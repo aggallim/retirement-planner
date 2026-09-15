@@ -570,7 +570,9 @@ const {
   ResponsiveContainer,
   ReferenceLine
 } = Recharts;
+// ENGINE-EXTRACT-START
 const CURRENT_YEAR = 2026;
+// ENGINE-EXTRACT-END
 const formatCurrency = v => new Intl.NumberFormat('en-GB', {
   style: 'currency',
   currency: 'GBP',
@@ -1224,6 +1226,7 @@ const IncomeChart = memo(function IncomeChart({
 });
 
 /* ---------------- Projection engine ---------------- */
+// ENGINE-EXTRACT-START
 function projectJoint({
   inflationRate,
   withdrawalRate,
@@ -1329,6 +1332,7 @@ function projectJoint({
   }
   return data;
 }
+// ENGINE-EXTRACT-END
 
 /* ---------------- Main ---------------- */
 function RetirementCalculator() {
