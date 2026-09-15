@@ -62,6 +62,32 @@ does that automatically.
   docs. Any change to accumulation, decumulation, lump-sum handling, or the
   joint-planning model should be checked against that list before shipping.
 
+## AI SDLC / Workflow
+
+Requirements flow through a fixed lifecycle, tracked as files in the repo
+rather than in an external issue tracker:
+
+1. **Intent** — `intent/NNN-slug.md` describes what's wanted and why, on `main`.
+2. **Spec** — `spec/NNN-slug.md` turns that intent into a concrete spec.
+3. **Branch** — create `NNN-slug` off `main` (e.g. `003-inheritance-tax`), one
+   branch per requirement, named after its intent slug.
+4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
+   implementation plan.
+5. **Implement** — make the change (see "Working in this repo" above for
+   `index.html`/`sw.js` conventions).
+6. **Test** — validate against `docs/TOOL_DOCUMENTATION.md` §5.4 for any
+   calculation change; otherwise exercise the change manually per "No build
+   step" above.
+7. **PR** — open a PR from the branch into `main`. The PR description
+   references the intent file path (e.g. "Implements
+   `intent/003-inheritance-tax.md`").
+8. **Merge** — once merged, delete the branch.
+
+The PR that implements a requirement also moves that requirement's intent and
+spec files into `intent/done/` and `spec/done/` **in the same PR** — this is
+not a separate cleanup step. A merged PR should leave no requirement's
+intent/spec files behind in the live `intent/`/`spec/` directories.
+
 ## Deployment
 
 Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes
