@@ -1,0 +1,86 @@
+# CLAUDE.md
+
+Guidance for Claude Code (or any agent) working in this repository.
+
+## What this project is
+
+A UK retirement planning calculator — pensions, ISAs, State Pension, mortgage
+runoff and inheritance projected year-by-year, benchmarked against the PLSA
+Retirement Living Standards. Supports individual or joint (couple) planning.
+Packaged as an installable, offline-capable PWA.
+
+Not financial advice — illustrative planning only. Retirement income tax is
+not modelled. See `docs/TOOL_DOCUMENTATION.md` for the full spec: input
+definitions, the financial model/formulas, architecture, verification
+checklist and known limitations. Read that file before changing any
+calculation logic.
+
+**Live app:** https://aggallim.github.io/retirement-planner/
+**Repo:** https://github.com/aggallim/retirement-planner
+
+## Repo layout
+
+| Path | Purpose |
+|---|---|
+| `index.html` | The entire app. React 18, Recharts and Tailwind's compiled CSS are all inlined here. |
+| `manifest.webmanifest` | PWA name/icon/theme colour, used for "Add to Home Screen". |
+| `sw.js` | Service worker — offline caching. |
+| `icon.svg` | Home screen icon. |
+| `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
+| `.github/workflows/pages.yml` | Deploys to GitHub Pages on every push to `main`. No build step. |
+
+There is no `package.json`, no build tooling, and no separate `.jsx` source
+in this repo — `index.html` is a **precompiled** artifact (JSX has already
+been turned into `React.createElement(...)` calls; there is no in-browser
+Babel). Editing the app means editing that generated JS directly inside
+`index.html`. If you're making a substantial change, it's reasonable to
+reconstruct readable JSX, edit it, and recompile/reinline the result back
+into `index.html` — but there is currently no pipeline in this repo that
+does that automatically.
+
+## Working in this repo
+
+- **No build step.** Open `index.html` directly, or serve the folder
+  (`python3 -m http.server 8000`) for testing "Add to Home Screen"-adjacent
+  behaviour (that specific feature needs real HTTPS, i.e. the deployed site).
+- **Data never leaves the device.** All figures are stored in the browser's
+  `localStorage`. There is no backend, no API, and nothing to configure for
+  secrets — this app has none.
+- **Bump the cache version after any deploy-worthy change.** The service
+  worker (`sw.js`) caches aggressively. If `index.html` changes,
+  increment `CACHE = 'retirement-planner-v1'` to `v2`, `v3`, etc., or
+  returning users won't see the update.
+- **Performance is fragile — read §5.3 of `docs/TOOL_DOCUMENTATION.md`
+  before touching component structure.** The sliders were previously
+  unusable because subcomponents were declared inside the parent component.
+  Keep `SliderWithInput`, `PersonInputs`, `CustomTooltip`, `WealthChart` and
+  `IncomeChart` at module level, memoised, with stable (`useCallback`)
+  handlers. Re-introducing an inline component definition will reintroduce
+  the original bug.
+- **Calculation changes are high-stakes.** The engine (`projectJoint()`) is
+  a pure function covered by the verification checklist in §5.4 of the tool
+  docs. Any change to accumulation, decumulation, lump-sum handling, or the
+  joint-planning model should be checked against that list before shipping.
+
+## Deployment
+
+Pushing to `main` triggers `.github/workflows/pages.yml`, which publishes
+the repo root as-is to GitHub Pages via `actions/configure-pages` +
+`actions/upload-pages-artifact` + `actions/deploy-pages`. No build step.
+
+One-time setup already done for this repo: **Settings → Pages → Source:
+GitHub Actions**. The workflow's default `GITHUB_TOKEN` cannot create a
+Pages site from scratch (`Resource not accessible by integration`), so if
+Pages is ever reset or this is replicated in a new repo, that setting needs
+to be flipped manually once before the workflow will succeed.
+
+## Conventions
+
+- Keep the whole app as a single-file PWA unless there's a strong reason to
+  add a build pipeline — that's a deliberate design choice (see §5.5 of the
+  tool docs), not an oversight.
+- Reference figures (State Pension, allowances, PLSA bands) are UK-specific
+  and dated (currently 2026/27 tax year, PLSA 2025/26). Check
+  `docs/TOOL_DOCUMENTATION.md` §4.7 before assuming a figure is current.
+- This file intentionally contains no personal financial figures, tokens,
+  or credentials — none exist in this project. Keep it that way.
