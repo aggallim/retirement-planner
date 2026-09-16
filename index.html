@@ -626,9 +626,16 @@ const makePerson = (o = {}) => ({
   lifeExpectancy: 95,
   statePensionAge: 67,
   statePensionAmount: 12548,
-  isaBalance: 25000,
-  isaContribution: 500,
-  isaGrowth: 5,
+  cashIsaBalance: 0,
+  cashIsaContribution: 0,
+  cashIsaGrowth: 2,
+  ssIsaBalance: 25000,
+  ssIsaContribution: 500,
+  ssIsaGrowth: 5,
+  lisaBalance: 0,
+  lisaContribution: 0,
+  lisaGrowth: 5,
+  otherSavings: [],
   pensionPot: 80000,
   pensionContribution: 400,
   employerContribution: 300,
@@ -636,6 +643,14 @@ const makePerson = (o = {}) => ({
   takeLumpSum: true,
   inheritanceAmount: 0,
   inheritanceAge: 70,
+  ...o
+});
+const makeOtherSavingsAccount = (o = {}) => ({
+  id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+  name: 'Other savings',
+  balance: 0,
+  contribution: 0,
+  growth: 2,
   ...o
 });
 
@@ -776,10 +791,109 @@ const PEN_OPTS = [{
   value: 9
 }];
 
+/* ---------------- Savings sub-accounts (module level + memoized) ---------------- */
+const IsaTypeAccount = memo(function IsaTypeAccount({
+  label,
+  tooltip,
+  balanceField,
+  contributionField,
+  contributionSubtitle,
+  growthField,
+  person,
+  onChange,
+  accent
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-5"
+  }, /*#__PURE__*/React.createElement("h5", {
+    className: "font-semibold text-slate-700 text-sm"
+  }, label), /*#__PURE__*/React.createElement(SliderWithInput, {
+    label: "Current Balance",
+    field: balanceField,
+    value: person[balanceField],
+    onChange: onChange,
+    min: 0,
+    max: 250000,
+    step: 1000,
+    prefix: "£",
+    accent: accent,
+    tooltip: tooltip
+  }), /*#__PURE__*/React.createElement(SliderWithInput, {
+    label: "Monthly Contribution",
+    field: contributionField,
+    value: person[contributionField],
+    onChange: onChange,
+    min: 0,
+    max: 1667,
+    step: 25,
+    prefix: "£",
+    accent: accent,
+    subtitle: contributionSubtitle
+  }), /*#__PURE__*/React.createElement(GrowthProfile, {
+    value: person[growthField],
+    field: growthField,
+    onChange: onChange,
+    options: ISA_OPTS,
+    accent: accent
+  }));
+});
+const OtherSavingsAccount = memo(function OtherSavingsAccount({
+  account,
+  onChange,
+  onRemove,
+  accent
+}) {
+  const handleChange = useCallback((field, value) => onChange(account.id, field, value), [account.id, onChange]);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-5 pt-4 border-t border-dashed border-slate-200"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: account.name,
+    onChange: e => handleChange('name', e.target.value),
+    className: "flex-1 font-semibold text-slate-700 text-sm bg-transparent border-b border-transparent focus:outline-none focus:border-slate-300 rounded px-1"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onRemove(account.id),
+    className: "text-slate-400 hover:text-red-500",
+    title: "Remove this savings account"
+  }, /*#__PURE__*/React.createElement(X, {
+    className: "h-4 w-4"
+  }))), /*#__PURE__*/React.createElement(SliderWithInput, {
+    label: "Current Balance",
+    field: "balance",
+    value: account.balance,
+    onChange: handleChange,
+    min: 0,
+    max: 250000,
+    step: 1000,
+    prefix: "£",
+    accent: accent
+  }), /*#__PURE__*/React.createElement(SliderWithInput, {
+    label: "Monthly Contribution",
+    field: "contribution",
+    value: account.contribution,
+    onChange: handleChange,
+    min: 0,
+    max: 2000,
+    step: 25,
+    prefix: "£",
+    accent: accent
+  }), /*#__PURE__*/React.createElement(GrowthProfile, {
+    value: account.growth,
+    field: "growth",
+    onChange: handleChange,
+    options: ISA_OPTS,
+    accent: accent
+  }));
+});
+
 /* ---------------- Person input panel (module level + memoized) ---------------- */
 const PersonInputs = memo(function PersonInputs({
   person,
   onChange,
+  onOtherAdd,
+  onOtherRemove,
+  onOtherChange,
   accent
 }) {
   return /*#__PURE__*/React.createElement("div", {
@@ -817,37 +931,50 @@ const PersonInputs = memo(function PersonInputs({
     className: "font-bold text-slate-800 mb-4 flex items-center gap-2"
   }, /*#__PURE__*/React.createElement(PiggyBank, {
     className: "h-4 w-4 text-emerald-600"
-  }), " ISA Savings"), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-5"
-  }, /*#__PURE__*/React.createElement(SliderWithInput, {
-    label: "Current Balance",
-    field: "isaBalance",
-    value: person.isaBalance,
+  }), " Savings"), /*#__PURE__*/React.createElement(IsaTypeAccount, {
+    label: "Cash ISA",
+    tooltip: "£20,000 annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.",
+    balanceField: "cashIsaBalance",
+    contributionField: "cashIsaContribution",
+    contributionSubtitle: "Shares the £20,000/yr ISA allowance",
+    growthField: "cashIsaGrowth",
+    person: person,
     onChange: onChange,
-    min: 0,
-    max: 500000,
-    step: 1000,
-    prefix: "£",
-    accent: accent,
-    tooltip: "Combined Cash + Stocks & Shares ISA. £20,000 annual allowance, tax-free growth and withdrawals."
-  }), /*#__PURE__*/React.createElement(SliderWithInput, {
-    label: "Monthly Contribution",
-    field: "isaContribution",
-    value: person.isaContribution,
-    onChange: onChange,
-    min: 0,
-    max: 1667,
-    step: 25,
-    prefix: "£",
-    accent: accent,
-    subtitle: "Max £1,667/mo (£20k annual allowance)"
-  }), /*#__PURE__*/React.createElement(GrowthProfile, {
-    value: person.isaGrowth,
-    field: "isaGrowth",
-    onChange: onChange,
-    options: ISA_OPTS,
     accent: accent
-  }))), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "pt-4"
+  }, /*#__PURE__*/React.createElement(IsaTypeAccount, {
+    label: "Stocks & Shares ISA",
+    tooltip: "£20,000 annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.",
+    balanceField: "ssIsaBalance",
+    contributionField: "ssIsaContribution",
+    contributionSubtitle: "Shares the £20,000/yr ISA allowance",
+    growthField: "ssIsaGrowth",
+    person: person,
+    onChange: onChange,
+    accent: accent
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "pt-4"
+  }, /*#__PURE__*/React.createElement(IsaTypeAccount, {
+    label: "Lifetime ISA (LISA)",
+    tooltip: "25% government bonus on contributions, up to £4,000/yr. Not accessible before age 60 in this tool (no first-home exception modelled).",
+    balanceField: "lisaBalance",
+    contributionField: "lisaContribution",
+    contributionSubtitle: "25% government bonus applied automatically. Max £4,000/yr.",
+    growthField: "lisaGrowth",
+    person: person,
+    onChange: onChange,
+    accent: accent
+  })), person.otherSavings.map(account => /*#__PURE__*/React.createElement(OtherSavingsAccount, {
+    key: account.id,
+    account: account,
+    onChange: onOtherChange,
+    onRemove: onOtherRemove,
+    accent: accent
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: onOtherAdd,
+    className: "w-full mt-4 py-2 rounded-lg border-2 border-dashed border-slate-300 text-sm font-semibold text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-colors"
+  }, "+ Add savings account")), /*#__PURE__*/React.createElement("div", {
     className: "pt-4 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-slate-800 mb-4 flex items-center gap-2"
@@ -1106,6 +1233,15 @@ const WealthChart = memo(function WealthChart({
     stroke: "#10b981",
     fill: "url(#g2)",
     name: isCouple ? `${p1Name} ISA` : 'ISA'
+  }), /*#__PURE__*/React.createElement(Area, {
+    isAnimationActive: false,
+    type: "monotone",
+    dataKey: "p1OtherSavings",
+    stackId: "1",
+    stroke: "#f59e0b",
+    fill: "#f59e0b",
+    fillOpacity: 0.35,
+    name: isCouple ? `${p1Name} Other Savings` : 'Other Savings'
   }), isCouple && /*#__PURE__*/React.createElement(Area, {
     isAnimationActive: false,
     type: "monotone",
@@ -1122,6 +1258,15 @@ const WealthChart = memo(function WealthChart({
     stroke: "#84cc16",
     fill: "url(#g4)",
     name: `${p2Name} ISA`
+  }), isCouple && /*#__PURE__*/React.createElement(Area, {
+    isAnimationActive: false,
+    type: "monotone",
+    dataKey: "p2OtherSavings",
+    stackId: "1",
+    stroke: "#fb923c",
+    fill: "#fb923c",
+    fillOpacity: 0.35,
+    name: `${p2Name} Other Savings`
   }), /*#__PURE__*/React.createElement(ReferenceLine, {
     x: p1RetYear,
     stroke: "#2563eb",
@@ -1199,6 +1344,11 @@ const IncomeChart = memo(function IncomeChart({
     }
   }), /*#__PURE__*/React.createElement(Bar, {
     isAnimationActive: false,
+    dataKey: "Other Savings",
+    stackId: "a",
+    fill: "#f59e0b"
+  }), /*#__PURE__*/React.createElement(Bar, {
+    isAnimationActive: false,
     dataKey: "Pension",
     stackId: "a",
     fill: "#2563eb"
@@ -1227,6 +1377,44 @@ const IncomeChart = memo(function IncomeChart({
 
 /* ---------------- Projection engine ---------------- */
 // ENGINE-EXTRACT-START
+function migratePerson(saved) {
+  if (!saved || saved.ssIsaBalance !== undefined) return saved;
+  const {
+    isaBalance,
+    isaContribution,
+    isaGrowth,
+    ...rest
+  } = saved;
+  return {
+    ...rest,
+    cashIsaBalance: 0,
+    cashIsaContribution: 0,
+    cashIsaGrowth: 2,
+    ssIsaBalance: isaBalance ?? 0,
+    ssIsaContribution: isaContribution ?? 0,
+    ssIsaGrowth: isaGrowth ?? 5,
+    lisaBalance: 0,
+    lisaContribution: 0,
+    lisaGrowth: 5,
+    otherSavings: []
+  };
+}
+// Draws proportionally-by-balance from every instance in one drawdown tier,
+// generalising the single proportional ISA draw this replaces to however
+// many account instances (people x accounts) are eligible in that tier —
+// spec/002-extra-savings-accounts.md §5.
+function drawFromTier(instances, gap) {
+  const total = instances.reduce((s, inst) => s + inst.balance, 0);
+  if (gap <= 0 || total <= 0) return {
+    draws: instances.map(() => 0),
+    drawn: 0
+  };
+  const draws = instances.map(inst => Math.min(inst.balance, gap * (inst.balance / total)));
+  return {
+    draws,
+    drawn: draws.reduce((s, d) => s + d, 0)
+  };
+}
 function projectJoint({
   inflationRate,
   withdrawalRate,
@@ -1241,11 +1429,18 @@ function projectJoint({
   const cap = 60000;
   const init = p => ({
     cfg: p,
-    isa: p.isaBalance,
+    cashIsa: p.cashIsaBalance,
+    ssIsa: p.ssIsaBalance,
+    lisa: p.lisaBalance,
+    other: (p.otherSavings || []).map(a => ({
+      ...a
+    })),
     pension: p.pensionPot,
     appliedLump: false,
     initialWithdrawal: 0,
-    mIsaG: Math.pow(1 + p.isaGrowth / 100, 1 / 12) - 1,
+    mCashIsaG: Math.pow(1 + p.cashIsaGrowth / 100, 1 / 12) - 1,
+    mSsIsaG: Math.pow(1 + p.ssIsaGrowth / 100, 1 / 12) - 1,
+    mLisaG: Math.pow(1 + p.lisaGrowth / 100, 1 / 12) - 1,
     mPenG: Math.pow(1 + p.pensionGrowth / 100, 1 / 12) - 1
   });
   const people = [init(person1)];
@@ -1265,12 +1460,12 @@ function projectJoint({
         if (p.cfg.takeLumpSum) {
           const ls = p.pension * 0.25;
           p.pension -= ls;
-          p.isa += ls;
+          p.ssIsa += ls;
         }
         p.initialWithdrawal = p.pension * (withdrawalRate / 100);
         p.appliedLump = true;
       }
-      if (age === p.cfg.inheritanceAge && p.cfg.inheritanceAmount > 0) p.isa += p.cfg.inheritanceAmount;
+      if (age === p.cfg.inheritanceAge && p.cfg.inheritanceAmount > 0) p.ssIsa += p.cfg.inheritanceAmount;
       return {
         p,
         age,
@@ -1288,15 +1483,46 @@ function projectJoint({
       totalPenW += d;
       return d;
     });
-    const gap = Math.max(0, targetExpenses - totalSP - totalPenW);
-    const retIsaTotal = pp.reduce((s, x) => s + (x.retired ? x.p.isa : 0), 0);
-    let totalIsaW = 0;
-    const isaDraws = pp.map(x => {
-      if (!x.retired || retIsaTotal <= 0 || gap <= 0) return 0;
-      const d = Math.min(x.p.isa, gap * (x.p.isa / retIsaTotal));
-      totalIsaW += d;
-      return d;
+    let gap = Math.max(0, targetExpenses - totalSP - totalPenW);
+
+    // Fixed drawdown priority: other savings -> Cash ISA -> S&S ISA -> LISA
+    // (from age 60), each tier drawn proportionally-by-balance across every
+    // retired person's eligible account(s) of that type.
+    const otherInstances = [];
+    pp.forEach((x, pi) => {
+      x.p.other.forEach((acc, ai) => {
+        otherInstances.push({
+          pi,
+          ai,
+          balance: x.retired ? acc.balance : 0
+        });
+      });
     });
+    const otherResult = drawFromTier(otherInstances, gap);
+    gap = Math.max(0, gap - otherResult.drawn);
+
+    const cashInstances = pp.map((x, pi) => ({
+      pi,
+      balance: x.retired ? x.p.cashIsa : 0
+    }));
+    const cashResult = drawFromTier(cashInstances, gap);
+    gap = Math.max(0, gap - cashResult.drawn);
+
+    const ssInstances = pp.map((x, pi) => ({
+      pi,
+      balance: x.retired ? x.p.ssIsa : 0
+    }));
+    const ssResult = drawFromTier(ssInstances, gap);
+    gap = Math.max(0, gap - ssResult.drawn);
+
+    const lisaInstances = pp.map((x, pi) => ({
+      pi,
+      balance: x.retired && x.age >= 60 ? x.p.lisa : 0
+    }));
+    const lisaResult = drawFromTier(lisaInstances, gap);
+    gap = Math.max(0, gap - lisaResult.drawn);
+
+    const otherSavingsOf = pi => pp[pi].p.other.reduce((s, a) => s + a.balance, 0);
     const row = {
       year,
       person1Age: person1.currentAge + y,
@@ -1305,27 +1531,57 @@ function projectJoint({
       targetExpenses: Math.round(targetExpenses),
       statePension: Math.round(totalSP),
       pensionWithdrawal: Math.round(totalPenW),
-      isaWithdrawal: Math.round(totalIsaW),
+      isaWithdrawal: Math.round(cashResult.drawn + ssResult.drawn + lisaResult.drawn),
+      otherSavingsWithdrawal: Math.round(otherResult.drawn),
       p1Pension: Math.round(pp[0].p.pension),
-      p1Isa: Math.round(pp[0].p.isa),
+      p1CashIsa: Math.round(pp[0].p.cashIsa),
+      p1SsIsa: Math.round(pp[0].p.ssIsa),
+      p1Lisa: Math.round(pp[0].p.lisa),
+      p1OtherSavings: Math.round(otherSavingsOf(0)),
       p2Pension: pp[1] ? Math.round(pp[1].p.pension) : 0,
-      p2Isa: pp[1] ? Math.round(pp[1].p.isa) : 0
+      p2CashIsa: pp[1] ? Math.round(pp[1].p.cashIsa) : 0,
+      p2SsIsa: pp[1] ? Math.round(pp[1].p.ssIsa) : 0,
+      p2Lisa: pp[1] ? Math.round(pp[1].p.lisa) : 0,
+      p2OtherSavings: pp[1] ? Math.round(otherSavingsOf(1)) : 0
     };
-    row.p1Total = row.p1Pension + row.p1Isa;
-    row.p2Total = row.p2Pension + row.p2Isa;
+    row.p1Isa = row.p1CashIsa + row.p1SsIsa + row.p1Lisa;
+    row.p2Isa = row.p2CashIsa + row.p2SsIsa + row.p2Lisa;
+    row.p1Total = row.p1Pension + row.p1Isa + row.p1OtherSavings;
+    row.p2Total = row.p2Pension + row.p2Isa + row.p2OtherSavings;
     row.totalPension = row.p1Pension + row.p2Pension;
     row.totalIsa = row.p1Isa + row.p2Isa;
+    row.totalOtherSavings = row.p1OtherSavings + row.p2OtherSavings;
     data.push(row);
+    otherInstances.forEach((inst, idx) => {
+      const acc = pp[inst.pi].p.other[inst.ai];
+      acc.balance = Math.max(0, acc.balance - otherResult.draws[idx]);
+    });
     pp.forEach((x, i) => {
       x.p.pension = Math.max(0, x.p.pension - penDraws[i]);
-      x.p.isa = Math.max(0, x.p.isa - isaDraws[i]);
+      const cashDraw = cashInstances[i] ? cashResult.draws[i] : 0;
+      const ssDraw = ssInstances[i] ? ssResult.draws[i] : 0;
+      const lisaDraw = lisaInstances[i] ? lisaResult.draws[i] : 0;
+      x.p.cashIsa = Math.max(0, x.p.cashIsa - cashDraw);
+      x.p.ssIsa = Math.max(0, x.p.ssIsa - ssDraw);
+      x.p.lisa = Math.max(0, x.p.lisa - lisaDraw);
       if (!x.retired) {
-        for (let m = 0; m < 12; m++) x.p.isa = x.p.isa * (1 + x.p.mIsaG) + x.p.cfg.isaContribution;
+        for (let m = 0; m < 12; m++) x.p.cashIsa = x.p.cashIsa * (1 + x.p.mCashIsaG) + x.p.cfg.cashIsaContribution;
+        for (let m = 0; m < 12; m++) x.p.ssIsa = x.p.ssIsa * (1 + x.p.mSsIsaG) + x.p.cfg.ssIsaContribution;
+        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + x.p.cfg.lisaContribution * 1.25;
+        x.p.other.forEach(acc => {
+          const mG = Math.pow(1 + acc.growth / 100, 1 / 12) - 1;
+          for (let m = 0; m < 12; m++) acc.balance = acc.balance * (1 + mG) + acc.contribution;
+        });
         const cm = Math.min(x.p.cfg.pensionContribution + x.p.cfg.employerContribution, cap / 12);
         for (let m = 0; m < 12; m++) x.p.pension = x.p.pension * (1 + x.p.mPenG) + cm;
       } else {
         x.p.pension *= 1 + x.p.cfg.pensionGrowth / 100;
-        x.p.isa *= 1 + x.p.cfg.isaGrowth / 100;
+        x.p.cashIsa *= 1 + x.p.cfg.cashIsaGrowth / 100;
+        x.p.ssIsa *= 1 + x.p.cfg.ssIsaGrowth / 100;
+        x.p.lisa *= 1 + x.p.cfg.lisaGrowth / 100;
+        x.p.other.forEach(acc => {
+          acc.balance *= 1 + acc.growth / 100;
+        });
       }
     });
     if (mortgage > 0) mortgage = Math.max(0, mortgage - mortgagePayment * 12);
@@ -1337,18 +1593,18 @@ function projectJoint({
 /* ---------------- Main ---------------- */
 function RetirementCalculator() {
   const [hasPartner, setHasPartner] = useState(pick('hasPartner', false));
-  const [person1, setPerson1] = useState(pick('person1', makePerson({
+  const [person1, setPerson1] = useState(migratePerson(pick('person1', makePerson({
     name: 'You'
-  })));
-  const [person2, setPerson2] = useState(pick('person2', makePerson({
+  }))));
+  const [person2, setPerson2] = useState(migratePerson(pick('person2', makePerson({
     name: 'Partner',
     currentAge: 37,
-    isaBalance: 20000,
-    isaContribution: 400,
+    ssIsaBalance: 20000,
+    ssIsaContribution: 400,
     pensionPot: 60000,
     pensionContribution: 350,
     employerContribution: 250
-  })));
+  }))));
   const [annualExpenses, setAnnualExpenses] = useState(pick('annualExpenses', 35000));
   const [healthcareCosts, setHealthcareCosts] = useState(pick('healthcareCosts', 2000));
   const [mortgagePayment, setMortgagePayment] = useState(pick('mortgagePayment', 1200));
@@ -1401,6 +1657,36 @@ function RetirementCalculator() {
     ...p,
     [field]: value
   })), []);
+  const addOtherP1 = useCallback(() => setPerson1(p => ({
+    ...p,
+    otherSavings: [...p.otherSavings, makeOtherSavingsAccount()]
+  })), []);
+  const addOtherP2 = useCallback(() => setPerson2(p => ({
+    ...p,
+    otherSavings: [...p.otherSavings, makeOtherSavingsAccount()]
+  })), []);
+  const removeOtherP1 = useCallback(id => setPerson1(p => ({
+    ...p,
+    otherSavings: p.otherSavings.filter(a => a.id !== id)
+  })), []);
+  const removeOtherP2 = useCallback(id => setPerson2(p => ({
+    ...p,
+    otherSavings: p.otherSavings.filter(a => a.id !== id)
+  })), []);
+  const updateOtherP1 = useCallback((id, field, value) => setPerson1(p => ({
+    ...p,
+    otherSavings: p.otherSavings.map(a => a.id === id ? {
+      ...a,
+      [field]: value
+    } : a)
+  })), []);
+  const updateOtherP2 = useCallback((id, field, value) => setPerson2(p => ({
+    ...p,
+    otherSavings: p.otherSavings.map(a => a.id === id ? {
+      ...a,
+      [field]: value
+    } : a)
+  })), []);
   const updateShared = useCallback((field, value) => {
     if (field === 'annualExpenses') setAnnualExpenses(value);else if (field === 'healthcareCosts') setHealthcareCosts(value);else if (field === 'mortgagePayment') setMortgagePayment(value);else if (field === 'mortgageYears') setMortgageYears(value);else if (field === 'withdrawalRate') setWithdrawalRate(value);
   }, []);
@@ -1433,16 +1719,19 @@ function RetirementCalculator() {
     if (!row) return {
       pension: 0,
       isa: 0,
+      otherSavings: 0,
       total: 0,
       lumpSum: 0,
       pensionIncome: 0
     };
     const pension = row[`p${key}Pension`],
-      isa = row[`p${key}Isa`];
+      isa = row[`p${key}Isa`],
+      otherSavings = row[`p${key}OtherSavings`];
     return {
       pension,
       isa,
-      total: pension + isa,
+      otherSavings,
+      total: pension + isa + otherSavings,
       lumpSum: person.takeLumpSum ? pension / 3 : 0,
       pensionIncome: pension * (d.wr / 100)
     };
@@ -1458,7 +1747,7 @@ function RetirementCalculator() {
     if (isCouple && d.p2.currentAge + y >= d.p2.statePensionAge) sp += d.p2.statePensionAmount;
     const pensionIncome = p1Summary.pensionIncome + (p2Summary ? p2Summary.pensionIncome : 0);
     return {
-      totalPot: row.totalPension + row.totalIsa,
+      totalPot: row.totalPension + row.totalIsa + row.totalOtherSavings,
       pensionIncome,
       statePension: sp,
       annualIncome: pensionIncome + sp,
@@ -1472,7 +1761,7 @@ function RetirementCalculator() {
     let depleted = null;
     for (const r of projections) {
       if (r.year < firstRet) continue;
-      if (r.totalPension + r.totalIsa < 1000) {
+      if (r.totalPension + r.totalIsa + r.totalOtherSavings < 1000) {
         depleted = r.year;
         break;
       }
@@ -1498,6 +1787,9 @@ function RetirementCalculator() {
     const check = (p, label) => {
       if ((p.pensionContribution + p.employerContribution) * 12 > 60000) w.push(`${label}: pension contributions exceed £60,000 annual allowance`);
       if (p.retirementAge < p.statePensionAge) w.push(`${label}: ${p.statePensionAge - p.retirementAge}-year gap before State Pension starts`);
+      const isaAnnual = (p.cashIsaContribution + p.ssIsaContribution + p.lisaContribution) * 12;
+      if (isaAnnual > 20000) w.push(`${label}: ISA contributions exceed £20,000 annual allowance`);
+      if (p.lisaContribution * 12 > 4000) w.push(`${label}: LISA contributions exceed £4,000 annual allowance`);
     };
     check(d.p1, isCouple ? d.p1.name : 'You');
     if (isCouple) check(d.p2, d.p2.name);
@@ -1510,6 +1802,7 @@ function RetirementCalculator() {
     year: r.year,
     Pension: r.pensionWithdrawal,
     ISA: r.isaWithdrawal,
+    'Other Savings': r.otherSavingsWithdrawal,
     'State Pension': r.statePension,
     Expenses: r.targetExpenses
   })), [projections, longevity.firstRet]);
@@ -1709,7 +2002,7 @@ function RetirementCalculator() {
   }, p.name), /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-slate-500 ml-auto"
   }, "retires ", CURRENT_YEAR + (p.retirementAge - p.currentAge), " (age ", p.retirementAge, ")")), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-3 gap-3 text-center"
+    className: s.otherSavings > 0 ? "grid grid-cols-4 gap-3 text-center" : "grid grid-cols-3 gap-3 text-center"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mb-0.5"
   }, "Pension"), /*#__PURE__*/React.createElement("p", {
@@ -1718,7 +2011,11 @@ function RetirementCalculator() {
     className: "text-xs text-slate-500 mb-0.5"
   }, "ISA"), /*#__PURE__*/React.createElement("p", {
     className: "font-bold text-slate-900 tabular text-sm"
-  }, formatCurrency(s.isa))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+  }, formatCurrency(s.isa))), s.otherSavings > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-500 mb-0.5"
+  }, "Other Savings"), /*#__PURE__*/React.createElement("p", {
+    className: "font-bold text-slate-900 tabular text-sm"
+  }, formatCurrency(s.otherSavings))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mb-0.5"
   }, "Total"), /*#__PURE__*/React.createElement("p", {
     className: "font-bold text-slate-900 tabular text-sm"
@@ -1745,6 +2042,9 @@ function RetirementCalculator() {
   }, hasPartner ? 'First person’s' : 'Your', " savings, pensions and retirement timeline."), /*#__PURE__*/React.createElement(PersonInputs, {
     person: person1,
     onChange: updateP1,
+    onOtherAdd: addOtherP1,
+    onOtherRemove: removeOtherP1,
+    onOtherChange: updateOtherP1,
     accent: "blue"
   })), hasPartner ? /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
@@ -1769,6 +2069,9 @@ function RetirementCalculator() {
   }, "Partner’s savings, pensions and retirement timeline."), /*#__PURE__*/React.createElement(PersonInputs, {
     person: person2,
     onChange: updateP2,
+    onOtherAdd: addOtherP2,
+    onOtherRemove: removeOtherP2,
+    onOtherChange: updateOtherP2,
     accent: "teal"
   })) : /*#__PURE__*/React.createElement("button", {
     onClick: () => setHasPartner(true),
@@ -2004,13 +2307,13 @@ function RetirementCalculator() {
     className: "font-bold text-slate-900 mb-1"
   }, "Investment growth"), /*#__PURE__*/React.createElement("p", null, "Growth rates are illustrative. Actual returns vary with markets and fees.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
-  }, "Safe withdrawal rate (4% rule)"), /*#__PURE__*/React.createElement("p", null, "Each person withdraws their chosen rate of their pension pot in their first year of retirement, then increases it with inflation. ISAs top up any remaining spending gap.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "Safe withdrawal rate (4% rule)"), /*#__PURE__*/React.createElement("p", null, "Each person withdraws their chosen rate of their pension pot in their first year of retirement, then increases it with inflation. Any remaining spending gap is drawn from other savings first, then Cash ISA, then Stocks & Shares ISA, then the LISA (from age 60).")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
   }, "PLSA Retirement Living Standards (2025/26)"), /*#__PURE__*/React.createElement("p", null, "One-person: Minimum £13,400, Moderate £31,700, Comfortable £43,900. Two-person: Minimum £21,600, Moderate £43,900, Comfortable £60,600. After-tax, excluding housing, outside London.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
   }, "State Pension"), /*#__PURE__*/React.createElement("p", null, "Full new State Pension is £12,548/year (2026/27), beginning at each person’s State Pension age (rising 66→67). Actual amounts depend on NI record.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
-  }, "Allowances"), /*#__PURE__*/React.createElement("p", null, "Pension annual allowance £60,000 (incl. employer); ISA allowance £20,000 (2026/27).")), /*#__PURE__*/React.createElement("div", {
+  }, "Allowances"), /*#__PURE__*/React.createElement("p", null, "Pension annual allowance £60,000 (incl. employer); combined Cash ISA + Stocks & Shares ISA + LISA allowance £20,000, of which up to £4,000 can be LISA (2026/27). LISA contributions get a 25% government bonus and aren't accessible before age 60 in this tool.")), /*#__PURE__*/React.createElement("div", {
     className: "bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r"
   }, /*#__PURE__*/React.createElement("p", {
     className: "font-bold text-amber-900"

@@ -61,6 +61,16 @@ does that automatically.
   a pure function covered by the verification checklist in §5.4 of the tool
   docs. Any change to accumulation, decumulation, lump-sum handling, or the
   joint-planning model should be checked against that list before shipping.
+- **Update `docs/TOOL_DOCUMENTATION.md` in the same PR as any change it
+  describes** — it is the spec of record, not a follow-up chore. This means:
+  the relevant section(s) in §3 (user guide) and §4 (financial technicals,
+  including §4.7 reference figures) for any input, calculation, or
+  reference-figure change; §5.4 (verification) with any new checklist items
+  a calculation change needs; §7 (known limitations) if the change removes,
+  narrows, or adds a deliberate simplification; and a new entry under
+  **§8 Build history** — the project's changelog — summarising what changed
+  and, for a non-trivial calculation change, why. A PR that changes
+  behaviour without a matching §8 entry is incomplete.
 
 ## AI SDLC / Workflow
 
@@ -77,7 +87,9 @@ rather than in an external issue tracker:
    `index.html`/`sw.js` conventions).
 6. **Test** — validate against `docs/TOOL_DOCUMENTATION.md` §5.4 for any
    calculation change; otherwise exercise the change manually per "No build
-   step" above.
+   step" above. Update `docs/TOOL_DOCUMENTATION.md` itself (including a new
+   §8 Build history entry) per "Working in this repo" above — this happens
+   alongside implementation, not after it.
 7. **PR** — open a PR from the branch into `main`. The PR description
    references the intent file path (e.g. "Implements
    `intent/003-inheritance-tax.md`").

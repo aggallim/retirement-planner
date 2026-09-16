@@ -89,7 +89,7 @@ Both names are editable — tap the name to rename.
 | Section | Per person or shared? | Notes |
 |---|---|---|
 | Ages and retirement timing | Per person | Shows the calendar year they retire |
-| ISA savings | Per person | Cash and Stocks & Shares combined |
+| Savings | Per person | Cash ISA, Stocks & Shares ISA, LISA, and any number of free-form "other savings" accounts |
 | Pension | Per person | Includes employer contributions and lump sum choice |
 | State Pension and inheritance | Per person | Each person can have a different State Pension age |
 | Living costs | Shared | Entered once for the household |
@@ -110,6 +110,8 @@ Both names are editable — tap the name to rename.
 
 The red banner appears when any of these trigger:
 - Pension contributions exceed the £60,000 annual allowance
+- Combined Cash ISA + Stocks & Shares ISA + LISA contributions exceed the £20,000 annual allowance
+- LISA contributions exceed the £4,000 annual allowance
 - A gap exists between retirement and State Pension age
 - Household income falls below the PLSA minimum
 - Funds are projected to run out before the plan horizon
@@ -135,11 +137,13 @@ for each of 12 months:
 
 Combined employee plus employer pension contributions are capped at the **£60,000** annual allowance inside the engine, not merely warned about.
 
+Each person's savings are modelled as up to four independent account types, each with its own balance, monthly contribution and growth rate: **Cash ISA**, **Stocks & Shares ISA**, **LISA**, and any number of free-form **other savings** accounts (e.g. Premium Bonds, general savings). LISA contributions receive an automatic **25% government bonus**, credited monthly alongside the LISA's own growth (`lisaContribution × 1.25` added each month, on top of compounding) — mirroring how the pension lump sum is already special-cased as a fixed, non-configurable top-up. Combined Cash ISA + Stocks & Shares ISA + LISA contributions are **not** hard-capped in the engine (unlike the pension allowance above); exceeding the £20,000 combined allowance or the £4,000 LISA sub-allowance is warned about (§3.5) rather than silently reduced, since unlike the single-figure pension contribution there's no unambiguous way to decide which of the three accounts should absorb an over-the-cap reduction.
+
 ### 4.2 At retirement
 
 Applied once, in the person's retirement year, in this order:
 
-1. **25% tax-free lump sum** (if selected) is moved out of the pension and into the ISA — modelling it as retained tax-free capital rather than spent
+1. **25% tax-free lump sum** (if selected) is moved out of the pension and into the Stocks & Shares ISA — modelling it as retained tax-free capital rather than spent
 2. The **initial sustainable withdrawal** is fixed as `remainingPension × withdrawalRate`
 
 ### 4.3 Decumulation
@@ -154,9 +158,9 @@ Spending is funded in this order each year:
 
 1. **State Pension** — begins at each person's State Pension age, inflation-uprated from today
 2. **Pension drawdown** — the sustainable amount above, capped at the remaining pot
-3. **ISA** — tops up whatever gap remains
+3. **Savings** — top up whatever gap remains, drawn in a **fixed priority order**: other savings first, then Cash ISA, then Stocks & Shares ISA, then the **LISA** — and the LISA is only drawable once the person turns **60** (no first-home exception is modelled; before 60 it is excluded from funding the gap entirely, though it keeps accruing contributions, bonus and growth). This order is shown in the app's Assumptions panel so it's never left implicit.
 
-In joint mode, the ISA top-up is drawn **proportionally** from each retired person's ISA balance. Balances that remain after withdrawals continue to grow at the person's chosen rate.
+In joint mode, each tier is drawn **proportionally** across every retired person's balance of that account type before moving to the next tier — the same proportional mechanic the tool has always used for ISA withdrawals, now applied tier-by-tier instead of once. Balances that remain after withdrawals continue to grow at the person's chosen rate.
 
 ### 4.4 Expenses and inflation
 
@@ -177,7 +181,7 @@ The projection is anchored on **calendar years** so that differing ages align co
 
 ### 4.6 Longevity test
 
-Funds are considered depleted the first year that combined pension plus ISA falls below £1,000, measured only from the first retirement onward. The plan horizon is the **longer** of the two life expectancies.
+Funds are considered depleted the first year that combined pension plus ISA plus other savings falls below £1,000, measured only from the first retirement onward. The plan horizon is the **longer** of the two life expectancies.
 
 ### 4.7 Reference figures used
 
@@ -185,7 +189,10 @@ Funds are considered depleted the first year that combined pension plus ISA fall
 |---|---|---|
 | Full new State Pension | £12,548/yr (£241.30/wk) | 2026/27 |
 | Pension annual allowance | £60,000 incl. employer | 2026/27 |
-| ISA allowance | £20,000 | 2026/27 |
+| ISA allowance (Cash + Stocks & Shares + LISA combined) | £20,000 | 2026/27 |
+| LISA annual contribution limit | £4,000 (within the £20,000 above) | 2026/27 |
+| LISA government bonus | 25% of contributions | 2026/27 |
+| LISA minimum access age | 60 (no first-home exception modelled) | — |
 | PLSA one-person | Min £13,400 / Mod £31,700 / Comf £43,900 | 2025/26, outside London |
 | PLSA two-person | Min £21,600 / Mod £43,900 / Comf £60,600 | 2025/26, outside London |
 
@@ -245,6 +252,10 @@ The engine was tested as a standalone module. Checks that pass:
 - State Pension starts in the correct year, correctly inflated
 - Joint totals reconcile against the sum of individual pots
 - Depletion is detected correctly in a deliberately under-funded scenario
+- LISA contributions receive exactly a 25% government top-up before compounding
+- The LISA is never drawn before age 60, and becomes drawable from age 60 onward
+- Fixed drawdown order is respected: other savings, then Cash ISA, then Stocks & Shares ISA, then LISA
+- `migratePerson()` correctly maps an old single-ISA save onto the new sub-account shape, and is a no-op on an already-migrated save
 - **Individual-mode results are identical before and after the joint-planning rewrite** — the regression guard that mattered most
 
 The built PWA was additionally rendered in a headless browser to confirm it boots, calculates, toggles into couple mode and persists state.
@@ -291,9 +302,11 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 4. **Growth is a fixed annual rate** with no sequence-of-returns risk or volatility modelling. A poor first decade of retirement is far more damaging than the same average return implies.
 5. **One inflation rate** applies to all spending categories; healthcare in particular tends to inflate faster.
 6. **PLSA bands are not inflated forward** — they are compared against nominal future income, which flatters later years.
-7. **ISA contributions are not hard-capped** in the engine; the £20,000 limit is enforced only by the slider maximum.
+7. **ISA/LISA contributions are not hard-capped** in the engine; the £20,000 combined and £4,000 LISA limits are warned about (§3.5), not enforced — unlike the pension allowance, which is a hard cap.
 8. **Defined benefit pensions are not supported** — only defined contribution pots.
 9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan.
+10. **No LISA first-home exception.** Real LISAs allow penalty-free access before 60 for a first home purchase; this tool has no house-purchase concept to hang that on, so the age-60 restriction is unconditional.
+11. **Unlimited free-form "other savings" accounts.** A person can add any number of named non-ISA savings accounts — this is intentional, not a bug.
 
 ### Possible future additions
 
@@ -331,5 +344,17 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 - **Joint expenses start at the first retirement**, chosen deliberately as the cautious option
 - **Mortgage kept as a single shared liability** rather than split between partners
 - **Growth profile persists into retirement** rather than assuming a de-risking glidepath
+
+</details>
+
+<details>
+<summary><strong>Extra savings accounts (Cash ISA / S&S ISA / LISA / other savings) — spec/002-extra-savings-accounts.md</strong></summary>
+
+- **Split the single "ISA" field into Cash ISA, Stocks & Shares ISA and LISA**, each with its own balance/contribution/growth rate, plus a free-form "other savings" list for non-ISA money (Premium Bonds, general savings) — replacing a field that `docs/TOOL_DOCUMENTATION.md` §4 had documented as "Cash and Stocks & Shares combined" ever since the original build.
+- **LISA bonus is a fixed engine-side top-up** (`contribution × 1.25`), not a configurable input — the same treatment already given to the pension lump sum.
+- **ISA/LISA allowance enforcement is warning-only**, deliberately asymmetric with the pension allowance's hard cap: a single combined pension contribution has one unambiguous number to cap, but three independently-growing ISA-type accounts have no unambiguous way to attribute a proportional reduction across them.
+- **Fixed drawdown order (other savings → Cash ISA → S&S ISA → LISA)** replaces the old single proportional ISA draw, generalising the same proportional-by-balance mechanic to four tiers instead of one — cross-person behaviour within a tier is unchanged from before.
+- **Old saves are migrated on load** (`migratePerson()`), mapping a pre-existing ISA balance onto the opening Stocks & Shares ISA balance — never silently dropped or reset to zero.
+- **Other savings count as real wealth** for the depletion check and wealth/income charts, but are not part of the "ISA" total shown elsewhere in the app — they're household money, just not an ISA.
 
 </details>
