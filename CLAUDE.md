@@ -27,7 +27,11 @@ calculation logic.
 | `sw.js` | Service worker — offline caching. |
 | `icon.svg` | Home screen icon. |
 | `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
+| `CHANGELOG.md` | Short, chronological "what shipped when," one entry per requirement. |
+| `tests/test-engine.js` | Dependency-free `node` test harness for `projectJoint()`. Run with `node tests/test-engine.js` from the repo root. |
+| `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
 | `.github/workflows/pages.yml` | Deploys to GitHub Pages on every push to `main`. No build step. |
+| `.github/workflows/test-engine.yml` | Runs `tests/test-engine.js` on push/PR. |
 
 There is no `package.json`, no build tooling, and no separate `.jsx` source
 in this repo — `index.html` is a **precompiled** artifact (JSX has already
@@ -61,6 +65,22 @@ does that automatically.
   a pure function covered by the verification checklist in §5.4 of the tool
   docs. Any change to accumulation, decumulation, lump-sum handling, or the
   joint-planning model should be checked against that list before shipping.
+- **Update `docs/TOOL_DOCUMENTATION.md` in the same PR as any change it
+  describes** — it is the spec of record, not a follow-up chore. This means:
+  the relevant section(s) in §3 (user guide) and §4 (financial technicals,
+  including §4.7 reference figures) for any input, calculation, or
+  reference-figure change; §5.4 (verification) with any new checklist items
+  a calculation change needs; §7 (known limitations) if the change removes,
+  narrows, or adds a deliberate simplification; and a new entry under
+  **§8 Build history** — the detailed, narrative record — summarising what
+  changed and, for a non-trivial calculation change, why. A PR that changes
+  behaviour without a matching §8 entry is incomplete.
+- **Add a `CHANGELOG.md` entry in the same PR too.** `CHANGELOG.md` is the
+  short, chronological "what shipped when," separate from §8's narrative
+  detail. Every requirement gets one entry under a dated heading (the date
+  the PR merges), naming the intent/spec file it implements — written
+  directly in the PR, the same way intent/spec move to `done/` in the same
+  PR rather than as a follow-up.
 
 ## AI SDLC / Workflow
 
@@ -72,12 +92,19 @@ rather than in an external issue tracker:
 3. **Branch** — create `NNN-slug` off `main` (e.g. `003-inheritance-tax`), one
    branch per requirement, named after its intent slug.
 4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
-   implementation plan.
+   implementation plan. It's a working file for the branch only — it never
+   lands on `main`. Delete it (`git rm plan.md`) as part of the same PR that
+   implements the requirement; it already did its job by the time the PR
+   opens, and the branch's commit history keeps it if anyone needs to see it
+   later.
 5. **Implement** — make the change (see "Working in this repo" above for
    `index.html`/`sw.js` conventions).
-6. **Test** — validate against `docs/TOOL_DOCUMENTATION.md` §5.4 for any
-   calculation change; otherwise exercise the change manually per "No build
-   step" above.
+6. **Test** — run `node tests/test-engine.js` and validate against
+   `docs/TOOL_DOCUMENTATION.md` §5.4 for any calculation change; otherwise
+   exercise the change manually per "No build step" above. Update
+   `docs/TOOL_DOCUMENTATION.md` itself (including a new §8 Build history
+   entry) and add a `CHANGELOG.md` entry, both per "Working in this repo"
+   above — this happens alongside implementation, not after it.
 7. **PR** — open a PR from the branch into `main`. The PR description
    references the intent file path (e.g. "Implements
    `intent/003-inheritance-tax.md`").
@@ -86,7 +113,8 @@ rather than in an external issue tracker:
 The PR that implements a requirement also moves that requirement's intent and
 spec files into `intent/done/` and `spec/done/` **in the same PR** — this is
 not a separate cleanup step. A merged PR should leave no requirement's
-intent/spec files behind in the live `intent/`/`spec/` directories.
+intent/spec files, nor `plan.md`, behind in the live `intent/`/`spec/`
+directories or repo root.
 
 ## Deployment
 
