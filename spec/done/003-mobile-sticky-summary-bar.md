@@ -68,14 +68,20 @@ runtime — the Living Standard label is a small, fixed, enumerable set (`level`
 at `index.html:598/604/610/616`: "Comfortable", "Moderate", "Minimum", "Below
 Minimum") so a static size beats adding a shrink-to-fit measurement routine
 for four known strings. Change both value `<p>` classes
-(`index.html:1901`, `1907`, `1913`) from `text-base md:text-xl` to `text-sm
-md:text-xl` — `md:` and above stay exactly as today.
+(`index.html:1901`, `1907`, `1913`) from `text-base md:text-xl` to `text-xs
+md:text-xl` — `md:` and above stay exactly as today. (`text-sm` was tried
+first during implementation; at the narrowest supported viewport it still
+forced an ugly mid-word break, e.g. "Minimu"/"m", on the longest Living
+Standard label. `text-xs` — the same size already used for the box labels at
+`md:` — wraps that case cleanly at the word boundary instead, confirmed via
+DOM measurement in mobile emulation.)
 
-**b. Wrapping instead of clipping.** At `text-sm` in a 3-column mobile grid,
-"Below Minimum" and large pot values can still exceed one column's width on
-the narrowest supported viewport (~320px) — the fix's guarantee is that this
-wraps onto a second line and stays fully visible, never that everything fits
-on one line. Two changes make that true:
+**b. Wrapping instead of clipping.** At `text-xs` in a 3-column mobile grid,
+an 8+ figure pot value or "Comfortable" can still wrap mid-word on the
+narrowest supported viewport (~320px) — the fix's guarantee is that this
+wraps and stays fully visible, never that everything fits on one line or
+breaks only at clean word boundaries. Two changes make the wrapping itself
+safe (no clipping, no horizontal overflow):
 - Add `break-words` to all three value `<p>` classes (`index.html:1901,
   1907, 1913`), so long unspaced text (a wrapped number, "Below Minimum")
   wraps at the container edge instead of overflowing it.
@@ -88,11 +94,11 @@ on one line. Two changes make that true:
 **c. Remove the height clip.** `index.html:1893`'s
 `` `transition-all duration-300 overflow-hidden ${isScrolled ? 'max-h-24 border-t border-slate-200' : 'max-h-0'}` ``
 hard-caps the expanded state at 96px, clipping anything taller (a wrapped
-second line). Raise the expanded cap to `max-h-40` (160px) — large enough for
-label + two wrapped value lines at `text-sm` with room to spare, verified
-against real content (a large pot figure and "Below Minimum") in mobile
-emulation during implementation; adjust the value then if it's still tight
-for any realistic combination. (`max-h-0`/`max-h-40` are still two fixed
+second line). Raise the expanded cap to `max-h-40` (160px) — confirmed via
+DOM measurement in mobile emulation to comfortably fit label + two wrapped
+value lines at `text-xs` (tallest observed: 132px, for a two-line-wrapped
+pot value alongside a two-line-wrapped "Below Minimum" at 320px) with room
+to spare. (`max-h-0`/`max-h-40` are still two fixed
 values so the existing CSS transition keeps animating smoothly — an
 unbounded `max-h-none` can't be transitioned.) Combined with §2's move to the
 new sticky wrapper, this class moves from the header's inner collapsing
@@ -150,7 +156,7 @@ Carried over unchanged from `intent/003-mobile-sticky-summary-bar.md`:
 
 Additionally out of scope for this spec:
 
-- No dynamic/JS shrink-to-fit font sizing — the static `text-sm` choice in
+- No dynamic/JS shrink-to-fit font sizing — the static `text-xs` choice in
   §2a covers the fixed Living Standard label set without that complexity.
 - No change to the 3-column grid layout itself (e.g. stacking to a single
   column on the narrowest widths) — wrapping within the existing 3-column

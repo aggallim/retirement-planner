@@ -8,6 +8,21 @@ This file is the short, chronological "what shipped when." For the
 detailed narrative — why a calculation changed, what broke before it was
 fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
 
+## 2026-09-16 — Mobile sticky summary bar (003)
+
+- **Only the three summary boxes (Pot/Income/Living Standard) stay pinned
+  on scroll now**, not the whole header — the title and Reset/Partner
+  buttons scroll away normally, freeing up screen space for sliders.
+  Applies at every viewport width.
+- **Fixed mobile squashing**: summary values now wrap instead of being
+  clipped, via `min-w-0` + `break-words` on each box and a raised
+  `max-h-40` cap (was a hard `max-h-24` that cut off longer values).
+- Value text drops to `text-xs` on mobile (`md:` and up unchanged) so
+  common values (a 7-figure pot, any PLSA Living Standard label) wrap
+  cleanly at word boundaries rather than mid-word.
+- `docs/TOOL_DOCUMENTATION.md` updated (§5.1, §8 Build history).
+- Implements `intent/done/003-mobile-sticky-summary-bar.md`.
+
 ## 2026-09-16 — Extra savings accounts (002)
 
 - Replaced each person's single blended ISA field with **Cash ISA**,
