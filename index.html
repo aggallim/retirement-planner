@@ -1854,8 +1854,11 @@ function RetirementCalculator() {
         .tooltip-trigger:hover .tooltip-content { opacity:1; visibility:visible; }
         .tooltip-content { opacity:0; visibility:hidden; transition:opacity .15s; }
         .gradient-text { background:linear-gradient(135deg,#1e3a8a,#2563eb 60%,#0d9488); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .min-w-0 { min-width:0; }
+        .break-words { overflow-wrap:break-word; }
+        .max-h-40 { max-height:10rem; }
       `), /*#__PURE__*/React.createElement("header", {
-    className: "bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50"
+    className: "bg-white border-b border-slate-200 shadow-sm"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-7xl mx-auto px-6 py-5 flex items-center justify-between flex-wrap gap-4"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
@@ -1889,29 +1892,29 @@ function RetirementCalculator() {
     className: "hidden sm:inline"
   }, "Add a partner"), /*#__PURE__*/React.createElement("span", {
     className: "sm:hidden"
-  }, "Partner"))))), /*#__PURE__*/React.createElement("div", {
-    className: `transition-all duration-300 overflow-hidden ${isScrolled ? 'max-h-24 border-t border-slate-200' : 'max-h-0'}`
+  }, "Partner")))))), /*#__PURE__*/React.createElement("div", {
+    className: `sticky top-0 z-50 bg-white shadow-sm transition-all duration-300 overflow-hidden ${isScrolled ? 'max-h-40 border-b border-slate-200' : 'max-h-0'}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-7xl mx-auto px-6 py-3 grid grid-cols-3 gap-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-blue-50 rounded-lg px-3 py-2 border border-blue-200"
+    className: "bg-blue-50 rounded-lg px-3 py-2 border border-blue-200 min-w-0"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide"
   }, isCouple ? 'Combined Pot' : 'Total Pot'), /*#__PURE__*/React.createElement("p", {
-    className: "text-base md:text-xl font-bold text-slate-900 tabular"
+    className: "text-xs md:text-xl font-bold text-slate-900 tabular break-words"
   }, formatCurrency(household.totalPot))), /*#__PURE__*/React.createElement("div", {
-    className: "bg-emerald-50 rounded-lg px-3 py-2 border border-emerald-200"
+    className: "bg-emerald-50 rounded-lg px-3 py-2 border border-emerald-200 min-w-0"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide"
   }, isCouple ? 'Household Income' : 'Annual Income'), /*#__PURE__*/React.createElement("p", {
-    className: "text-base md:text-xl font-bold text-slate-900 tabular"
+    className: "text-xs md:text-xl font-bold text-slate-900 tabular break-words"
   }, formatCurrency(household.annualIncome))), /*#__PURE__*/React.createElement("div", {
-    className: `rounded-lg px-3 py-2 border ${livingStandard.bg} ${livingStandard.border}`
+    className: `rounded-lg px-3 py-2 border min-w-0 ${livingStandard.bg} ${livingStandard.border}`
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide"
   }, "Living Standard"), /*#__PURE__*/React.createElement("p", {
-    className: `text-base md:text-xl font-bold ${livingStandard.color}`
-  }, livingStandard.level))))), /*#__PURE__*/React.createElement("div", {
+    className: `text-xs md:text-xl font-bold break-words ${livingStandard.color}`
+  }, livingStandard.level)))), /*#__PURE__*/React.createElement("div", {
     className: "max-w-7xl mx-auto px-6 py-8"
   }, warnings.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start"

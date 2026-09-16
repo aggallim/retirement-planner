@@ -206,7 +206,7 @@ State Pension age is rising from 66 to 67, phased from April 2026.
 
 - **React 18** with hooks — no state management library
 - **Recharts** for all three visualisations
-- **Tailwind CSS** for styling
+- **Tailwind CSS** for styling — the inlined stylesheet is a one-time, pre-generated build containing only the utility classes the app actually used at build time, not a runtime compiler. A Tailwind class name that was never used anywhere in the original source (e.g. `min-w-0`, `break-words`) has **no CSS behind it** if added to the JSX later — it silently does nothing. Adding a not-yet-present utility means hand-writing its rule (matching Tailwind's own output) into the custom rules already inlined in the component's `<style>` block, alongside `.tabular`/`.gradient-text`/etc.
 - **Fraunces** (serif headings) paired with **Inter Tight** (body) via Google Fonts
 - Single `.jsx` file, roughly 750 lines, precompiled and inlined into `index.html`
 
@@ -356,5 +356,16 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 - **Fixed drawdown order (other savings → Cash ISA → S&S ISA → LISA)** replaces the old single proportional ISA draw, generalising the same proportional-by-balance mechanic to four tiers instead of one — cross-person behaviour within a tier is unchanged from before.
 - **Old saves are migrated on load** (`migratePerson()`), mapping a pre-existing ISA balance onto the opening Stocks & Shares ISA balance — never silently dropped or reset to zero.
 - **Other savings count as real wealth** for the depletion check and wealth/income charts, but are not part of the "ISA" total shown elsewhere in the app — they're household money, just not an ISA.
+
+</details>
+
+<details>
+<summary><strong>Mobile sticky summary bar — spec/003-mobile-sticky-summary-bar.md</strong></summary>
+
+- **Only the three summary boxes (Pot/Income/Living Standard) stay pinned on scroll now**, not the whole header — the title and Reset/Partner buttons were sharing one `sticky` wrapper with the summary boxes for no reason tied to their content, permanently eating mobile screen space needed for sliders. The header (title/buttons) and the summary bar are now two independent siblings; only the summary bar is `sticky`. This applies at every viewport width, not just mobile — desktop's unscrolled appearance is unchanged, but scrolling there now also leaves the title/buttons behind.
+- **Mobile summary values were clipped, not wrapped**, inside a hard `max-h-24` (96px) cap with no ability for long text to wrap onto a second line. Fixed by giving each box `min-w-0` (so a CSS grid item can actually shrink below its content's intrinsic width instead of overflowing) and `break-words` on the value text, and raising the cap to `max-h-40` (160px) so a wrapped line isn't cut off.
+- **Value text is `text-xs` on mobile, not `text-base`** (unchanged `text-xl` at `md:` and up). `text-sm` was tried first but still forced an ugly mid-word split (e.g. "Minimu"/"m") for the longest Living Standard label at the narrowest supported width (320px); `text-xs` wraps those cases cleanly at word boundaries instead. Extremely large pot values (8+ figures) or "Comfortable" can still wrap mid-word at 320px — accepted, since the fix's guarantee is that nothing is ever clipped or squashed, not that everything fits on one line, and the 3-column mobile grid itself was deliberately kept unchanged.
+- **The inlined Tailwind stylesheet doesn't include every utility class name** — see §5.1. `min-w-0`, `break-words` and `max-h-40` were never used in the original build, so their CSS had to be hand-added to the component's inline `<style>` block; using the class names in JSX alone would have silently done nothing.
+- **A pre-existing ~78px horizontal page overflow at narrow mobile widths (independent of this fix) was found during verification** — reproduces identically on `main` before this change, with no relation to the summary bar's content. Left alone as out of scope for this requirement; worth its own bug report.
 
 </details>
