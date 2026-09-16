@@ -1,8 +1,8 @@
 // Engine test harness for projectJoint() — spec/001-engine-test-harness.md
 //
-// Run:            node test-engine.js
+// Run (from repo root):            node tests/test-engine.js
 // Regenerate the individual-mode regression baseline (deliberate, reviewed act):
-//                 node test-engine.js --update-baseline
+//                                   node tests/test-engine.js --update-baseline
 //
 // How this works: projectJoint() (and the CURRENT_YEAR constant it needs) are
 // pulled straight out of index.html by searching for two pairs of
@@ -17,8 +17,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 
-const INDEX_HTML_PATH = path.join(__dirname, 'index.html');
-const BASELINE_PATH = path.join(__dirname, 'test-fixtures', 'individual-baseline.json');
+const INDEX_HTML_PATH = path.join(__dirname, '..', 'index.html');
+const BASELINE_PATH = path.join(__dirname, 'fixtures', 'individual-baseline.json');
 const START = '// ENGINE-EXTRACT-START';
 const END = '// ENGINE-EXTRACT-END';
 
