@@ -27,6 +27,7 @@ calculation logic.
 | `sw.js` | Service worker — offline caching. |
 | `icon.svg` | Home screen icon. |
 | `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
+| `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → spec → branch → plan → implement → PR → merge lifecycle below, including when to open the PR. |
 | `CHANGELOG.md` | Short, chronological "what shipped when," one entry per requirement. |
 | `tests/test-engine.js` | Dependency-free `node` test harness for `projectJoint()`. Run with `node tests/test-engine.js` from the repo root. |
 | `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
@@ -85,12 +86,18 @@ does that automatically.
 ## AI SDLC / Workflow
 
 Requirements flow through a fixed lifecycle, tracked as files in the repo
-rather than in an external issue tracker:
+rather than in an external issue tracker. See `CONTRIBUTING.md` for the full
+step-by-step walkthrough (with a diagram) of this same lifecycle, including
+exactly how and when to open the PR — read it if you're picking up work here
+from a different device or session than whoever started it.
 
 1. **Intent** — `intent/NNN-slug.md` describes what's wanted and why, on `main`.
 2. **Spec** — `spec/NNN-slug.md` turns that intent into a concrete spec.
 3. **Branch** — create `NNN-slug` off `main` (e.g. `003-inheritance-tax`), one
-   branch per requirement, named after its intent slug.
+   branch per requirement, named after its intent slug. Push the branch and
+   open a **draft PR** into `main` immediately once the intent is committed
+   — don't wait for the spec, plan or implementation. See `CONTRIBUTING.md`
+   for why (cross-device/cross-session continuity) and the exact command.
 4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
    implementation plan. It's a working file for the branch only — it never
    lands on `main`. Delete it (`git rm plan.md`) as part of the same PR that
@@ -105,9 +112,9 @@ rather than in an external issue tracker:
    `docs/TOOL_DOCUMENTATION.md` itself (including a new §8 Build history
    entry) and add a `CHANGELOG.md` entry, both per "Working in this repo"
    above — this happens alongside implementation, not after it.
-7. **PR** — open a PR from the branch into `main`. The PR description
-   references the intent file path (e.g. "Implements
-   `intent/003-inheritance-tax.md`").
+7. **PR** — the draft PR opened in step 3 is marked ready for review once
+   implementation, tests and docs are all pushed. Its description references
+   the intent file path (e.g. "Implements `intent/003-inheritance-tax.md`").
 8. **Merge** — once merged, delete the branch.
 
 The PR that implements a requirement also moves that requirement's intent and
