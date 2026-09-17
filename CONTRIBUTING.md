@@ -68,7 +68,18 @@ one link away, from any device.
    `spec/NNN-slug.md` into `intent/done/` / `spec/done/`, and `git rm
    plan.md`. A merged PR should leave none of these behind in the live
    directories or repo root.
-10. **Merge**, then delete the branch.
+10. **Merge, then sync `main` and hand off branch cleanup.** Check out
+    `main`, fetch, fast-forward-merge (`git checkout main && git fetch
+    origin main && git merge --ff-only origin/main`) so the local
+    checkout matches what's live, then delete the local copy of the
+    branch (`git branch -d NNN-slug`). The remote branch can't be deleted
+    from this environment — this git proxy rejects `git push --delete`
+    with a 403, and no GitHub MCP tool here deletes branches either. Don't
+    keep retrying either approach: give the user a direct link to
+    **https://github.com/aggallim/retirement-planner/branches** (or point
+    out the "Delete branch" button GitHub shows on the merged PR's own
+    page) and let them do it. A merged, undeleted remote branch is inert —
+    this is a hand-off for convenience, not something blocking anything.
 
 ```mermaid
 flowchart TD
@@ -82,7 +93,7 @@ flowchart TD
     Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md,\nUSER_CHANGELOG if user-facing"]
     Ready["8. Mark PR ready for review"]
     Cleanup["9. Cleanup in the same PR\nintent+spec -> done/, delete plan.md"]
-    Merge["10. Merge, delete branch"]
+    Merge["10. Merge, sync main, delete local branch,\nhand off remote branch deletion to the user"]
 
     Main --> Intent --> Branch --> Spec --> PR
     PR --> Plan --> Impl --> Docs --> Ready --> Cleanup --> Merge --> Main

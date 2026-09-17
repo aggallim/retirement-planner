@@ -131,7 +131,21 @@ from a different device or session than whoever started it.
 7. **PR** — the draft PR opened in step 3 is marked ready for review once
    implementation, tests and docs are all pushed. Its description references
    the intent file path (e.g. "Implements `intent/003-inheritance-tax.md`").
-8. **Merge** — once merged, delete the branch.
+8. **Merge, then sync `main` and hand off branch cleanup.** Once the PR is
+   merged: check out `main`, fetch, and fast-forward-merge (`git checkout
+   main && git fetch origin main && git merge --ff-only origin/main`) so
+   the local checkout matches what's actually live — don't leave it
+   sitting on the now-merged requirement branch or behind `origin/main`.
+   Then **delete the local copy** of the requirement branch (`git branch
+   -d NNN-slug` — safe once it's confirmed merged). The **remote** branch
+   is a different story: this environment's git proxy rejects `git push
+   --delete` (403), and no GitHub MCP tool here can delete a branch
+   either — don't keep retrying either approach. Instead, give the user a
+   direct link to **https://github.com/aggallim/retirement-planner/branches**
+   and let them delete it there (GitHub also shows a one-click "Delete
+   branch" button on the merged PR's own page). It's harmless left in
+   place either way — fully merged, no data at risk — this is a
+   convenience hand-off, not a blocker on anything.
 
 The PR that implements a requirement also moves that requirement's intent and
 spec files into `intent/done/` and `spec/done/` **in the same PR** — this is
