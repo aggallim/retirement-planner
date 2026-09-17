@@ -1,4 +1,4 @@
-# 006 — Dark mode support
+# 008 — Dark mode support
 
 ## Status
 
@@ -15,8 +15,14 @@ packaged as an installable PWA (`CLAUDE.md`, `docs/TOOL_DOCUMENTATION.md`
 §5.5/§6.2) meant to feel like a native app on the home screen, not a web
 page opened in a tab.
 
-This is item 10 of the `docs/TOOL_DOCUMENTATION.md` §7 "Possible future
-additions" list ("Dark mode support").
+Raised via the user's own roadmap tracking rather than
+`docs/TOOL_DOCUMENTATION.md` §7 itself — that section's "Possible future
+additions" list is shorter than the roadmap notes it was checked against
+and doesn't currently name dark mode as a line item. (Numbered 008, not
+006, here: 006 and 007 were claimed by the mobile Data-menu overflow fix
+and the dev-workflow-improvements requirement while this was being
+scoped — see `intent/done/006-mobile-data-menu-overflow.md` and
+`intent/done/007-dev-workflow-improvements.md`.)
 
 ## Decisions confirmed with the user
 
