@@ -15,8 +15,11 @@ laptop, a phone, a different Claude Code session, a CI-triggered agent). The
 only thing every one of those has in common is GitHub. So:
 
 **Push every commit, and open the PR as early as possible — right after the
-intent is committed, well before the spec, plan or implementation exist.**
-An uncommitted local branch, or a pushed branch with no PR, is invisible to
+spec's first commit, well before the plan or implementation exist.** (Not
+right after the intent: GitHub won't open a PR with no diff between head and
+base, and a freshly-branched `NNN-slug` has nothing beyond `main` yet — the
+spec is what gives the PR something to show. See step 4 below.) An
+uncommitted local branch, or a pushed branch with no PR, is invisible to
 whoever/whatever picks this up next. A pushed branch with an open (draft) PR
 is not — its diff, its description, and its checklist of what's done are all
 one link away, from any device.
@@ -28,15 +31,21 @@ one link away, from any device.
 2. **Branch** — create `NNN-slug` off `main` (named after the intent's
    slug), and push it immediately, even with nothing on it yet beyond
    `main`'s history.
-3. **Open the PR — as a draft, immediately.** Before the spec, plan, or any
-   code exists. Title it after the requirement; body references the intent
-   file path (e.g. "Implements `intent/003-inheritance-tax.md`") and says
-   what stage the work is at. See "Opening the PR" below for the exact
-   command. This is the step people skip and the step that matters most for
-   cross-device continuity — do it now, not once the code is ready.
-4. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
-   questions into a concrete spec. Commit and push to the branch; the draft
-   PR updates automatically.
+3. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
+   questions into a concrete spec. Commit and push to the branch straight
+   away — this is also what makes step 4 possible (see below), not a step to
+   defer.
+4. **Open the PR — as a draft, as soon as there's a first commit on the
+   branch.** GitHub refuses to open a PR with zero diff between head and
+   base, so "immediately" in practice means "right after the spec's first
+   commit," not literally before it — a branch pushed with nothing beyond
+   `main`'s history (end of step 2) can't have a PR opened against it yet.
+   Title the PR after the requirement; body references the intent file path
+   (e.g. "Implements `intent/003-inheritance-tax.md`") and says what stage
+   the work is at. See "Opening the PR" below for the exact command. This is
+   still the step people skip and the step that matters most for
+   cross-device continuity — do it the moment it's possible, not once the
+   code is ready.
 5. **Plan** — write `plan.md` on the branch, breaking the spec into an
    implementation sequence. Push it too. It's a working file only — it gets
    deleted in the same PR that implements the requirement, never merged to
@@ -64,8 +73,8 @@ flowchart TD
     Main[("main")]
     Intent["1. Intent\nintent/NNN-slug.md\ncommitted straight to main"]
     Branch["2. Branch\nNNN-slug off main, pushed immediately"]
-    PR["3. Open PR as DRAFT\nhead: NNN-slug -> base: main\nbody links intent/NNN-slug.md"]
-    Spec["4. Spec\nspec/NNN-slug.md"]
+    Spec["3. Spec\nspec/NNN-slug.md\nfirst commit on the branch"]
+    PR["4. Open PR as DRAFT\nhead: NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(needs step 3's commit to exist)"]
     Plan["5. Plan\nplan.md (branch-only, never merged)"]
     Impl["6. Implement\nindex.html / sw.js"]
     Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md"]
@@ -73,10 +82,9 @@ flowchart TD
     Cleanup["9. Cleanup in the same PR\nintent+spec -> done/, delete plan.md"]
     Merge["10. Merge, delete branch"]
 
-    Main --> Intent --> Branch --> PR
-    PR --> Spec --> Plan --> Impl --> Docs --> Ready --> Cleanup --> Merge --> Main
+    Main --> Intent --> Branch --> Spec --> PR
+    PR --> Plan --> Impl --> Docs --> Ready --> Cleanup --> Merge --> Main
 
-    Spec -. push, PR updates .-> PR
     Plan -. push, PR updates .-> PR
     Impl -. push, PR updates .-> PR
     Docs -. push, PR updates .-> PR
@@ -87,14 +95,15 @@ flowchart TD
     class Ready ready;
 ```
 
-The dotted arrows are the point: steps 4 through 7 don't happen in one
+The dotted arrows are the point: steps 5 through 7 don't happen in one
 sitting on one machine. Each one is a push to the same branch, updating the
 same already-open PR — so whoever (or whatever) continues the work next just
 needs the PR link, not a handoff.
 
 ## Opening the PR
 
-Once the intent is committed and the branch is pushed:
+Once the branch is pushed and the spec's first commit is on it (a PR needs
+at least one commit ahead of `main` to open):
 
 ```sh
 git push -u origin NNN-slug
@@ -121,9 +130,9 @@ later, follow its structure for the PR body instead of the free-form
 Some agent environments (e.g. Claude Code remote sessions) assign a fixed
 branch name up front rather than letting the agent pick `NNN-slug` itself.
 In that case, skip step 2 (the branch already exists) but everything else
-still applies exactly as above: commit and push the intent immediately, open
-the draft PR immediately, and keep pushing every subsequent stage to that
-same branch/PR.
+still applies exactly as above: commit and push the intent immediately, push
+the spec's first commit, open the draft PR as soon as that commit exists, and
+keep pushing every subsequent stage to that same branch/PR.
 
 ## Other conventions
 
