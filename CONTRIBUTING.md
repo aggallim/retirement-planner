@@ -58,7 +58,9 @@ one link away, from any device.
 7. **Test & document** — run `node tests/test-engine.js`, validate
    calculation changes against `docs/TOOL_DOCUMENTATION.md` §5.4, update
    `docs/TOOL_DOCUMENTATION.md` itself (including a new §8 Build history
-   entry) and add a `CHANGELOG.md` entry. Push.
+   entry), add a `CHANGELOG.md` entry, and add a `USER_CHANGELOG` entry in
+   `index.html` if — and only if — the change is user-facing (`CLAUDE.md`
+   has the exact test). Push.
 8. **Mark the PR ready for review** once implementation, tests and docs are
    all pushed — this is the signal that the draft is now a real review
    request, not just an in-progress marker.
@@ -66,7 +68,18 @@ one link away, from any device.
    `spec/NNN-slug.md` into `intent/done/` / `spec/done/`, and `git rm
    plan.md`. A merged PR should leave none of these behind in the live
    directories or repo root.
-10. **Merge**, then delete the branch.
+10. **Merge, then sync `main` and hand off branch cleanup.** Check out
+    `main`, fetch, fast-forward-merge (`git checkout main && git fetch
+    origin main && git merge --ff-only origin/main`) so the local
+    checkout matches what's live, then delete the local copy of the
+    branch (`git branch -d NNN-slug`). The remote branch can't be deleted
+    from this environment — this git proxy rejects `git push --delete`
+    with a 403, and no GitHub MCP tool here deletes branches either. Don't
+    keep retrying either approach: give the user a direct link to
+    **https://github.com/aggallim/retirement-planner/branches** (or point
+    out the "Delete branch" button GitHub shows on the merged PR's own
+    page) and let them do it. A merged, undeleted remote branch is inert —
+    this is a hand-off for convenience, not something blocking anything.
 
 ```mermaid
 flowchart TD
@@ -77,10 +90,10 @@ flowchart TD
     PR["4. Open PR as DRAFT\nhead: NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(needs step 3's commit to exist)"]
     Plan["5. Plan\nplan.md (branch-only, never merged)"]
     Impl["6. Implement\nindex.html / sw.js"]
-    Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md"]
+    Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md,\nUSER_CHANGELOG if user-facing"]
     Ready["8. Mark PR ready for review"]
     Cleanup["9. Cleanup in the same PR\nintent+spec -> done/, delete plan.md"]
-    Merge["10. Merge, delete branch"]
+    Merge["10. Merge, sync main, delete local branch,\nhand off remote branch deletion to the user"]
 
     Main --> Intent --> Branch --> Spec --> PR
     PR --> Plan --> Impl --> Docs --> Ready --> Cleanup --> Merge --> Main

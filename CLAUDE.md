@@ -82,8 +82,20 @@ does that automatically.
   the PR merges), naming the intent/spec file it implements — written
   directly in the PR, the same way intent/spec move to `done/` in the same
   PR rather than as a follow-up.
-
-## AI SDLC / Workflow
+- **Add a `USER_CHANGELOG` entry in `index.html`, in the same PR — but
+  only if the change is user-facing.** `USER_CHANGELOG` (near
+  `PERSISTED_FIELDS` in the Persistence section) backs the "What's new"
+  view in the ⚙ Data menu — plain language, no file/function names, no
+  intent/spec references. The test: does this change something a user of
+  the running app would experience (a new or changed feature, a
+  calculation or behaviour change, a bug fix, a UI change)? If yes, add an
+  entry, versioned with the `sw.js` cache value this PR bumps to. If the
+  change is repo/process only (this file, `CONTRIBUTING.md`, CI workflows,
+  the test harness, an internal refactor with no behaviour change, or a
+  `docs/TOOL_DOCUMENTATION.md`-only edit) — no entry, and that's correct,
+  not an omission. Unlike the `CHANGELOG.md` entry above, this one is
+  conditional; get the yes/no call right rather than defaulting to either
+  answer.
 
 Requirements flow through a fixed lifecycle, tracked as files in the repo
 rather than in an external issue tracker. See `CONTRIBUTING.md` for the full
@@ -113,12 +125,27 @@ from a different device or session than whoever started it.
    `docs/TOOL_DOCUMENTATION.md` §5.4 for any calculation change; otherwise
    exercise the change manually per "No build step" above. Update
    `docs/TOOL_DOCUMENTATION.md` itself (including a new §8 Build history
-   entry) and add a `CHANGELOG.md` entry, both per "Working in this repo"
-   above — this happens alongside implementation, not after it.
+   entry), add a `CHANGELOG.md` entry, and add a `USER_CHANGELOG` entry if
+   (and only if) the change is user-facing — all three per "Working in
+   this repo" above — this happens alongside implementation, not after it.
 7. **PR** — the draft PR opened in step 3 is marked ready for review once
    implementation, tests and docs are all pushed. Its description references
    the intent file path (e.g. "Implements `intent/003-inheritance-tax.md`").
-8. **Merge** — once merged, delete the branch.
+8. **Merge, then sync `main` and hand off branch cleanup.** Once the PR is
+   merged: check out `main`, fetch, and fast-forward-merge (`git checkout
+   main && git fetch origin main && git merge --ff-only origin/main`) so
+   the local checkout matches what's actually live — don't leave it
+   sitting on the now-merged requirement branch or behind `origin/main`.
+   Then **delete the local copy** of the requirement branch (`git branch
+   -d NNN-slug` — safe once it's confirmed merged). The **remote** branch
+   is a different story: this environment's git proxy rejects `git push
+   --delete` (403), and no GitHub MCP tool here can delete a branch
+   either — don't keep retrying either approach. Instead, give the user a
+   direct link to **https://github.com/aggallim/retirement-planner/branches**
+   and let them delete it there (GitHub also shows a one-click "Delete
+   branch" button on the merged PR's own page). It's harmless left in
+   place either way — fully merged, no data at risk — this is a
+   convenience hand-off, not a blocker on anything.
 
 The PR that implements a requirement also moves that requirement's intent and
 spec files into `intent/done/` and `spec/done/` **in the same PR** — this is
