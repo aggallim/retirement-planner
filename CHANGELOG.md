@@ -8,7 +8,7 @@ This file is the short, chronological "what shipped when." For the
 detailed narrative — why a calculation changed, what broke before it was
 fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
 
-## 2026-09-17 — Fix Data menu overflowing off-screen on narrow phones
+## 2026-09-17 — Fix Data menu overflowing off-screen on narrow phones (006)
 
 - The Export/Import/What's new panel (`SettingsMenu`) anchored itself with
   `right: 0` against its own trigger button, not the viewport. On a narrow
@@ -26,6 +26,11 @@ fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
   covering both the menu and What's new views.
 - `sw.js` cache bumped v6 → v7; `docs/TOOL_DOCUMENTATION.md` updated (§8
   Build history).
+- Also updated `CLAUDE.md`/`CONTRIBUTING.md`: bug fixes now explicitly go
+  through the same intent-first lifecycle as any other requirement, with
+  a `bug/NNN-slug` branch-naming convention to tell bug branches apart
+  from feature branches.
+- Implements `intent/done/006-mobile-data-menu-overflow.md`.
 
 ## 2026-09-17 — User-facing changelog (005)
 
