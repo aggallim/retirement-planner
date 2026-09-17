@@ -414,3 +414,18 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 - No calculation, persisted-state or `USER_CHANGELOG`-shape change — CSS/layout only. `sw.js` `CACHE` bumped `v6` → `v7` since this is user-facing (the panel is now actually usable on a phone).
 
 </details>
+
+<details>
+<summary><strong>Development workflow improvements — spec/done/007-dev-workflow-improvements.md</strong></summary>
+
+Process/tooling only — no `index.html` or engine change, so `node
+tests/test-engine.js` was re-run purely to confirm it (correctly) reports
+no difference.
+
+- **Requirement branch names gain a Conventional Branch type prefix** (`<type>/NNN-slug`, e.g. `feature/007-dev-workflow-improvements`, `bugfix/006-mobile-data-menu-overflow`) instead of bare `NNN-slug` — superseding the ad-hoc `bug/NNN-slug` convention introduced by 006 immediately above, which predates this requirement and is folded into the published spec's `bugfix/` type instead. The existing `NNN-slug` numbering is kept as the description half rather than replaced, so intent/spec ↔ branch traceability is unchanged.
+- **Harness-assigned agent branches are left alone.** A Claude Code remote session's `claude/<name>` branch already satisfies [Conventional Branch](https://conventionalbranch.org)'s AI-agent source prefix (`claude/`) — renaming it to fit `<type>/NNN-slug` would fight the harness for no benefit, since that pattern exists purely for branches this lifecycle names itself.
+- **Branch protection on `main` is a documented setting, not a code change.** No tool available to an agent session in this environment (including the GitHub MCP server) can edit repository/branch settings, so `CLAUDE.md` now states the required end state (PR required, `test-engine` check required, no bypass) as an explicit manual step for whoever has admin access, rather than pretending a committed file enforces it.
+- **Intent gathering becomes an active step, not just a norm.** Matt Pocock's `grill-me` (user-invoked) / `grilling` (model-invoked) skill pair is added to `.claude/skills/` and required, in both `CLAUDE.md` and `CONTRIBUTING.md`, as the step *before* `intent/NNN-slug.md` is written — the file should capture resolved decisions from that interview, not a restated one-line request.
+- **Skills are reproduced verbatim from their upstream sources, not paraphrased** — `grill-me`/`grilling` from `mattpocock/skills` (MIT, © Matt Pocock) and `conventional-branch` from `conventional-branch/conventional-branch` (CC BY 4.0) — each with an attribution footer naming the source and license, added outside the YAML frontmatter so it doesn't affect how the skill is parsed or triggered.
+
+</details>

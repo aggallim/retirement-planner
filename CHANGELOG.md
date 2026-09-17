@@ -8,6 +8,25 @@ This file is the short, chronological "what shipped when." For the
 detailed narrative — why a calculation changed, what broke before it was
 fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
 
+## 2026-09-17 — Development workflow improvements (007)
+
+- Requirement branches now follow the [Conventional Branch](https://conventionalbranch.org)
+  spec: `<type>/NNN-slug` (e.g. `feature/007-dev-workflow-improvements`,
+  `bugfix/006-mobile-data-menu-overflow`) instead of bare `NNN-slug` —
+  superseding the ad-hoc `bug/NNN-slug` convention 006 introduced below,
+  which predates this requirement.
+- Documented the branch-protection settings `main` requires (PR required,
+  `test-engine` status check required, no bypass) — a manual GitHub
+  setting, since no tool available in this environment can apply it.
+- Gathering intent now requires running the `grill-me`/`grilling` skill
+  first, so `intent/NNN-slug.md` records resolved decisions rather than a
+  restated request.
+- Added `.claude/skills/grill-me/`, `.claude/skills/grilling/` (MIT, ©
+  Matt Pocock) and `.claude/skills/conventional-branch/` (CC BY 4.0) to
+  the repo.
+- Process/tooling only — no user-facing change, no `USER_CHANGELOG` entry.
+- Implements `intent/done/007-dev-workflow-improvements.md`.
+
 ## 2026-09-17 — Fix Data menu overflowing off-screen on narrow phones (006)
 
 - The Export/Import/What's new panel (`SettingsMenu`) anchored itself with
