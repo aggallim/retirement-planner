@@ -406,13 +406,13 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 </details>
 
 <details>
-<summary><strong>Development workflow improvements — spec/006-dev-workflow-improvements.md</strong></summary>
+<summary><strong>Development workflow improvements — spec/007-dev-workflow-improvements.md</strong></summary>
 
 Process/tooling only — no `index.html` or engine change, so `node
 tests/test-engine.js` was re-run purely to confirm it (correctly) reports
 no difference.
 
-- **Requirement branch names gain a Conventional Branch type prefix** (`<type>/NNN-slug`, e.g. `feature/006-dev-workflow-improvements`) instead of bare `NNN-slug`. The existing `NNN-slug` numbering is kept as the description half rather than replaced, so intent/spec ↔ branch traceability is unchanged.
+- **Requirement branch names gain a Conventional Branch type prefix** (`<type>/NNN-slug`, e.g. `feature/007-dev-workflow-improvements`) instead of bare `NNN-slug`. The existing `NNN-slug` numbering is kept as the description half rather than replaced, so intent/spec ↔ branch traceability is unchanged.
 - **Harness-assigned agent branches are left alone.** A Claude Code remote session's `claude/<name>` branch already satisfies [Conventional Branch](https://conventionalbranch.org)'s AI-agent source prefix (`claude/`) — renaming it to fit `<type>/NNN-slug` would fight the harness for no benefit, since that pattern exists purely for branches this lifecycle names itself.
 - **Branch protection on `main` is a documented setting, not a code change.** No tool available to an agent session in this environment (including the GitHub MCP server) can edit repository/branch settings, so `CLAUDE.md` now states the required end state (PR required, `test-engine` check required, no bypass) as an explicit manual step for whoever has admin access, rather than pretending a committed file enforces it.
 - **Intent gathering becomes an active step, not just a norm.** Matt Pocock's `grill-me` (user-invoked) / `grilling` (model-invoked) skill pair is added to `.claude/skills/` and required, in both `CLAUDE.md` and `CONTRIBUTING.md`, as the step *before* `intent/NNN-slug.md` is written — the file should capture resolved decisions from that interview, not a restated one-line request.

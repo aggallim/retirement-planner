@@ -1,15 +1,15 @@
-# 006 — Development workflow improvements
+# 007 — Development workflow improvements
 
 ## Status
 
 Resolved — ready for implementation. Fleshed out from
-`intent/006-dev-workflow-improvements.md`; all four outcome points are
+`intent/007-dev-workflow-improvements.md`; all four outcome points are
 process/documentation/tooling changes with no ambiguous design decisions
 left to make.
 
 ## Problem
 
-See `intent/006-dev-workflow-improvements.md` §Problem — unchanged here.
+See `intent/007-dev-workflow-improvements.md` §Problem — unchanged here.
 
 ## Outcome
 

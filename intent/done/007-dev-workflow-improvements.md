@@ -1,4 +1,4 @@
-# 006 — Development workflow improvements
+# 007 — Development workflow improvements
 
 ## Status
 
@@ -34,7 +34,7 @@ enforced:
 1. Adopt the [Conventional Branch](https://conventionalbranch.org) 1.1.0
    naming spec (`<type>/<description>`) for branch names, layering it onto
    the existing `NNN-slug` numbering rather than replacing it —
-   `<type>/NNN-slug` (e.g. `feature/006-dev-workflow-improvements`). The
+   `<type>/NNN-slug` (e.g. `feature/007-dev-workflow-improvements`). The
    spec's AI-agent source prefixes (`claude/`, `ai/`, `copilot/`, `cursor/`,
    `codex/`) already cover harness-assigned branch names like
    `claude/laughing-cannon-lz90c5` — no rename needed for those.
