@@ -8,6 +8,24 @@ This file is the short, chronological "what shipped when." For the
 detailed narrative — why a calculation changed, what broke before it was
 fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
 
+## 2026-09-17 — Development workflow improvements (006)
+
+- Requirement branches now follow the [Conventional Branch](https://conventionalbranch.org)
+  spec: `<type>/NNN-slug` (e.g. `feature/006-dev-workflow-improvements`)
+  instead of bare `NNN-slug`. Harness-assigned agent branches (`claude/...`)
+  already comply via the spec's AI-agent prefixes and are left as-is.
+- Documented the branch-protection settings `main` requires (PR required,
+  `test-engine` status check required, no bypass) — a manual GitHub
+  setting, since no tool available in this environment can apply it.
+- Gathering intent now requires running the `grill-me`/`grilling` skill
+  first, so `intent/NNN-slug.md` records resolved decisions rather than a
+  restated request.
+- Added `.claude/skills/grill-me/`, `.claude/skills/grilling/` (MIT, ©
+  Matt Pocock) and `.claude/skills/conventional-branch/` (CC BY 4.0) to
+  the repo.
+- Process/tooling only — no user-facing change, no `USER_CHANGELOG` entry.
+- Implements `intent/done/006-dev-workflow-improvements.md`.
+
 ## 2026-09-17 — User-facing changelog (005)
 
 - Added a **What's new** link to the ⚙ Data menu — a plain-language,

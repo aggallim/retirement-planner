@@ -404,3 +404,18 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 - **Two more Tailwind utilities turned out to have no CSS behind them**, found while verifying this feature in a real browser rather than assumed working from the class names alone: `w-72` and `right-0` — both already present in the `SettingsMenu` popover's className since intent 004, silently doing nothing. The popover was never actually 288px wide or right-aligned; it was previously narrow enough, by coincidence of its Export/Import content's shrink-to-fit sizing, to still land inside the viewport. Adding this requirement's content changed that sizing enough to make the popover visibly overflow off-screen — which is what surfaced both bugs. Fixed the same way intent 003 fixed `min-w-0`/`break-words`/`max-h-40`: the missing rules hand-added to the inline `<style>` block. Also simplified the new markup to avoid needing several more (`list-disc`, `pl-4`, `hover:underline`, `pr-1`) by using plain bullet-prefixed paragraphs and existing spacing utilities instead — fewer hand-authored CSS rules to keep in sync by hand next time.
 
 </details>
+
+<details>
+<summary><strong>Development workflow improvements — spec/006-dev-workflow-improvements.md</strong></summary>
+
+Process/tooling only — no `index.html` or engine change, so `node
+tests/test-engine.js` was re-run purely to confirm it (correctly) reports
+no difference.
+
+- **Requirement branch names gain a Conventional Branch type prefix** (`<type>/NNN-slug`, e.g. `feature/006-dev-workflow-improvements`) instead of bare `NNN-slug`. The existing `NNN-slug` numbering is kept as the description half rather than replaced, so intent/spec ↔ branch traceability is unchanged.
+- **Harness-assigned agent branches are left alone.** A Claude Code remote session's `claude/<name>` branch already satisfies [Conventional Branch](https://conventionalbranch.org)'s AI-agent source prefix (`claude/`) — renaming it to fit `<type>/NNN-slug` would fight the harness for no benefit, since that pattern exists purely for branches this lifecycle names itself.
+- **Branch protection on `main` is a documented setting, not a code change.** No tool available to an agent session in this environment (including the GitHub MCP server) can edit repository/branch settings, so `CLAUDE.md` now states the required end state (PR required, `test-engine` check required, no bypass) as an explicit manual step for whoever has admin access, rather than pretending a committed file enforces it.
+- **Intent gathering becomes an active step, not just a norm.** Matt Pocock's `grill-me` (user-invoked) / `grilling` (model-invoked) skill pair is added to `.claude/skills/` and required, in both `CLAUDE.md` and `CONTRIBUTING.md`, as the step *before* `intent/NNN-slug.md` is written — the file should capture resolved decisions from that interview, not a restated one-line request.
+- **Skills are reproduced verbatim from their upstream sources, not paraphrased** — `grill-me`/`grilling` from `mattpocock/skills` (MIT, © Matt Pocock) and `conventional-branch` from `conventional-branch/conventional-branch` (CC BY 4.0) — each with an attribution footer naming the source and license, added outside the YAML frontmatter so it doesn't affect how the skill is parsed or triggered.
+
+</details>

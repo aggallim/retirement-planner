@@ -33,6 +33,7 @@ calculation logic.
 | `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
 | `.github/workflows/pages.yml` | Deploys to GitHub Pages on every push to `main`. No build step. |
 | `.github/workflows/test-engine.yml` | Runs `tests/test-engine.js` on push/PR. |
+| `.claude/skills/` | Skills for the workflow below: `grill-me`/`grilling` (intent gathering) and `conventional-branch` (branch naming). Reproduced from their upstream sources — see each `SKILL.md`'s attribution footer. |
 
 There is no `package.json`, no build tooling, and no separate `.jsx` source
 in this repo — `index.html` is a **precompiled** artifact (JSX has already
@@ -103,16 +104,27 @@ step-by-step walkthrough (with a diagram) of this same lifecycle, including
 exactly how and when to open the PR — read it if you're picking up work here
 from a different device or session than whoever started it.
 
-1. **Intent** — `intent/NNN-slug.md` describes what's wanted and why, on `main`.
+1. **Intent** — first run the `grilling` skill (or point a human at the
+   user-invoked `grill-me` skill; see `.claude/skills/`) to interrogate the
+   requirement's design tree until every branch is resolved. Then write
+   `intent/NNN-slug.md` from those resolved decisions — describing what's
+   wanted and why — on `main`.
 2. **Spec** — `spec/NNN-slug.md` turns that intent into a concrete spec.
-3. **Branch** — create `NNN-slug` off `main` (e.g. `003-inheritance-tax`), one
-   branch per requirement, named after its intent slug. Push it immediately,
-   then push the spec's first commit, then open a **draft PR** into `main`
-   — don't wait for the plan or implementation. (Not immediately after just
-   the intent: GitHub won't open a PR with no diff against `main`, and a
-   freshly-branched `NNN-slug` has nothing beyond `main` yet.) See
-   `CONTRIBUTING.md` for why (cross-device/cross-session continuity) and the
-   exact command.
+3. **Branch** — create `<type>/NNN-slug` off `main` (e.g.
+   `feature/003-inheritance-tax`), following the
+   [Conventional Branch](https://conventionalbranch.org) spec (see
+   `.claude/skills/conventional-branch/`): `<type>` is `feature`, `bugfix`,
+   `hotfix`, `release`, or `chore` depending on the nature of the
+   requirement (most requirements here are `feature/`), and `NNN-slug`
+   matches the intent's slug. One branch per requirement. A
+   harness-assigned agent branch name (e.g. `claude/laughing-cannon-lz90c5`)
+   already satisfies the spec's AI-agent prefix — don't rename it. Push it
+   immediately, then push the spec's first commit, then open a **draft PR**
+   into `main` — don't wait for the plan or implementation. (Not
+   immediately after just the intent: GitHub won't open a PR with no diff
+   against `main`, and a freshly-branched branch has nothing beyond `main`
+   yet.) See `CONTRIBUTING.md` for why (cross-device/cross-session
+   continuity) and the exact command.
 4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
    implementation plan. It's a working file for the branch only — it never
    lands on `main`. Delete it (`git rm plan.md`) as part of the same PR that
@@ -137,7 +149,7 @@ from a different device or session than whoever started it.
    the local checkout matches what's actually live — don't leave it
    sitting on the now-merged requirement branch or behind `origin/main`.
    Then **delete the local copy** of the requirement branch (`git branch
-   -d NNN-slug` — safe once it's confirmed merged). The **remote** branch
+   -d <type>/NNN-slug` — safe once it's confirmed merged). The **remote** branch
    is a different story: this environment's git proxy rejects `git push
    --delete` (403), and no GitHub MCP tool here can delete a branch
    either — don't keep retrying either approach. Instead, give the user a
@@ -152,6 +164,28 @@ spec files into `intent/done/` and `spec/done/` **in the same PR** — this is
 not a separate cleanup step. A merged PR should leave no requirement's
 intent/spec files, nor `plan.md`, behind in the live `intent/`/`spec/`
 directories or repo root.
+
+## Branch protection
+
+`main` only ever changes via a reviewed, green pull request — never a
+direct push. This is a GitHub repository setting, not something a file in
+this repo can enforce, and no tool available to an agent session here
+(GitHub MCP server included) can change it — it has to be applied once, by
+hand, by someone with admin access:
+
+**Settings → Branches → Add branch protection rule** (or
+**Settings → Rules → Rulesets** on repos using the newer Rulesets UI), for
+`main`:
+
+- Require a pull request before merging (this alone blocks direct pushes).
+- Require status checks to pass before merging — the `test-engine` check
+  from `.github/workflows/test-engine.yml`.
+- Do not allow bypassing the above, including for administrators, where
+  the plan supports it.
+
+If this is ever missing (a fresh fork, a reset setting), apply it before
+relying on the "no direct pushes to `main`" assumption the lifecycle below
+is built on.
 
 ## Deployment
 

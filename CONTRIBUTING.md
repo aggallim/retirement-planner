@@ -17,7 +17,7 @@ only thing every one of those has in common is GitHub. So:
 **Push every commit, and open the PR as early as possible — right after the
 spec's first commit, well before the plan or implementation exist.** (Not
 right after the intent: GitHub won't open a PR with no diff between head and
-base, and a freshly-branched `NNN-slug` has nothing beyond `main` yet — the
+base, and a freshly-branched `<type>/NNN-slug` has nothing beyond `main` yet — the
 spec is what gives the PR something to show. See step 4 below.) An
 uncommitted local branch, or a pushed branch with no PR, is invisible to
 whoever/whatever picks this up next. A pushed branch with an open (draft) PR
@@ -26,11 +26,19 @@ one link away, from any device.
 
 ## The lifecycle
 
-1. **Intent** — write `intent/NNN-slug.md` on `main` describing what's
-   wanted and why. Commit and push straight to `main`.
-2. **Branch** — create `NNN-slug` off `main` (named after the intent's
-   slug), and push it immediately, even with nothing on it yet beyond
-   `main`'s history.
+1. **Intent** — first run the `grilling` skill (model-invoked) — or the
+   user-invoked `grill-me` skill if you're a human contributor — to get
+   interrogated about the requirement until every branch of its design tree
+   is resolved (see `.claude/skills/grill-me/` and `.claude/skills/grilling/`).
+   Then write `intent/NNN-slug.md` on `main` from those resolved decisions,
+   describing what's wanted and why. Commit and push straight to `main`.
+2. **Branch** — create `<type>/NNN-slug` off `main`, following the
+   [Conventional Branch](https://conventionalbranch.org) spec (see
+   `.claude/skills/conventional-branch/`): `<type>` is `feature`, `bugfix`,
+   `hotfix`, `release`, or `chore` for the nature of the requirement (most
+   are `feature/`), and `NNN-slug` is named after the intent's slug as
+   before (e.g. `feature/003-inheritance-tax`). Push it immediately, even
+   with nothing on it yet beyond `main`'s history.
 3. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
    questions into a concrete spec. Commit and push to the branch straight
    away — this is also what makes step 4 possible (see below), not a step to
@@ -72,7 +80,7 @@ one link away, from any device.
     `main`, fetch, fast-forward-merge (`git checkout main && git fetch
     origin main && git merge --ff-only origin/main`) so the local
     checkout matches what's live, then delete the local copy of the
-    branch (`git branch -d NNN-slug`). The remote branch can't be deleted
+    branch (`git branch -d <type>/NNN-slug`). The remote branch can't be deleted
     from this environment — this git proxy rejects `git push --delete`
     with a 403, and no GitHub MCP tool here deletes branches either. Don't
     keep retrying either approach: give the user a direct link to
@@ -85,9 +93,9 @@ one link away, from any device.
 flowchart TD
     Main[("main")]
     Intent["1. Intent\nintent/NNN-slug.md\ncommitted straight to main"]
-    Branch["2. Branch\nNNN-slug off main, pushed immediately"]
+    Branch["2. Branch\n&lt;type&gt;/NNN-slug off main, pushed immediately"]
     Spec["3. Spec\nspec/NNN-slug.md\nfirst commit on the branch"]
-    PR["4. Open PR as DRAFT\nhead: NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(needs step 3's commit to exist)"]
+    PR["4. Open PR as DRAFT\nhead: &lt;type&gt;/NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(needs step 3's commit to exist)"]
     Plan["5. Plan\nplan.md (branch-only, never merged)"]
     Impl["6. Implement\nindex.html / sw.js"]
     Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md,\nUSER_CHANGELOG if user-facing"]
@@ -119,15 +127,15 @@ Once the branch is pushed and the spec's first commit is on it (a PR needs
 at least one commit ahead of `main` to open):
 
 ```sh
-git push -u origin NNN-slug
-gh pr create --draft --base main --head NNN-slug \
+git push -u origin <type>/NNN-slug
+gh pr create --draft --base main --head <type>/NNN-slug \
   --title "Short description of the requirement" \
   --body "Implements intent/NNN-slug.md. Status: intent + spec drafted, implementation not yet started."
 ```
 
 No GitHub CLI available? Use the GitHub web UI's "compare & pull request"
 prompt after pushing, or the GitHub API/MCP tooling if you're an agent with
-access to it — same result: a draft PR, base `main`, head `NNN-slug`, body
+access to it — same result: a draft PR, base `main`, head `<type>/NNN-slug`, body
 linking the intent file.
 
 Update the PR body's "Status" line as you move through the lifecycle (it's
@@ -141,11 +149,17 @@ later, follow its structure for the PR body instead of the free-form
 ## Agent sessions bound to a pre-named branch
 
 Some agent environments (e.g. Claude Code remote sessions) assign a fixed
-branch name up front rather than letting the agent pick `NNN-slug` itself.
-In that case, skip step 2 (the branch already exists) but everything else
-still applies exactly as above: commit and push the intent immediately, push
-the spec's first commit, open the draft PR as soon as that commit exists, and
-keep pushing every subsequent stage to that same branch/PR.
+branch name up front rather than letting the agent pick `<type>/NNN-slug`
+itself. In that case, skip step 2 (the branch already exists) but
+everything else still applies exactly as above: commit and push the intent
+immediately, push the spec's first commit, open the draft PR as soon as
+that commit exists, and keep pushing every subsequent stage to that same
+branch/PR.
+
+A harness-assigned branch name like `claude/laughing-cannon-lz90c5` already
+satisfies Conventional Branch's AI-agent prefix rule (`claude/`) as-is —
+don't try to rename it to fit the `<type>/NNN-slug` pattern above; that
+pattern is only for branches this lifecycle names itself.
 
 ## Other conventions
 
