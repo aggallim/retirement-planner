@@ -24,13 +24,22 @@ whoever/whatever picks this up next. A pushed branch with an open (draft) PR
 is not — its diff, its description, and its checklist of what's done are all
 one link away, from any device.
 
+**This lifecycle applies to bug fixes too, not just new features.** A bug
+report still gets an intent file first — what's broken, how it was
+observed — before any code changes, even when the fix turns out to be a
+few lines. The only difference for a bug is the branch name (step 2).
+
 ## The lifecycle
 
 1. **Intent** — write `intent/NNN-slug.md` on `main` describing what's
-   wanted and why. Commit and push straight to `main`.
+   wanted and why (for a bug: what's broken and how it was observed).
+   Commit and push straight to `main`.
 2. **Branch** — create `NNN-slug` off `main` (named after the intent's
    slug), and push it immediately, even with nothing on it yet beyond
-   `main`'s history.
+   `main`'s history. **For a bug fix, prefix it `bug/NNN-slug`** (e.g.
+   `bug/006-mobile-data-menu-overflow`) so bug branches read distinctly
+   from feature branches in the branch list — the intent/spec files
+   underneath keep the plain `NNN-slug` naming regardless.
 3. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
    questions into a concrete spec. Commit and push to the branch straight
    away — this is also what makes step 4 possible (see below), not a step to
@@ -85,7 +94,7 @@ one link away, from any device.
 flowchart TD
     Main[("main")]
     Intent["1. Intent\nintent/NNN-slug.md\ncommitted straight to main"]
-    Branch["2. Branch\nNNN-slug off main, pushed immediately"]
+    Branch["2. Branch\nNNN-slug off main (bug/NNN-slug for a bug fix),\npushed immediately"]
     Spec["3. Spec\nspec/NNN-slug.md\nfirst commit on the branch"]
     PR["4. Open PR as DRAFT\nhead: NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(needs step 3's commit to exist)"]
     Plan["5. Plan\nplan.md (branch-only, never merged)"]
@@ -125,6 +134,9 @@ gh pr create --draft --base main --head NNN-slug \
   --body "Implements intent/NNN-slug.md. Status: intent + spec drafted, implementation not yet started."
 ```
 
+For a bug fix, use `bug/NNN-slug` as the branch name in both commands above
+instead of `NNN-slug`.
+
 No GitHub CLI available? Use the GitHub web UI's "compare & pull request"
 prompt after pushing, or the GitHub API/MCP tooling if you're an agent with
 access to it — same result: a draft PR, base `main`, head `NNN-slug`, body
@@ -146,6 +158,12 @@ In that case, skip step 2 (the branch already exists) but everything else
 still applies exactly as above: commit and push the intent immediately, push
 the spec's first commit, open the draft PR as soon as that commit exists, and
 keep pushing every subsequent stage to that same branch/PR.
+
+If the pre-named branch doesn't follow this repo's own naming (e.g. it
+doesn't carry the `bug/` prefix for a bug fix) and the user asks for the
+proper convention to be used, that request takes precedence: create and
+push a correctly-named branch (`NNN-slug` or `bug/NNN-slug`) off the
+pre-named branch's work instead, and open the PR from there.
 
 ## Other conventions
 
