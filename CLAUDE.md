@@ -98,21 +98,33 @@ does that automatically.
   answer.
 
 Requirements flow through a fixed lifecycle, tracked as files in the repo
-rather than in an external issue tracker. See `CONTRIBUTING.md` for the full
-step-by-step walkthrough (with a diagram) of this same lifecycle, including
-exactly how and when to open the PR — read it if you're picking up work here
-from a different device or session than whoever started it.
+rather than in an external issue tracker. **This applies to bug fixes just
+as much as new features** — a reported bug still starts with an intent
+file (what's broken, and why) before any code changes, even when the fix
+itself turns out to be small or obvious. Don't jump straight to editing
+`index.html` because the fix seems quick; write the intent first. See
+`CONTRIBUTING.md` for the full step-by-step walkthrough (with a diagram) of
+this same lifecycle, including exactly how and when to open the PR — read
+it if you're picking up work here from a different device or session than
+whoever started it.
 
 1. **Intent** — `intent/NNN-slug.md` describes what's wanted and why, on `main`.
+   For a bug, this is the problem report: what's broken, how it was
+   observed (e.g. a screenshot or repro steps), and any root cause already
+   known.
 2. **Spec** — `spec/NNN-slug.md` turns that intent into a concrete spec.
 3. **Branch** — create `NNN-slug` off `main` (e.g. `003-inheritance-tax`), one
-   branch per requirement, named after its intent slug. Push it immediately,
-   then push the spec's first commit, then open a **draft PR** into `main`
-   — don't wait for the plan or implementation. (Not immediately after just
-   the intent: GitHub won't open a PR with no diff against `main`, and a
-   freshly-branched `NNN-slug` has nothing beyond `main` yet.) See
-   `CONTRIBUTING.md` for why (cross-device/cross-session continuity) and the
-   exact command.
+   branch per requirement, named after its intent slug. **For a bug fix,
+   prefix the branch name with `bug/`** — `bug/NNN-slug` (e.g.
+   `bug/006-mobile-data-menu-overflow`) — so bug branches are visually
+   distinguishable from feature branches in the branch list; the intent/spec
+   *files* keep the plain `NNN-slug` naming either way, only the branch gets
+   the prefix. Push it immediately, then push the spec's first commit, then
+   open a **draft PR** into `main` — don't wait for the plan or
+   implementation. (Not immediately after just the intent: GitHub won't open
+   a PR with no diff against `main`, and a freshly-branched `NNN-slug` has
+   nothing beyond `main` yet.) See `CONTRIBUTING.md` for why (cross-device/
+   cross-session continuity) and the exact command.
 4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
    implementation plan. It's a working file for the branch only — it never
    lands on `main`. Delete it (`git rm plan.md`) as part of the same PR that
