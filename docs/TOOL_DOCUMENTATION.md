@@ -120,6 +120,15 @@ The red banner appears when any of these trigger:
 
 Figures auto-save about half a second after each change — a brief **Saved** appears in the header. Data lives in that browser's storage on that device only, so your phone and laptop keep separate plans. The **↺ Reset** button clears the saved plan and restores defaults.
 
+### 3.7 Export and import
+
+The **⚙ Data** button in the header opens a small panel with two controls, separate from Reset/Add-a-partner so there's room to grow:
+
+- **Export plan** downloads your current figures as a `retirement-plan-YYYY-MM-DD.json` file. A warning line is shown every time the panel is open, not just once: *"This file contains your personal financial figures in plain text. Store or share it only somewhere you trust."* The file is a straight copy of your inputs (not the computed projection) plus a `schemaVersion` field for future compatibility — it contains no more than what already sits in your browser's storage.
+- **Import plan** opens a file picker. A file is rejected outright, with an inline error and your current plan left untouched, only if it isn't valid JSON or isn't a plan-shaped object at all. Otherwise you're asked to confirm — *"This will replace your currently saved plan on this device — continue?"* — before anything changes; declining leaves your plan untouched. Importing is always a full replace, never a merge with what's currently saved. A field the file doesn't have is simply left as it was; a field the app doesn't recognise (e.g. from a future version) is ignored rather than rejected.
+
+This is manual, one-off file transfer — moving a plan to another device, or keeping an offline backup — not automatic sync. See limitation #9 below.
+
 ---
 
 ## 4. Financial technicals
@@ -304,7 +313,7 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 6. **PLSA bands are not inflated forward** — they are compared against nominal future income, which flatters later years.
 7. **ISA/LISA contributions are not hard-capped** in the engine; the £20,000 combined and £4,000 LISA limits are warned about (§3.5), not enforced — unlike the pension allowance, which is a hard cap.
 8. **Defined benefit pensions are not supported** — only defined contribution pots.
-9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan.
+9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan. Manual export/import (§3.7) can move a plan between devices or back it up, but there's no automatic sync.
 10. **No LISA first-home exception.** Real LISAs allow penalty-free access before 60 for a first home purchase; this tool has no house-purchase concept to hang that on, so the age-60 restriction is unconditional.
 11. **Unlimited free-form "other savings" accounts.** A person can add any number of named non-ISA savings accounts — this is intentional, not a bug.
 
@@ -314,7 +323,6 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 - [ ] Model the working partner's salary before their retirement
 - [ ] Proper mortgage amortisation with an interest rate input
 - [ ] Monte Carlo / sequence-of-returns stress testing
-- [ ] Export and import a plan as JSON, for cross-device sync and backup
 - [ ] Uprate PLSA bands with inflation for like-for-like comparison
 
 ---
@@ -367,5 +375,18 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 - **Value text is `text-xs` on mobile, not `text-base`** (unchanged `text-xl` at `md:` and up). `text-sm` was tried first but still forced an ugly mid-word split (e.g. "Minimu"/"m") for the longest Living Standard label at the narrowest supported width (320px); `text-xs` wraps those cases cleanly at word boundaries instead. Extremely large pot values (8+ figures) or "Comfortable" can still wrap mid-word at 320px — accepted, since the fix's guarantee is that nothing is ever clipped or squashed, not that everything fits on one line, and the 3-column mobile grid itself was deliberately kept unchanged.
 - **The inlined Tailwind stylesheet doesn't include every utility class name** — see §5.1. `min-w-0`, `break-words` and `max-h-40` were never used in the original build, so their CSS had to be hand-added to the component's inline `<style>` block; using the class names in JSX alone would have silently done nothing.
 - **A pre-existing ~78px horizontal page overflow at narrow mobile widths (independent of this fix) was found during verification** — reproduces identically on `main` before this change, with no relation to the summary bar's content. Left alone as out of scope for this requirement; worth its own bug report.
+
+</details>
+
+<details>
+<summary><strong>JSON import/export — spec/004-json-import-export.md</strong></summary>
+
+- **`schemaVersion` is written but not yet read for anything.** It exists now so a future breaking change to the saved-state shape (in the style of intent 002's old-ISA migration) has something to branch on — there is currently only one shape (`v1`), so there's no migration logic to write yet.
+- **Export is inputs-only, not inputs + computed projection.** The projection is fully reproducible from the inputs, so the file stays a backup/transfer artifact rather than also trying to double as a point-in-time report. Confirmed explicitly rather than assumed — a genuine fork in the requirement, not the only reasonable choice.
+- **The pre-export warning shows every time, not once.** A one-time notice has a real failure mode here: the person who mishandles the file later is unlikely to be the same person who read a warning months earlier on their first export. Deliberately not gated behind a `localStorage` "seen it" flag.
+- **`PERSISTED_FIELDS` is a single shared array** — the auto-save effect, `exportPlan()` and `importPlanFields()` all read the same list, rather than three independently-maintained field lists that could silently drift apart.
+- **Import is per-field tolerant in both directions.** A field missing from the imported file leaves the *current* value untouched (not reset to an app default) — the file is trusted as far as it goes, not treated as all-or-nothing. A field the file doesn't recognise (e.g. from a newer app version) is simply never read.
+- **Import is full-overwrite-on-confirm only, no merge.** Confirmed explicitly with the user as a real trade-off (someone maintaining two devices' plans separately can't combine them via import) rather than an oversight.
+- **`migratePerson()` runs on import, not just on initial `localStorage` load** — an imported file can be exactly as stale as an old saved plan, so it goes through the same migration path rather than a separate copy of it.
 
 </details>
