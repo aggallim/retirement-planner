@@ -8,6 +8,27 @@ This file is the short, chronological "what shipped when." For the
 detailed narrative — why a calculation changed, what broke before it was
 fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
 
+## 2026-09-17 — User-facing changelog (005)
+
+- Added a **What's new** link to the ⚙ Data menu — a plain-language,
+  in-app history of user-facing changes, newest first. Not GitHub
+  Releases (reconsidered mid-flight — see intent's Revision note): stays
+  inside the app's offline/self-contained boundary instead.
+- Version labels reuse the `sw.js` cache version, with intentional gaps
+  for merges that weren't user-facing (per the inclusion rule this
+  requirement introduces — see `CLAUDE.md`).
+- Backfilled entries for `v3` (002), `v4` (003) and `v5` (004);
+  `USER_CHANGELOG` gets a new entry in the same PR as any future
+  user-facing change, going forward.
+- Found and fixed two more Tailwind utilities with no CSS behind them
+  (`w-72`, `right-0`, both already in `SettingsMenu` since 004, silently
+  doing nothing) — same class of bug as 003's `min-w-0`/`break-words`/
+  `max-h-40`, hand-patched the same way.
+- `docs/TOOL_DOCUMENTATION.md` updated (§3.8 new, §8 Build history).
+- `CLAUDE.md`/`CONTRIBUTING.md` updated with the new conditional
+  same-PR step.
+- Implements `intent/done/005-user-facing-changelog.md`.
+
 ## 2026-09-17 — JSON import/export (004)
 
 - Added an **⚙ Data** menu to the header with **Export plan** (downloads a

@@ -58,7 +58,9 @@ one link away, from any device.
 7. **Test & document** — run `node tests/test-engine.js`, validate
    calculation changes against `docs/TOOL_DOCUMENTATION.md` §5.4, update
    `docs/TOOL_DOCUMENTATION.md` itself (including a new §8 Build history
-   entry) and add a `CHANGELOG.md` entry. Push.
+   entry), add a `CHANGELOG.md` entry, and add a `USER_CHANGELOG` entry in
+   `index.html` if — and only if — the change is user-facing (`CLAUDE.md`
+   has the exact test). Push.
 8. **Mark the PR ready for review** once implementation, tests and docs are
    all pushed — this is the signal that the draft is now a real review
    request, not just an in-progress marker.
@@ -77,7 +79,7 @@ flowchart TD
     PR["4. Open PR as DRAFT\nhead: NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(needs step 3's commit to exist)"]
     Plan["5. Plan\nplan.md (branch-only, never merged)"]
     Impl["6. Implement\nindex.html / sw.js"]
-    Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md"]
+    Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md,\nUSER_CHANGELOG if user-facing"]
     Ready["8. Mark PR ready for review"]
     Cleanup["9. Cleanup in the same PR\nintent+spec -> done/, delete plan.md"]
     Merge["10. Merge, delete branch"]

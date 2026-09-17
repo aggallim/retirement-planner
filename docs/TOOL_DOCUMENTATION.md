@@ -129,6 +129,10 @@ The **⚙ Data** button in the header opens a small panel with two controls, sep
 
 This is manual, one-off file transfer — moving a plan to another device, or keeping an offline backup — not automatic sync. See limitation #9 below.
 
+### 3.8 What's new
+
+The same **⚙ Data** panel has a **What's new (vN)** link below Import. It swaps the panel to a plain-language history of updates to the app — what changed, not how — newest first. The version number reuses the app's internal build version and isn't sequential (some builds only change things you'd never notice, like the code the app is tested with, and don't get an entry), so a gap between two version numbers is expected, not a sign anything is missing. **← Back** returns to Export/Import; closing the panel and reopening it always starts back on Export/Import, regardless of which view you were last on.
+
 ---
 
 ## 4. Financial technicals
@@ -388,5 +392,15 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 - **Import is per-field tolerant in both directions.** A field missing from the imported file leaves the *current* value untouched (not reset to an app default) — the file is trusted as far as it goes, not treated as all-or-nothing. A field the file doesn't recognise (e.g. from a newer app version) is simply never read.
 - **Import is full-overwrite-on-confirm only, no merge.** Confirmed explicitly with the user as a real trade-off (someone maintaining two devices' plans separately can't combine them via import) rather than an oversight.
 - **`migratePerson()` runs on import, not just on initial `localStorage` load** — an imported file can be exactly as stale as an old saved plan, so it goes through the same migration path rather than a separate copy of it.
+
+</details>
+
+<details>
+<summary><strong>User-facing changelog ("What's new") — spec/005-user-facing-changelog.md</strong></summary>
+
+- **In-app, not GitHub Releases.** The original plan for this requirement was a GitHub Release per user-facing change. Reconsidered mid-flight: this app is deliberately self-contained and works offline, and a Release lives entirely outside that boundary. Building it into the app itself keeps the whole feature inside the PWA, and also removes a real constraint the Releases version had — a Release can only be created after a PR merges (a tag needs a commit to point at), where an in-app entry is just part of `index.html` and lands in the PR like everything else.
+- **A swappable view inside the existing Data menu, not a third stacked section.** Chosen specifically to avoid the same class of mobile-cramping problem intent 003 already had to fix once for the header — a list that only grows over time, stacked next to Export/Import, would make the popover's height unbounded. The "What's new" view replaces the panel's content entirely (its own scrollable region, capped height) rather than appending to it; a `view` state (`'menu' | 'whatsnew'`) resets to `'menu'` on every close path via one `useEffect` keyed on the panel's open state, rather than threading a reset through each individual close action.
+- **The version label reuses the `sw.js` `CACHE` value**, gaps and all — a merge that isn't user-facing (like the engine test harness) never gets an entry, so the sequence skips numbers. That's intentional, not a bug: see §3.8.
+- **Two more Tailwind utilities turned out to have no CSS behind them**, found while verifying this feature in a real browser rather than assumed working from the class names alone: `w-72` and `right-0` — both already present in the `SettingsMenu` popover's className since intent 004, silently doing nothing. The popover was never actually 288px wide or right-aligned; it was previously narrow enough, by coincidence of its Export/Import content's shrink-to-fit sizing, to still land inside the viewport. Adding this requirement's content changed that sizing enough to make the popover visibly overflow off-screen — which is what surfaced both bugs. Fixed the same way intent 003 fixed `min-w-0`/`break-words`/`max-h-40`: the missing rules hand-added to the inline `<style>` block. Also simplified the new markup to avoid needing several more (`list-disc`, `pl-4`, `hover:underline`, `pr-1`) by using plain bullet-prefixed paragraphs and existing spacing utilities instead — fewer hand-authored CSS rules to keep in sync by hand next time.
 
 </details>

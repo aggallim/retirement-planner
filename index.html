@@ -759,6 +759,33 @@ const importPlanFields = parsed => {
   return fields;
 };
 
+/* ---------------- User-facing changelog ("What's new") ---------------- */
+// Newest first. Only entries for changes a user of the app would notice —
+// see intent 005's inclusion rule. version reuses the sw.js CACHE value at
+// the point that change shipped, so the sequence has intentional gaps
+// (v1, v2 never appear here — neither was user-facing).
+const USER_CHANGELOG = [{
+  version: 'v6',
+  date: '2026-09-17',
+  title: "See what's changed, right here",
+  items: ["A new \"What's new\" link in the Data menu shows a plain-language history of updates to the app."]
+}, {
+  version: 'v5',
+  date: '2026-09-17',
+  title: 'Export and import your plan',
+  items: ['Save your figures to a file from the Data menu, so you can back them up or move them to another device.', 'Importing a file shows a warning first and asks you to confirm before it replaces what’s currently saved.']
+}, {
+  version: 'v4',
+  date: '2026-09-16',
+  title: 'Smoother summary bar on mobile',
+  items: ['The Pot / Income / Living Standard summary stays visible while you scroll on a phone, without squashing or cutting off the numbers.']
+}, {
+  version: 'v3',
+  date: '2026-09-16',
+  title: 'Track more types of savings',
+  items: ['Split the single ISA field into three: Cash ISA, Stocks & Shares ISA, and LISA — each with its own balance and growth rate.', 'Add any number of other savings accounts (like Premium Bonds) alongside your ISAs.', 'LISA contributions get the 25% government bonus automatically, and can’t be used to cover costs before you turn 60.', 'A warning appears if your combined ISA/LISA contributions go over the annual allowance.']
+}];
+
 /* ---------------- Slider (module level + memoized) ---------------- */
 const SliderWithInput = memo(function SliderWithInput({
   label,
@@ -1678,8 +1705,15 @@ const SettingsMenu = memo(function SettingsMenu({
   onImport
 }) {
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState('menu');
   const [importError, setImportError] = useState('');
   const fileInputRef = useRef(null);
+  // Reset to the default view on every close path (X button, header
+  // toggle, a successful export, a successful import) with one rule
+  // instead of threading a reset through each individually.
+  useEffect(() => {
+    if (!open) setView('menu');
+  }, [open]);
   const handleFileChange = useCallback(e => {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
@@ -1721,12 +1755,12 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "flex items-center justify-between"
   }, React.createElement("h3", {
     className: "text-sm font-bold text-slate-900"
-  }, "Export & import"), React.createElement("button", {
+  }, view === 'whatsnew' ? "What's new" : 'Export & import'), React.createElement("button", {
     onClick: () => setOpen(false),
     "aria-label": "Close"
   }, React.createElement(X, {
     className: "h-4 w-4 text-slate-400 hover:text-slate-600"
-  }))), React.createElement("div", {
+  }))), view === 'menu' ? React.createElement(React.Fragment, null, React.createElement("div", {
     className: "space-y-2"
   }, React.createElement("p", {
     className: "text-xs text-slate-500"
@@ -1753,7 +1787,28 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "hidden"
   }), importError && React.createElement("p", {
     className: "text-xs text-red-600 font-medium"
-  }, importError))));
+  }, importError)), React.createElement("div", {
+    className: "pt-2 border-t border-slate-100"
+  }, React.createElement("button", {
+    onClick: () => setView('whatsnew'),
+    className: "text-sm text-blue-600 font-medium"
+  }, `What's new (${USER_CHANGELOG[0].version})`))) : React.createElement(React.Fragment, null, React.createElement("button", {
+    onClick: () => setView('menu'),
+    className: "text-sm text-blue-600 font-medium"
+  }, "← Back"), React.createElement("div", {
+    className: "space-y-4 max-h-64 overflow-y-auto"
+  }, USER_CHANGELOG.map(entry => React.createElement("div", {
+    key: entry.version,
+    className: "space-y-1.5"
+  }, React.createElement("p", {
+    className: "text-[10px] font-semibold text-slate-400 uppercase tracking-wide"
+  }, `${entry.version} · ${entry.date}`), React.createElement("p", {
+    className: "text-sm font-bold text-slate-900"
+  }, entry.title), React.createElement("div", {
+    className: "text-xs text-slate-600 space-y-1.5"
+  }, entry.items.map((item, i) => React.createElement("p", {
+    key: i
+  }, `• ${item}`)))))))));
 });
 
 /* ---------------- Main ---------------- */
@@ -2053,6 +2108,10 @@ function RetirementCalculator() {
         .min-w-0 { min-width:0; }
         .break-words { overflow-wrap:break-word; }
         .max-h-40 { max-height:10rem; }
+        .w-72 { width:18rem; }
+        .max-h-64 { max-height:16rem; }
+        .overflow-y-auto { overflow-y:auto; }
+        .right-0 { right:0px; }
       `), /*#__PURE__*/React.createElement("header", {
     className: "bg-white border-b border-slate-200 shadow-sm"
   }, /*#__PURE__*/React.createElement("div", {
