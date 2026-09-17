@@ -73,8 +73,8 @@ few lines. The only difference for a bug is the branch name (step 2).
    watching it.
 7. **Test & document** — run `node tests/test-engine.js`, validate
    calculation changes against `docs/TOOL_DOCUMENTATION.md` §5.4, update
-   `docs/TOOL_DOCUMENTATION.md` itself (including a new §8 Build history
-   entry), add a `CHANGELOG.md` entry, and add a `USER_CHANGELOG` entry in
+   `docs/TOOL_DOCUMENTATION.md` itself, add a `CHANGELOG.md` entry, and
+   add a `USER_CHANGELOG` entry in
    `index.html` if — and only if — the change is user-facing (`CLAUDE.md`
    has the exact test). Push.
 8. **Mark the PR ready for review** once implementation, tests and docs are

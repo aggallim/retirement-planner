@@ -4,9 +4,26 @@ All notable changes to the UK Retirement Planner, most recent first. Each
 entry names the requirement it implements (`intent/NNN-slug.md` /
 `spec/NNN-slug.md`, both moved to their `done/` directories once shipped).
 
-This file is the short, chronological "what shipped when." For the
-detailed narrative — why a calculation changed, what broke before it was
-fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
+This file is the complete change history — both what shipped and, for a
+non-trivial calculation change, why — in one place.
+
+## 2026-09-17 — Trim roadmap and build history from tool docs (009)
+
+- Removed the "Possible future additions" checklist from
+  `docs/TOOL_DOCUMENTATION.md` §7 — it duplicated a roadmap already
+  tracked on the project's Notion page (the declared source of truth for
+  that doc), and the two copies had already started to drift apart.
+- Removed `docs/TOOL_DOCUMENTATION.md` §8 Build history entirely — its
+  per-requirement narrative duplicated what this file already records for
+  every requirement. The two entries with no `CHANGELOG.md` equivalent
+  (the pre-repo accuracy review and general design decisions) were folded
+  into the "Initial release" entry below before §8 was deleted, so
+  nothing not already duplicated elsewhere was lost.
+- `CLAUDE.md`/`CONTRIBUTING.md` updated: the lifecycle no longer asks for
+  a §8 entry — this file is now the sole change-history record.
+- Mirrored the same two removals into the Notion page.
+- Process/docs only — no user-facing change, no `USER_CHANGELOG` entry.
+- Implements `intent/done/009-tool-docs-history-cleanup.md`.
 
 ## 2026-09-17 — Development workflow improvements (007)
 
@@ -139,3 +156,31 @@ fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
 - Brought the UK Retirement Planner PWA into this repository (previously a
   standalone build) and deployed it to GitHub Pages via GitHub Actions.
 - Added `CLAUDE.md` project guidance and `docs/TOOL_DOCUMENTATION.md`.
+- **Calculation accuracy review**, performed before this repo existed,
+  caught and fixed nine defects:
+  - The 25% pension lump sum was never applied to the projections —
+    calculated for display only, leaving pension balances 25% overstated.
+  - The 4% rule was implemented as 4% of the declining balance each year,
+    rather than a fixed initial amount uprated by inflation.
+  - Expenses were inconsistent between the projection and the income
+    chart — one assumed the mortgage was included, the other excluded.
+  - The wealth chart started one year late, showing balances after a
+    year of growth instead of today's figures.
+  - Retirement balances were frozen — remaining pots didn't grow after
+    withdrawals, understating longevity.
+  - The income chart read an always-zero field, so pension withdrawal
+    bars were empty.
+  - The income chart used `BarChart` with a `Line` child, so the
+    expenses line silently never rendered — needed `ComposedChart`.
+  - Gauge thresholds were evenly spaced but plotted on a linear scale, so
+    the labels didn't line up with the colour bands.
+  - PLSA and State Pension reference figures were out of date and were
+    refreshed to current values.
+- **Design decisions carried in from that build**: calendar-year
+  anchoring (not age) so differing ages align on one chart axis; the
+  pension lump sum moves into the ISA as retained capital rather than
+  being treated as spent; joint household expenses start from the first
+  partner's retirement (the deliberately cautious assumption); the
+  mortgage stays a single shared liability rather than being split
+  between partners; growth profile persists into retirement rather than
+  assuming a de-risking glidepath.
