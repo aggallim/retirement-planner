@@ -548,12 +548,55 @@ const RotateCcw = ({
     __html: "<path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\" /><path d=\"M3 3v5h5\" />"
   }
 });
+const Download = ({
+  className
+}) => React.createElement("svg", {
+  className,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  dangerouslySetInnerHTML: {
+    __html: "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\" /><polyline points=\"7 10 12 15 17 10\" /><line x1=\"12\" x2=\"12\" y1=\"15\" y2=\"3\" />"
+  }
+});
+const Upload = ({
+  className
+}) => React.createElement("svg", {
+  className,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  dangerouslySetInnerHTML: {
+    __html: "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\" /><polyline points=\"17 8 12 3 7 8\" /><line x1=\"12\" x2=\"12\" y1=\"3\" y2=\"15\" />"
+  }
+});
+const Settings = ({
+  className
+}) => React.createElement("svg", {
+  className,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  dangerouslySetInnerHTML: {
+    __html: "<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />"
+  }
+});
 const {
   useState,
   useMemo,
   useEffect,
   useDeferredValue,
   useCallback,
+  useRef,
   memo
 } = React;
 const {
@@ -676,6 +719,45 @@ const clearSaved = () => {
 };
 const SAVED = loadSaved();
 const pick = (key, fallback) => SAVED && SAVED[key] !== undefined ? SAVED[key] : fallback;
+
+/* ---------------- Export / Import (JSON) ---------------- */
+// PERSISTED_FIELDS is the single source of truth for "what's in a plan" —
+// the auto-save effect in RetirementCalculator, exportPlan and
+// importPlanFields all read this same list, so they can't drift apart.
+const PERSISTED_FIELDS = ['hasPartner', 'person1', 'person2', 'annualExpenses', 'healthcareCosts', 'mortgagePayment', 'mortgageYears', 'inflationRate', 'withdrawalRate'];
+const SCHEMA_VERSION = 1;
+const exportPlan = state => {
+  const payload = {
+    schemaVersion: SCHEMA_VERSION
+  };
+  PERSISTED_FIELDS.forEach(key => {
+    payload[key] = state[key];
+  });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: 'application/json'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `retirement-plan-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+// "Not garbage" bar only (spec point 5) — a plausible plan object, not
+// per-field validation. Per-field tolerance is importPlanFields' job.
+const validatePlanShape = parsed => parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed);
+// Picks known fields off an imported object; a field the file doesn't have
+// is simply never added here, which is the "ignored" half of per-field
+// tolerance — the caller decides what happens to a field that's absent.
+const importPlanFields = parsed => {
+  const fields = {};
+  PERSISTED_FIELDS.forEach(key => {
+    if (parsed[key] !== undefined) fields[key] = parsed[key];
+  });
+  return fields;
+};
 
 /* ---------------- Slider (module level + memoized) ---------------- */
 const SliderWithInput = memo(function SliderWithInput({
@@ -1590,6 +1672,90 @@ function projectJoint({
 }
 // ENGINE-EXTRACT-END
 
+/* ---------------- Settings menu: export / import (module level + memoized) ---------------- */
+const SettingsMenu = memo(function SettingsMenu({
+  onExport,
+  onImport
+}) {
+  const [open, setOpen] = useState(false);
+  const [importError, setImportError] = useState('');
+  const fileInputRef = useRef(null);
+  const handleFileChange = useCallback(e => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch {
+        setImportError('That file is not valid JSON.');
+        return;
+      }
+      if (!validatePlanShape(parsed)) {
+        setImportError("That file doesn't look like a retirement plan export.");
+        return;
+      }
+      setImportError('');
+      if (!window.confirm('This will replace your currently saved plan on this device — continue?')) return;
+      onImport(parsed);
+      setOpen(false);
+    };
+    reader.onerror = () => setImportError('Could not read that file.');
+    reader.readAsText(file);
+  }, [onImport]);
+  return React.createElement("div", {
+    className: "relative"
+  }, React.createElement("button", {
+    onClick: () => setOpen(v => !v),
+    title: "Export / import your plan",
+    className: "flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-semibold text-sm bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 transition-colors"
+  }, React.createElement(Settings, {
+    className: "h-4 w-4"
+  }), React.createElement("span", {
+    className: "hidden sm:inline"
+  }, "Data")), open && React.createElement("div", {
+    className: "absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-4 space-y-4"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, React.createElement("h3", {
+    className: "text-sm font-bold text-slate-900"
+  }, "Export & import"), React.createElement("button", {
+    onClick: () => setOpen(false),
+    "aria-label": "Close"
+  }, React.createElement(X, {
+    className: "h-4 w-4 text-slate-400 hover:text-slate-600"
+  }))), React.createElement("div", {
+    className: "space-y-2"
+  }, React.createElement("p", {
+    className: "text-xs text-slate-500"
+  }, "This file contains your personal financial figures in plain text. Store or share it only somewhere you trust."), React.createElement("button", {
+    onClick: () => {
+      onExport();
+      setOpen(false);
+    },
+    className: "w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+  }, React.createElement(Download, {
+    className: "h-4 w-4"
+  }), "Export plan")), React.createElement("div", {
+    className: "space-y-2 pt-2 border-t border-slate-100"
+  }, React.createElement("button", {
+    onClick: () => fileInputRef.current && fileInputRef.current.click(),
+    className: "w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-semibold text-sm bg-white border-2 border-slate-200 text-slate-700 hover:border-slate-400 transition-colors"
+  }, React.createElement(Upload, {
+    className: "h-4 w-4"
+  }), "Import plan"), React.createElement("input", {
+    ref: fileInputRef,
+    type: "file",
+    accept: "application/json",
+    onChange: handleFileChange,
+    className: "hidden"
+  }), importError && React.createElement("p", {
+    className: "text-xs text-red-600 font-medium"
+  }, importError))));
+});
+
 /* ---------------- Main ---------------- */
 function RetirementCalculator() {
   const [hasPartner, setHasPartner] = useState(pick('hasPartner', false));
@@ -1646,6 +1812,36 @@ function RetirementCalculator() {
     if (!window.confirm('Reset all figures back to defaults? Your saved plan will be cleared.')) return;
     clearSaved();
     window.location.reload();
+  }, []);
+
+  // Same field list as the auto-save effect above (both read PERSISTED_FIELDS
+  // conceptually; exportPlan itself pulls only PERSISTED_FIELDS off this object).
+  const handleExport = useCallback(() => {
+    exportPlan({
+      hasPartner,
+      person1,
+      person2,
+      annualExpenses,
+      healthcareCosts,
+      mortgagePayment,
+      mortgageYears,
+      inflationRate,
+      withdrawalRate
+    });
+  }, [hasPartner, person1, person2, annualExpenses, healthcareCosts, mortgagePayment, mortgageYears, inflationRate, withdrawalRate]);
+  // Per-field tolerant: a field absent from the imported file leaves the
+  // current value untouched rather than resetting it to an app default.
+  const handleImport = useCallback(parsed => {
+    const fields = importPlanFields(parsed);
+    if (fields.hasPartner !== undefined) setHasPartner(fields.hasPartner);
+    if (fields.person1 !== undefined) setPerson1(migratePerson(fields.person1));
+    if (fields.person2 !== undefined) setPerson2(migratePerson(fields.person2));
+    if (fields.annualExpenses !== undefined) setAnnualExpenses(fields.annualExpenses);
+    if (fields.healthcareCosts !== undefined) setHealthcareCosts(fields.healthcareCosts);
+    if (fields.mortgagePayment !== undefined) setMortgagePayment(fields.mortgagePayment);
+    if (fields.mortgageYears !== undefined) setMortgageYears(fields.mortgageYears);
+    if (fields.inflationRate !== undefined) setInflationRate(fields.inflationRate);
+    if (fields.withdrawalRate !== undefined) setWithdrawalRate(fields.withdrawalRate);
   }, []);
 
   // Stable callbacks so memoized children don't re-render needlessly
@@ -1877,7 +2073,10 @@ function RetirementCalculator() {
     className: "h-4 w-4"
   }), /*#__PURE__*/React.createElement("span", {
     className: "hidden sm:inline"
-  }, "Reset")), /*#__PURE__*/React.createElement("button", {
+  }, "Reset")), /*#__PURE__*/React.createElement(SettingsMenu, {
+    onExport: handleExport,
+    onImport: handleImport
+  }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setHasPartner(v => !v),
     className: `flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm ${hasPartner ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-white border-2 border-blue-200 text-blue-700 hover:border-blue-400'}`
   }, hasPartner ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Users, {

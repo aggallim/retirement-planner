@@ -8,6 +8,23 @@ This file is the short, chronological "what shipped when." For the
 detailed narrative — why a calculation changed, what broke before it was
 fixed — see `docs/TOOL_DOCUMENTATION.md` §8 Build history.
 
+## 2026-09-17 — JSON import/export (004)
+
+- Added an **⚙ Data** menu to the header with **Export plan** (downloads a
+  `retirement-plan-YYYY-MM-DD.json` of your current inputs, plus a
+  `schemaVersion` field) and **Import plan** (file picker → validate →
+  confirm-before-overwrite → per-field-tolerant apply).
+- A plaintext-data warning shows every time the panel is open, not just
+  once — a deliberate choice over a one-time/dismissible notice.
+- Import is full-overwrite-on-confirm only, no merge; a field missing from
+  the imported file leaves the current value untouched rather than
+  resetting it, and an unrecognised field is silently ignored.
+- `migratePerson()` runs on import as well as on initial load, so an old
+  single-ISA-shape export still restores correctly.
+- `docs/TOOL_DOCUMENTATION.md` updated (§3.7 new, §7 limitation #9 and
+  roadmap, §8 Build history).
+- Implements `intent/done/004-json-import-export.md`.
+
 ## 2026-09-16 — Mobile sticky summary bar (003)
 
 - **Only the three summary boxes (Pot/Income/Living Standard) stay pinned
