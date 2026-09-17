@@ -99,24 +99,34 @@ does that automatically.
   answer.
 
 Requirements flow through a fixed lifecycle, tracked as files in the repo
-rather than in an external issue tracker. See `CONTRIBUTING.md` for the full
-step-by-step walkthrough (with a diagram) of this same lifecycle, including
-exactly how and when to open the PR — read it if you're picking up work here
-from a different device or session than whoever started it.
+rather than in an external issue tracker. **This applies to bug fixes just
+as much as new features** — a reported bug still starts with an intent
+file (what's broken, and why) before any code changes, even when the fix
+itself turns out to be small or obvious. Don't jump straight to editing
+`index.html` because the fix seems quick; write the intent first. See
+`CONTRIBUTING.md` for the full step-by-step walkthrough (with a diagram) of
+this same lifecycle, including exactly how and when to open the PR — read
+it if you're picking up work here from a different device or session than
+whoever started it.
 
 1. **Intent** — first run the `grilling` skill (or point a human at the
    user-invoked `grill-me` skill; see `.claude/skills/`) to interrogate the
    requirement's design tree until every branch is resolved. Then write
    `intent/NNN-slug.md` from those resolved decisions — describing what's
-   wanted and why — on `main`.
+   wanted and why — on `main`. For a bug, this is the problem report:
+   what's broken, how it was observed (e.g. a screenshot or repro steps),
+   and any root cause already known.
 2. **Spec** — `spec/NNN-slug.md` turns that intent into a concrete spec.
 3. **Branch** — create `<type>/NNN-slug` off `main` (e.g.
-   `feature/003-inheritance-tax`), following the
-   [Conventional Branch](https://conventionalbranch.org) spec (see
-   `.claude/skills/conventional-branch/`): `<type>` is `feature`, `bugfix`,
-   `hotfix`, `release`, or `chore` depending on the nature of the
-   requirement (most requirements here are `feature/`), and `NNN-slug`
-   matches the intent's slug. One branch per requirement. A
+   `feature/003-inheritance-tax`, `bugfix/006-mobile-data-menu-overflow`),
+   following the [Conventional Branch](https://conventionalbranch.org) spec
+   (see `.claude/skills/conventional-branch/`): `<type>` is `feature`,
+   `bugfix`, `hotfix`, `release`, or `chore` depending on the nature of the
+   requirement — a bug fix is `bugfix/`, not the repo's earlier ad-hoc
+   `bug/` prefix, so branch names stay within the published spec; most
+   other requirements here are `feature/`. `NNN-slug` matches the intent's
+   slug either way — only the branch gets the type prefix, the intent/spec
+   *files* keep the plain `NNN-slug` naming. One branch per requirement. A
    harness-assigned agent branch name (e.g. `claude/laughing-cannon-lz90c5`)
    already satisfies the spec's AI-agent prefix — don't rename it. Push it
    immediately, then push the spec's first commit, then open a **draft PR**

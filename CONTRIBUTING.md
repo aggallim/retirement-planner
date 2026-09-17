@@ -24,6 +24,11 @@ whoever/whatever picks this up next. A pushed branch with an open (draft) PR
 is not — its diff, its description, and its checklist of what's done are all
 one link away, from any device.
 
+**This lifecycle applies to bug fixes too, not just new features.** A bug
+report still gets an intent file first — what's broken, how it was
+observed — before any code changes, even when the fix turns out to be a
+few lines. The only difference for a bug is the branch name (step 2).
+
 ## The lifecycle
 
 1. **Intent** — first run the `grilling` skill (model-invoked) — or the
@@ -31,14 +36,17 @@ one link away, from any device.
    interrogated about the requirement until every branch of its design tree
    is resolved (see `.claude/skills/grill-me/` and `.claude/skills/grilling/`).
    Then write `intent/NNN-slug.md` on `main` from those resolved decisions,
-   describing what's wanted and why. Commit and push straight to `main`.
+   describing what's wanted and why (for a bug: what's broken and how it
+   was observed). Commit and push straight to `main`.
 2. **Branch** — create `<type>/NNN-slug` off `main`, following the
    [Conventional Branch](https://conventionalbranch.org) spec (see
    `.claude/skills/conventional-branch/`): `<type>` is `feature`, `bugfix`,
    `hotfix`, `release`, or `chore` for the nature of the requirement (most
-   are `feature/`), and `NNN-slug` is named after the intent's slug as
-   before (e.g. `feature/003-inheritance-tax`). Push it immediately, even
-   with nothing on it yet beyond `main`'s history.
+   are `feature/`; a bug fix is `bugfix/`, not the repo's earlier ad-hoc
+   `bug/` prefix, to stay within the published spec), and `NNN-slug` is named
+   after the intent's slug as before (e.g. `feature/003-inheritance-tax`,
+   `bugfix/006-mobile-data-menu-overflow`). Push it immediately, even with
+   nothing on it yet beyond `main`'s history.
 3. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
    questions into a concrete spec. Commit and push to the branch straight
    away — this is also what makes step 4 possible (see below), not a step to
@@ -133,6 +141,9 @@ gh pr create --draft --base main --head <type>/NNN-slug \
   --body "Implements intent/NNN-slug.md. Status: intent + spec drafted, implementation not yet started."
 ```
 
+For a bug fix, use `bugfix/NNN-slug` as the branch name in both commands
+above instead of `feature/NNN-slug`.
+
 No GitHub CLI available? Use the GitHub web UI's "compare & pull request"
 prompt after pushing, or the GitHub API/MCP tooling if you're an agent with
 access to it — same result: a draft PR, base `main`, head `<type>/NNN-slug`, body
@@ -158,8 +169,12 @@ branch/PR.
 
 A harness-assigned branch name like `claude/laughing-cannon-lz90c5` already
 satisfies Conventional Branch's AI-agent prefix rule (`claude/`) as-is —
-don't try to rename it to fit the `<type>/NNN-slug` pattern above; that
-pattern is only for branches this lifecycle names itself.
+don't try to rename it to fit the `<type>/NNN-slug` pattern above by
+default; that pattern is only for branches this lifecycle names itself. If
+the user explicitly asks for the `<type>/NNN-slug` convention to be used
+regardless, that request takes precedence: create and push a
+correctly-named branch off the pre-named branch's work instead, and open
+the PR from there.
 
 ## Other conventions
 

@@ -406,13 +406,23 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 </details>
 
 <details>
-<summary><strong>Development workflow improvements — spec/007-dev-workflow-improvements.md</strong></summary>
+<summary><strong>Bug fix: Data menu still overflowed off-screen on narrow phones — spec/done/006-mobile-data-menu-overflow.md</strong></summary>
+
+- **Giving `w-72`/`right-0` real CSS (005) fixed the missing-rule bug but not the actual layout bug.** `right: 0` on the popover positions it against its own `relative` parent — the `SettingsMenu` button itself — not the viewport. In the header's `flex-wrap` button row, that button sits to the left of the row (after Reset, before Couple/Add-a-partner), so on a narrow phone there is far less than 18rem (288px) of space to its left. The panel opened mostly or entirely past the left edge of the screen, clipping the Export/Import text and buttons — reported directly from a real device, not caught by the desktop-viewport verification pass in 005.
+- **Fixed with a dedicated `.settings-popover` class** rather than patching `right-0` itself (other elements share that rule). Above a `640px` viewport width (Tailwind's `sm` breakpoint, already used elsewhere in the header for the same mobile/desktop split) the popover keeps its original behaviour: `position: absolute; right: 0; width: 18rem`, anchored to the button as before. Below `640px` a media query switches it to `position: fixed` with `left`/`right` both inset `1rem` from the viewport edges and `width: auto` — so its size and position come from the viewport, not from wherever the trigger button happens to sit in the wrapped row, and it can never open off-screen regardless of button position. A `max-height`/`overflow-y: auto` pair keeps it scrollable rather than overflowing the viewport vertically on a short screen.
+- **Verified with a headless-browser pass at 320px, 375px and 1280px** (both the Export/Import view and the What's new view), confirming the panel stays fully within the viewport at the narrowest supported width and that desktop positioning is unchanged.
+- No calculation, persisted-state or `USER_CHANGELOG`-shape change — CSS/layout only. `sw.js` `CACHE` bumped `v6` → `v7` since this is user-facing (the panel is now actually usable on a phone).
+
+</details>
+
+<details>
+<summary><strong>Development workflow improvements — spec/done/007-dev-workflow-improvements.md</strong></summary>
 
 Process/tooling only — no `index.html` or engine change, so `node
 tests/test-engine.js` was re-run purely to confirm it (correctly) reports
 no difference.
 
-- **Requirement branch names gain a Conventional Branch type prefix** (`<type>/NNN-slug`, e.g. `feature/007-dev-workflow-improvements`) instead of bare `NNN-slug`. The existing `NNN-slug` numbering is kept as the description half rather than replaced, so intent/spec ↔ branch traceability is unchanged.
+- **Requirement branch names gain a Conventional Branch type prefix** (`<type>/NNN-slug`, e.g. `feature/007-dev-workflow-improvements`, `bugfix/006-mobile-data-menu-overflow`) instead of bare `NNN-slug` — superseding the ad-hoc `bug/NNN-slug` convention introduced by 006 immediately above, which predates this requirement and is folded into the published spec's `bugfix/` type instead. The existing `NNN-slug` numbering is kept as the description half rather than replaced, so intent/spec ↔ branch traceability is unchanged.
 - **Harness-assigned agent branches are left alone.** A Claude Code remote session's `claude/<name>` branch already satisfies [Conventional Branch](https://conventionalbranch.org)'s AI-agent source prefix (`claude/`) — renaming it to fit `<type>/NNN-slug` would fight the harness for no benefit, since that pattern exists purely for branches this lifecycle names itself.
 - **Branch protection on `main` is a documented setting, not a code change.** No tool available to an agent session in this environment (including the GitHub MCP server) can edit repository/branch settings, so `CLAUDE.md` now states the required end state (PR required, `test-engine` check required, no bypass) as an explicit manual step for whoever has admin access, rather than pretending a committed file enforces it.
 - **Intent gathering becomes an active step, not just a norm.** Matt Pocock's `grill-me` (user-invoked) / `grilling` (model-invoked) skill pair is added to `.claude/skills/` and required, in both `CLAUDE.md` and `CONTRIBUTING.md`, as the step *before* `intent/NNN-slug.md` is written — the file should capture resolved decisions from that interview, not a restated one-line request.
