@@ -133,6 +133,10 @@ This is manual, one-off file transfer — moving a plan to another device, or ke
 
 The same **⚙ Data** panel has a **What's new (vN)** link below Import. It swaps the panel to a plain-language history of updates to the app — what changed, not how — newest first. The version number reuses the app's internal build version and isn't sequential (some builds only change things you'd never notice, like the code the app is tested with, and don't get an entry), so a gap between two version numbers is expected, not a sign anything is missing. **← Back** returns to Export/Import; closing the panel and reopening it always starts back on Export/Import, regardless of which view you were last on.
 
+### 3.9 Dark mode
+
+The same **⚙ Data** panel has a **System / Light / Dark** toggle below Import. **System** (the default) follows your device or browser's dark mode setting automatically, including switching live if you change it while the app is open. Picking **Light** or **Dark** explicitly overrides that and is remembered on this device — it stays set until you switch it back to System, independently of whatever the OS is doing. This choice is a display preference, not part of your plan: it's stored separately from your figures and is never included in an exported or imported plan file, so importing someone else's plan (or exporting yours to another device) never changes how the app looks.
+
 ---
 
 ## 4. Financial technicals

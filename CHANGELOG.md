@@ -7,6 +7,53 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-18 — Dark mode support (010)
+
+- **System / Light / Dark toggle**, added to the existing ⚙ Data menu
+  below Import. System (the default) follows `prefers-color-scheme` and
+  switches live if the OS theme changes while the app is open; Light/Dark
+  pin an explicit override. The override is stored under its own
+  `ukRetirementPlanner.theme` localStorage key, deliberately separate
+  from `PERSISTED_FIELDS`, so it never travels through Export/Import — a
+  display preference isn't part of "the plan."
+- **Whole app covered, including both charts.** `WealthChart`/
+  `IncomeChart` take an explicit `isDark` prop to swap `CartesianGrid`/
+  `XAxis`/`YAxis` stroke and `Legend` text colour; series/gradient
+  colours, `ReferenceLine`s and `ChartTooltip` are deliberately
+  unchanged between themes — already saturated/dark enough to read on
+  both, and changing them would be an unasked-for colour-meaning
+  decision.
+- **No Tailwind CLI or build step introduced.** This repo's inlined
+  stylesheet is precompiled and contains only the exact classes already
+  in use, so `dark:`-variant classes would silently do nothing. Instead,
+  every colour utility class the app actually uses gets a hand-written
+  `.dark <class> { … }` override appended to the existing inline
+  `<style>` block — the same pattern intents 003, 005 and 006 already
+  used for Tailwind utilities missing from the compiled output, just
+  applied more broadly. A Playwright pass across both themes (individual
+  and couple mode, warning banner, both charts, the Data menu, and the
+  Assumptions panel hovered and not) caught two real bugs before they
+  shipped: the root background gradient's middle "via" stop is baked as
+  a literal inside Tailwind's `--tw-gradient-stops` rather than exposed
+  as its own overridable variable, and three light-background hover/
+  focus states (`hover:bg-slate-50`, `hover:bg-slate-200`,
+  `focus:bg-blue-50`, `focus:bg-teal-50`, `hover:bg-teal-50/30`) needed
+  their own dark overrides too — both fixed and re-verified.
+- Anti-flash inline `<script>` in `<head>`, ahead of the compiled
+  stylesheet, applies the resolved theme synchronously before first
+  paint (reads the same `localStorage` key and `matchMedia` query the
+  React code does).
+- `sw.js` cache bumped `v7` → `v8`; `USER_CHANGELOG` `v8` entry added
+  (plainly user-facing — a new, visible feature).
+- `docs/TOOL_DOCUMENTATION.md` §3.9 added, documenting the toggle and
+  its System/Light/Dark behaviour.
+- Renumbered from 006 to 008 to 010 while in progress, as
+  `006-mobile-data-menu-overflow`, `007-dev-workflow-improvements`,
+  `008-dismissable-warning-banner` and `009-tool-docs-history-cleanup`
+  each claimed a number in turn — see `spec/done/010-dark-mode.md`'s
+  Status section for the full history.
+- Implements `intent/done/010-dark-mode.md`.
+
 ## 2026-09-17 — Trim roadmap and build history from tool docs (009)
 
 - Removed the "Possible future additions" checklist from
