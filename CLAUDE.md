@@ -72,17 +72,14 @@ does that automatically.
   the relevant section(s) in §3 (user guide) and §4 (financial technicals,
   including §4.7 reference figures) for any input, calculation, or
   reference-figure change; §5.4 (verification) with any new checklist items
-  a calculation change needs; §7 (known limitations) if the change removes,
-  narrows, or adds a deliberate simplification; and a new entry under
-  **§8 Build history** — the detailed, narrative record — summarising what
-  changed and, for a non-trivial calculation change, why. A PR that changes
-  behaviour without a matching §8 entry is incomplete.
+  a calculation change needs; and §7 (known limitations) if the change
+  removes, narrows, or adds a deliberate simplification.
 - **Add a `CHANGELOG.md` entry in the same PR too.** `CHANGELOG.md` is the
-  short, chronological "what shipped when," separate from §8's narrative
-  detail. Every requirement gets one entry under a dated heading (the date
-  the PR merges), naming the intent/spec file it implements — written
-  directly in the PR, the same way intent/spec move to `done/` in the same
-  PR rather than as a follow-up.
+  complete change-history record — both "what shipped when" and, for a
+  non-trivial calculation change, why. Every requirement gets one entry
+  under a dated heading (the date the PR merges), naming the intent/spec
+  file it implements — written directly in the PR, the same way intent/spec
+  move to `done/` in the same PR rather than as a follow-up.
 - **Add a `USER_CHANGELOG` entry in `index.html`, in the same PR — but
   only if the change is user-facing.** `USER_CHANGELOG` (near
   `PERSISTED_FIELDS` in the Persistence section) backs the "What's new"
@@ -146,8 +143,8 @@ whoever started it.
 6. **Test** — run `node tests/test-engine.js` and validate against
    `docs/TOOL_DOCUMENTATION.md` §5.4 for any calculation change; otherwise
    exercise the change manually per "No build step" above. Update
-   `docs/TOOL_DOCUMENTATION.md` itself (including a new §8 Build history
-   entry), add a `CHANGELOG.md` entry, and add a `USER_CHANGELOG` entry if
+   `docs/TOOL_DOCUMENTATION.md` itself, add a `CHANGELOG.md` entry, and
+   add a `USER_CHANGELOG` entry if
    (and only if) the change is user-facing — all three per "Working in
    this repo" above — this happens alongside implementation, not after it.
 7. **PR** — the draft PR opened in step 3 is marked ready for review once
