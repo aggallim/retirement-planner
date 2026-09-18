@@ -1,4 +1,4 @@
-# 008 — Dark mode support
+# 010 — Dark mode support
 
 ## Status
 
@@ -15,14 +15,20 @@ packaged as an installable PWA (`CLAUDE.md`, `docs/TOOL_DOCUMENTATION.md`
 §5.5/§6.2) meant to feel like a native app on the home screen, not a web
 page opened in a tab.
 
-Raised via the user's own roadmap tracking rather than
-`docs/TOOL_DOCUMENTATION.md` §7 itself — that section's "Possible future
-additions" list is shorter than the roadmap notes it was checked against
-and doesn't currently name dark mode as a line item. (Numbered 008, not
-006, here: 006 and 007 were claimed by the mobile Data-menu overflow fix
-and the dev-workflow-improvements requirement while this was being
-scoped — see `intent/done/006-mobile-data-menu-overflow.md` and
-`intent/done/007-dev-workflow-improvements.md`.)
+Raised via the user's own roadmap tracking (the project's Notion page)
+rather than `docs/TOOL_DOCUMENTATION.md` §7 itself, which never actually
+named dark mode as a line item even before its "Possible future
+additions" checklist was removed entirely by
+`intent/done/009-tool-docs-history-cleanup.md` (that checklist is now
+Notion-only, per that requirement).
+
+(Numbered 010, not 006 or 008, after two renumberings while this was in
+progress: 006 and 007 were claimed by the mobile Data-menu overflow fix
+and the dev-workflow-improvements requirement
+(`intent/done/006-mobile-data-menu-overflow.md`,
+`intent/done/007-dev-workflow-improvements.md`); 008 was then claimed by
+`intent/008-dismissable-warning-banner.md`, drafted but not yet
+implemented, while this branch was mid-flight a second time.)
 
 ## Decisions confirmed with the user
 

@@ -1,30 +1,36 @@
-# 008 — Dark mode support
+# 010 — Dark mode support
 
 ## Status
 
 Resolved — ready for implementation. Fleshed out from
-`intent/008-dark-mode.md` by resolving the two things that document
+`intent/010-dark-mode.md` by resolving the two things that document
 deliberately left open (colour-palette mechanism, and where exactly the
 manual override is persisted), and by working out the pieces the intent's
 "whole app, charts included" scope implies but doesn't itself spell out.
 
-**Renumbered from 006 to 008, and Resolved design decision 1 rewritten,**
-after rebasing onto `main`: `intent/done/006-mobile-data-menu-overflow.md`
-and `intent/done/007-dev-workflow-improvements.md` merged while this was
-in progress, claiming those numbers, and 006's fix established a directly
-relevant precedent (see decision 1 below) that this spec originally
-missed by not existing yet at the time.
+**Renumbered twice (006 → 008 → 010) while this was in progress**, as
+other requirements merged to `main` and claimed each number in turn:
+`intent/done/006-mobile-data-menu-overflow.md` and
+`intent/done/007-dev-workflow-improvements.md` first, then
+`intent/008-dismissable-warning-banner.md` (drafted, not yet
+implemented). 006's fix also established a directly relevant precedent
+for decision 1 below that this spec originally missed simply by not
+existing yet. Separately, `intent/done/009-tool-docs-history-cleanup.md`
+removed `docs/TOOL_DOCUMENTATION.md`'s §8 Build history and roadmap
+checklist entirely while this was also in progress — citations below to
+that section have been updated to point at `CHANGELOG.md` and the
+originating PRs instead, which still carry the same information.
 
 ## Problem
 
-See `intent/008-dark-mode.md` §Problem — unchanged here. The app only ever
+See `intent/010-dark-mode.md` §Problem — unchanged here. The app only ever
 renders in a light theme, which doesn't match a device/browser already set
 to dark mode — and matters more than pure aesthetics because this is an
 installed, home-screen PWA meant to feel native, not a page in a tab.
 
 ## Outcome
 
-See `intent/008-dark-mode.md` §Decisions confirmed with the user, points
+See `intent/010-dark-mode.md` §Decisions confirmed with the user, points
 1–4 — unchanged here. This spec adds the implementation-level detail those
 points didn't settle.
 
@@ -44,9 +50,11 @@ inline `<style>` block, the same way three prior requirements already
 solved this exact problem** — this repo has direct, repeated precedent for
 it, not just a theoretical option:
 
-- Intent 003 (`docs/TOOL_DOCUMENTATION.md` §8) hand-added `.min-w-0`,
-  `.break-words` and `.max-h-40` to this block when it needed Tailwind
-  utilities the compiled stylesheet didn't have rules for.
+- Intent 003 (`CHANGELOG.md`'s "Mobile sticky summary bar (003)" entry;
+  originally also documented in `docs/TOOL_DOCUMENTATION.md` §8 before
+  intent 009 removed that section) hand-added `.min-w-0`, `.break-words`
+  and `.max-h-40` to this block when it needed Tailwind utilities the
+  compiled stylesheet didn't have rules for.
 - Intent 005 hand-added `.w-72`, `.max-h-64`, `.overflow-y-auto`,
   `.right-0` for the same reason.
 - Intent 006 (`spec/done/006-mobile-data-menu-overflow.md`, merged onto
@@ -226,14 +234,14 @@ feature).
 
 ## Non-goals
 
-See `intent/008-dark-mode.md` §Out of scope — unchanged: no per-section
+See `intent/010-dark-mode.md` §Out of scope — unchanged: no per-section
 theme overrides, no new colour-meaning/branding decisions beyond adapting
 existing accents into a dark palette, no effect on `projectJoint()` or any
 figure the app produces.
 
 ## Constraints
 
-See `intent/008-dark-mode.md` — unchanged, with the following additions
+See `intent/010-dark-mode.md` — unchanged, with the following additions
 resolved above:
 
 - Theme preference lives in its own `localStorage` key
@@ -253,5 +261,5 @@ resolved above:
 
 ## Open questions
 
-None remaining. Both points `intent/008-dark-mode.md` left open (palette
+None remaining. Both points `intent/010-dark-mode.md` left open (palette
 mechanism, override persistence location) are resolved above.

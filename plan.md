@@ -1,13 +1,16 @@
-# Plan — 008 dark mode support
+# Plan — 010 dark mode support
 
-Breaks `spec/008-dark-mode.md` into an implementation sequence. Working
+Breaks `spec/010-dark-mode.md` into an implementation sequence. Working
 file only — deleted (`git rm plan.md`) in the same PR that finishes
 cleanup, per `CLAUDE.md`.
 
 All line numbers below are against `index.html` on this branch as of the
-merge with `main` (commit `7346dc1`, after picking up the mobile Data-menu
-fix and the dev-workflow-improvements PR). Re-check them before editing if
-anything else has merged to `main` since.
+merge with `main` that picked up the mobile Data-menu fix and the
+dev-workflow-improvements PR (commit `7346dc1`). A second merge (picking
+up the dismissable-warning-banner intent/spec and the tool-docs
+history-cleanup requirement, neither of which touch `index.html`) landed
+after that with no further line-number changes. Re-check them before
+editing if anything else has merged to `main` since.
 
 ## Step 1 — Theme state, persistence, and the `dark` class (spec "Theme
 state model", decision 2)
@@ -240,24 +243,25 @@ browser, per spec + intent:
 - **`index.html` `USER_CHANGELOG`** (`index.html:767` area) — new `v8`
   entry, plain language, e.g. "Added dark mode — follows your device's
   theme automatically, or set it manually from the ⚙ Data menu."
-- **`docs/TOOL_DOCUMENTATION.md`**:
-  - §3 user guide: a short new subsection (or an addition to §3.6 Saving
-    and resetting) documenting the theme toggle's location and
-    System/Light/Dark behaviour.
-  - §7: dark mode isn't currently listed as a "Possible future addition"
-    in this file (see PR #9's discussion — the Notion roadmap notes this
-    was scoped against had drifted from this file), so there's nothing to
-    check off here; no change needed to §7 beyond that non-finding.
-  - §8 Build history: new entry summarising the feature and, per spec
-    decision 1, *why* it's hand-written CSS rather than a Tailwind CLI
-    rebuild (the precedent intents 003/005/006 already set).
+- **`docs/TOOL_DOCUMENTATION.md`** — §3 user guide only: a short new
+  subsection (or an addition to §3.6 Saving and resetting) documenting
+  the theme toggle's location and System/Light/Dark behaviour. The doc
+  no longer has a §8 Build history or a §7 roadmap checklist —
+  `intent/done/009-tool-docs-history-cleanup.md` removed both while this
+  was in progress, so `CHANGELOG.md` is now the sole place for the
+  narrative "what and why," and the Notion project page is the sole
+  roadmap (dark mode was never actually listed as a §7 item even before
+  that removal — see intent 010's Problem section).
 - **`CHANGELOG.md`** — one entry under today's date naming
-  `intent/008-dark-mode.md` / `spec/008-dark-mode.md`.
+  `intent/010-dark-mode.md` / `spec/010-dark-mode.md`, covering both the
+  "what" and, per spec decision 1, *why* the CSS is hand-written rather
+  than a Tailwind CLI rebuild (the precedent intents 003/005/006 already
+  set) — this now carries the detail that used to go in §8.
 
 ## Step 7 — Cleanup and PR
 
-- Move `intent/008-dark-mode.md` → `intent/done/`,
-  `spec/008-dark-mode.md` → `spec/done/`.
+- Move `intent/010-dark-mode.md` → `intent/done/`,
+  `spec/010-dark-mode.md` → `spec/done/`.
 - `git rm plan.md` (this file).
 - Push; PR #9 (already open as a draft, tracking this branch) picks up
   the commits automatically.
