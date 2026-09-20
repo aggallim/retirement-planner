@@ -1817,6 +1817,56 @@ function projectJoint({
   }
   return data;
 }
+// Same £1,000/first-retirement/longer-life-expectancy test the longevity
+// memo already uses (spec/done/011-can-i-retire-headline.md) — extracted
+// so the supportable-age search below can reuse it without duplicating
+// the rule.
+function planSucceeds(projections, firstRet, planEnd) {
+  for (const r of projections) {
+    if (r.year < firstRet) continue;
+    if (r.totalPension + r.totalIsa + r.totalOtherSavings < 1000) {
+      return r.year > planEnd;
+    }
+  }
+  return true;
+}
+// Bidirectional shared-delta search (intent/011 decision 3). Individual
+// mode is just this same function with person2 === null — no special
+// case needed. A linear scan, not binary search: projectJoint()'s
+// success isn't provably monotonic in retirement age (State Pension
+// timing, the LISA age-60 threshold), and the scan range is small (at
+// most 25 integer years) so the extra safety costs nothing. Returns an
+// integer delta (negative = could retire earlier, positive = would need
+// to retire later), or null if no delta within the existing per-person
+// retirement-age bounds changes the outcome.
+function findSupportableDelta(engineArgs, currentlySucceeds) {
+  const people = [engineArgs.person1, engineArgs.person2].filter(Boolean);
+  const bound = p => [Math.max(50, p.currentAge + 1), 75];
+  const maxDelta = Math.min(...people.map(p => bound(p)[1] - p.retirementAge));
+  const minDelta = Math.max(...people.map(p => bound(p)[0] - p.retirementAge));
+  const evaluate = delta => {
+    const bump = p => p ? { ...p, retirementAge: p.retirementAge + delta } : p;
+    const person1 = bump(engineArgs.person1);
+    const person2 = bump(engineArgs.person2);
+    const projections = projectJoint({ ...engineArgs, person1, person2 });
+    const bumped = [person1, person2].filter(Boolean);
+    const firstRet = Math.min(...bumped.map(p => CURRENT_YEAR + (p.retirementAge - p.currentAge)));
+    const planEnd = Math.max(...bumped.map(p => CURRENT_YEAR + (p.lifeExpectancy - p.currentAge)));
+    return planSucceeds(projections, firstRet, planEnd);
+  };
+  if (currentlySucceeds) {
+    if (minDelta >= 0) return null;
+    for (let delta = minDelta; delta < 0; delta++) {
+      if (evaluate(delta)) return delta;
+    }
+    return null;
+  }
+  if (maxDelta <= 0) return null;
+  for (let delta = 1; delta <= maxDelta; delta++) {
+    if (evaluate(delta)) return delta;
+  }
+  return null;
+}
 // ENGINE-EXTRACT-END
 
 /* ---------------- Settings menu: export / import (module level + memoized) ---------------- */
