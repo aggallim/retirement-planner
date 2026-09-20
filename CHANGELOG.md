@@ -7,6 +7,41 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-20 — "Can I retire?" headline verdict (011)
+
+- **New headline at the top of results**, replacing the mid-page "Longevity
+  Analysis" card rather than duplicating it: a direct on-track/needs-
+  attention status badge (reusing the existing excellent/warning/critical
+  severity split), a hedged supporting sentence naming a specific age
+  ("Under these assumptions, your plan currently supports retiring at
+  age 60" — deliberately not a flat yes/no, since the figure depends
+  entirely on the plan's assumptions), a couple of lightweight rule-based
+  insight lines, and an inline caveat pointing at the model's key
+  simplifications. The existing summary cards (pot, income, PLSA band)
+  move to directly beneath it as supporting detail.
+- **New supportable-retirement-age search** — `findSupportableDelta()`, a
+  bidirectional shared-delta search wrapping `projectJoint()` without
+  modifying it (individual mode is just the `person2 === null` case of
+  the same function). If the plan already succeeds, it looks for the
+  earliest retirement age it could still support; if it fails, the
+  smallest delay that fixes it. In couple mode the same delta is applied
+  to both people rather than solved independently per person. The search
+  is bounded by the existing per-person Retirement Age slider limits
+  (`[max(50, currentAge+1), 75]`) — reusing a constraint the UI already
+  enforces rather than inventing a new one — and reports "no supportable
+  age found within typical limits" rather than a number when nothing in
+  range changes the outcome.
+- **Reuses, not redefines, the existing success test.** The verdict is
+  driven by the same £1,000-combined-balance-from-first-retirement test
+  the old Longevity Analysis card already used (now extracted into
+  `planSucceeds()`), deliberately not a new margin/buffer definition.
+- Resolved via two rounds of the `grilling` skill — the second
+  specifically re-examining the two decisions where the chosen answer
+  diverged from the initial recommendation (computing a supportable age
+  for couples via a shared delta rather than skipping it, and hedging
+  the verdict's supporting sentence while keeping its status badge
+  direct).
+
 ## 2026-09-20 — Dismissable warning banner (008)
 
 - **Whole-banner dismiss**, via a new **×** close control on the header's

@@ -100,8 +100,9 @@ Both names are editable — tap the name to rename.
 
 ### 3.4 Reading the outputs
 
-- **Summary cards** — combined pot, household income, and PLSA living standard. These repeat in a sticky banner once you scroll.
-- **Longevity Analysis** — traffic light showing whether funds last to the plan horizon. Green means funded beyond the horizon; amber means a shortfall within ten years of it; red means an earlier shortfall.
+- **"Can I retire?" headline** — the first thing shown below any warnings. A status badge gives a direct read: **On track** (green) or **Needs attention** (amber/red, split by whether the shortfall is within ten years of the plan horizon or earlier). Beneath it, a sentence names a specific age, deliberately hedged ("Under these assumptions, your plan currently supports retiring at age 60") rather than a flat yes/no, since the figure depends entirely on the assumptions in your inputs. A couple of insight lines follow (e.g. how many years your pot is projected to last past — or short of — your plan horizon), then a caveat noting the model's key simplifications (no tax modelled, a fixed average return, no sequence-of-returns risk). The same progress bar previously shown under "Longevity Analysis" (see below) is carried over into this headline.
+- **Supportable retirement age.** Alongside the current-age sentence, the app searches for a different retirement age your plan would support — holding every other input fixed. If your plan already succeeds, it looks for the *earliest* age it could still work; if it currently fails, it looks for the smallest delay that fixes it. In joint mode this is a single shared adjustment applied equally to both people (e.g. "retire 3 years later than currently planned"), not solved independently per person. The search only considers ages within the same range the Retirement Age slider itself allows (roughly 50 to 75, per person); if nothing in that range changes the outcome, the headline says so explicitly rather than showing a number.
+- **Summary cards** — combined pot, household income, and PLSA living standard, now sitting just below the headline as supporting detail. These repeat in a sticky banner once you scroll.
 - **Wealth Projection** — stacked pension and ISA balances by calendar year, with mortgage debt shown below the zero line. Dashed reference lines mark each retirement and the mortgage-free year.
 - **Retirement Income vs Expenses** — income split by source (pension drawdown, ISA, State Pension) against the dashed target-expenses line. Where the bars fall short of the line, the plan is under-funded in that year.
 - **Living Standard gauge** — positions household income against the PLSA bands.
@@ -276,6 +277,7 @@ The engine was tested as a standalone module. Checks that pass:
 - Fixed drawdown order is respected: other savings, then Cash ISA, then Stocks & Shares ISA, then LISA
 - `migratePerson()` correctly maps an old single-ISA save onto the new sub-account shape, and is a no-op on an already-migrated save
 - **Individual-mode results are identical before and after the joint-planning rewrite** — the regression guard that mattered most
+- `findSupportableDelta()` (the "Can I retire?" supportable-age search, §3.4) finds the earliest workable retirement when a plan already succeeds; finds the *smallest* delay that fixes a plan that currently fails (verified against a manual scan of every smaller delta); applies one shared delta to both people in couple mode rather than solving each independently; and returns `null` — never a delta outside the existing per-person age bounds — when nothing in range fixes a failing plan
 
 The built PWA was additionally rendered in a headless browser to confirm it boots, calculates, toggles into couple mode and persists state.
 
