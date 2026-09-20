@@ -1603,6 +1603,91 @@ const IncomeChart = memo(function IncomeChart({
     name: "Target Expenses"
   })));
 });
+// The "Can I retire?" headline (spec/done/011-can-i-retire-headline.md),
+// replacing the old mid-page "Longevity Analysis" card. The status badge
+// stays direct/unhedged (icon + colour, reusing longevity's own
+// excellent/warning/critical convention); only the supporting sentence
+// that names a specific age is hedged.
+const VerdictHero = memo(function VerdictHero({
+  succeeds,
+  status,
+  firstRet,
+  planEnd,
+  fundedTo,
+  supportableDelta,
+  isCouple,
+  p1Name,
+  p1RetirementAge,
+  p2Name,
+  p2RetirementAge
+}) {
+  const sc = {
+    excellent: {
+      t: 'text-emerald-600',
+      b: 'bg-emerald-50',
+      br: 'border-emerald-200',
+      bar: 'bg-emerald-600'
+    },
+    warning: {
+      t: 'text-amber-600',
+      b: 'bg-amber-50',
+      br: 'border-amber-200',
+      bar: 'bg-amber-600'
+    },
+    critical: {
+      t: 'text-red-600',
+      b: 'bg-red-50',
+      br: 'border-red-200',
+      bar: 'bg-red-600'
+    }
+  }[status];
+  const nameAt = (name, age) => isCouple ? `${name} at ${age}` : `age ${age}`;
+  const currentAges = isCouple ? `${nameAt(p1Name, p1RetirementAge)}, ${nameAt(p2Name, p2RetirementAge)}` : `age ${p1RetirementAge}`;
+  const supportableAges = supportableDelta !== null ? isCouple ? `${nameAt(p1Name, p1RetirementAge + supportableDelta)}, ${nameAt(p2Name, p2RetirementAge + supportableDelta)}` : `age ${p1RetirementAge + supportableDelta}` : null;
+  let headline;
+  if (succeeds && supportableDelta === null) {
+    headline = `Under these assumptions, your plan currently supports retiring at ${currentAges}.`;
+  } else if (succeeds) {
+    headline = `Under these assumptions, your plan could support retiring as early as ${supportableAges}.`;
+  } else if (supportableDelta !== null) {
+    headline = `Under these assumptions, your plan doesn't currently support retiring at ${currentAges} — retiring at ${supportableAges} would.`;
+  } else {
+    headline = `Under these assumptions, your plan doesn't currently support retiring at ${currentAges}, and no later retirement age within typical limits fixes this.`;
+  }
+  const insights = [succeeds ? 'Your pot is projected to last beyond your plan horizon.' : `Your pot is projected to run out in ${fundedTo} — ${planEnd - fundedTo} year${planEnd - fundedTo === 1 ? '' : 's'} before your plan horizon of ${planEnd}.`];
+  if (supportableDelta !== null && supportableDelta < 0) {
+    insights.push(`You have a ${-supportableDelta}-year buffer past your target retirement age${isCouple ? 's' : ''}.`);
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: "mb-8 bg-white rounded-xl shadow-lg p-6 border border-slate-200"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-4 ${sc.b} ${sc.br}`
+  }, succeeds ? /*#__PURE__*/React.createElement(CheckCircle, {
+    className: `h-5 w-5 ${sc.t}`
+  }) : /*#__PURE__*/React.createElement(AlertTriangle, {
+    className: `h-5 w-5 ${sc.t}`
+  }), /*#__PURE__*/React.createElement("span", {
+    className: `text-sm font-bold ${sc.t}`
+  }, succeeds ? 'On track' : 'Needs attention')), /*#__PURE__*/React.createElement("p", {
+    className: "text-2xl font-bold text-slate-900 mb-4 serif"
+  }, headline), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 mb-4"
+  }, insights.map((line, i) => /*#__PURE__*/React.createElement("p", {
+    key: i,
+    className: "text-slate-700 text-sm"
+  }, line))), /*#__PURE__*/React.createElement("div", {
+    className: "h-3 bg-slate-200 rounded-full overflow-hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `h-full ${sc.bar}`,
+    style: {
+      width: `${Math.min(100, (fundedTo - firstRet) / Math.max(1, planEnd - firstRet) * 100)}%`
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex justify-between text-xs text-slate-600 mt-2 mb-4"
+  }, /*#__PURE__*/React.createElement("span", null, "First retirement (", firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", planEnd, ")")), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-500 mt-3"
+  }, "Based on a fixed average return, no tax on retirement income, and no sequence-of-returns risk — see Known limitations in the Assumptions panel."));
+});
 
 /* ---------------- Projection engine ---------------- */
 // ENGINE-EXTRACT-START
@@ -2224,21 +2309,39 @@ function RetirementCalculator() {
       }
     }
     const fundedTo = depleted || projections[projections.length - 1].year;
-    let status = 'excellent',
-      message = `Funded beyond plan (to ${fundedTo})`;
+    let status = 'excellent';
     if (depleted && depleted <= planEnd) {
       status = planEnd - depleted > 10 ? 'critical' : 'warning';
-      message = `Funds run out in ${depleted}`;
-    } else if (depleted) message = `Funded to ${depleted}`;
+    }
     return {
       fundedTo,
       depleted,
       planEnd,
       firstRet,
-      status,
-      message
+      status
     };
   }, [projections, d.p1, d.p2, isCouple]);
+  // The "Can I retire?" headline verdict (spec/done/011-can-i-retire-headline.md).
+  // succeeds reuses longevity's own depleted/planEnd fields via the same rule,
+  // extracted as planSucceeds() so this and findSupportableDelta() agree.
+  const verdict = useMemo(() => {
+    const succeeds = planSucceeds(projections, longevity.firstRet, longevity.planEnd);
+    const engineArgs = {
+      inflationRate: d.infl,
+      withdrawalRate: d.wr,
+      annualExpenses: d.exp,
+      healthcareCosts: d.hc,
+      mortgagePayment: d.mp,
+      mortgageYears: d.my,
+      person1: d.p1,
+      person2: d.partner ? d.p2 : null
+    };
+    const supportableDelta = findSupportableDelta(engineArgs, succeeds);
+    return {
+      succeeds,
+      supportableDelta
+    };
+  }, [projections, longevity.firstRet, longevity.planEnd, d.infl, d.wr, d.exp, d.hc, d.mp, d.my, d.p1, d.p2, d.partner]);
   const warnings = useMemo(() => {
     const w = [];
     const check = (p, label) => {
@@ -2277,26 +2380,6 @@ function RetirementCalculator() {
   const gMin = isCouple ? 15000 : 10000,
     gMax = isCouple ? 70000 : 50000;
   const gPos = v => Math.min(98, Math.max(1, (v - gMin) / (gMax - gMin) * 100));
-  const sc = {
-    excellent: {
-      t: 'text-emerald-600',
-      b: 'bg-emerald-50',
-      br: 'border-emerald-200',
-      bar: 'bg-emerald-600'
-    },
-    warning: {
-      t: 'text-amber-600',
-      b: 'bg-amber-50',
-      br: 'border-amber-200',
-      bar: 'bg-amber-600'
-    },
-    critical: {
-      t: 'text-red-600',
-      b: 'bg-red-50',
-      br: 'border-red-200',
-      bar: 'bg-red-600'
-    }
-  }[longevity.status];
   const p1RetYear = CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge);
   const p2RetYear = CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge);
   return /*#__PURE__*/React.createElement("div", {
@@ -2473,7 +2556,19 @@ function RetirementCalculator() {
     className: "ml-3 flex-shrink-0 text-red-600 hover:text-red-800"
   }, /*#__PURE__*/React.createElement(X, {
     className: "h-4 w-4"
-  }))), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement(VerdictHero, {
+    succeeds: verdict.succeeds,
+    status: longevity.status,
+    firstRet: longevity.firstRet,
+    planEnd: longevity.planEnd,
+    fundedTo: longevity.fundedTo,
+    supportableDelta: verdict.supportableDelta,
+    isCouple: isCouple,
+    p1Name: d.p1.name,
+    p1RetirementAge: d.p1.retirementAge,
+    p2Name: d.p2.name,
+    p2RetirementAge: d.p2.retirementAge
+  }), /*#__PURE__*/React.createElement("div", {
     className: `grid grid-cols-1 ${isCouple ? 'lg:grid-cols-4' : 'md:grid-cols-3'} gap-5 mb-8`
   }, isCouple && /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-5 border border-slate-200"
@@ -2720,31 +2815,6 @@ function RetirementCalculator() {
   })))), /*#__PURE__*/React.createElement("div", {
     className: "lg:col-span-2 space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "text-2xl font-bold text-slate-900 mb-6 serif"
-  }, "Longevity Analysis"), /*#__PURE__*/React.createElement("div", {
-    className: `p-6 rounded-xl border-2 ${sc.b} ${sc.br}`
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-between mb-4"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: `text-3xl font-bold ${sc.t}`
-  }, longevity.message), /*#__PURE__*/React.createElement("p", {
-    className: "text-slate-600 mt-2"
-  }, "Plan horizon to ", longevity.planEnd, " (", isCouple ? 'longer of both life expectancies' : `age ${d.p1.lifeExpectancy}`, ")")), longevity.status === 'excellent' ? /*#__PURE__*/React.createElement(CheckCircle, {
-    className: "h-16 w-16 text-emerald-600 flex-shrink-0"
-  }) : /*#__PURE__*/React.createElement(AlertTriangle, {
-    className: `h-16 w-16 ${sc.t} flex-shrink-0`
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "h-3 bg-slate-200 rounded-full overflow-hidden"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: `h-full ${sc.bar}`,
-    style: {
-      width: `${Math.min(100, (longevity.fundedTo - longevity.firstRet) / Math.max(1, longevity.planEnd - longevity.firstRet) * 100)}%`
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex justify-between text-xs text-slate-600 mt-2"
-  }, /*#__PURE__*/React.createElement("span", null, "First retirement (", longevity.firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", longevity.planEnd, ")")))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-2xl font-bold text-slate-900 mb-2 serif"
