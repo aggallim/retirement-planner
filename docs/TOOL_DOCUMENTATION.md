@@ -116,9 +116,11 @@ The red banner appears when any of these trigger:
 - Household income falls below the PLSA minimum
 - Funds are projected to run out before the plan horizon
 
+The banner has a **×** close control. Dismissing it hides the whole banner — not individual warning lines — and persists across reloads on that device. It's tied to the exact set of warnings shown at the time: if any input change alters which warnings apply (a figure changes, a warning appears or disappears), the banner reappears automatically with the new set. This is separate from the *"This file contains your personal financial figures..."* warning in §3.7, which is shown every time regardless of prior dismissal — that one is a data-handling caution aimed at whoever currently has the Data panel open, not necessarily the person who saw it last time, so a persistent dismiss wouldn't be appropriate there the way it is for this planning-condition banner.
+
 ### 3.6 Saving and resetting
 
-Figures auto-save about half a second after each change — a brief **Saved** appears in the header. Data lives in that browser's storage on that device only, so your phone and laptop keep separate plans. The **↺ Reset** button clears the saved plan and restores defaults.
+Figures auto-save about half a second after each change — a brief **Saved** appears in the header. Data lives in that browser's storage on that device only, so your phone and laptop keep separate plans. The **↺ Reset** button clears the saved plan and restores defaults, including any dismissed warning banner.
 
 ### 3.7 Export and import
 

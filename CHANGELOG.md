@@ -7,6 +7,24 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-20 — Dismissable warning banner (008)
+
+- **Whole-banner dismiss**, via a new **×** close control on the header's
+  red warning banner. Closing it hides the entire banner, not individual
+  warning lines.
+- **Persists across reloads**, via a new `ukRetirementPlanner.dismissedWarnings.v1`
+  localStorage key, deliberately separate from `STORE_KEY`/`PERSISTED_FIELDS`
+  — same reasoning as the dark mode override key (010): "have I seen this"
+  is device-local UI state, not plan data, so it never travels through
+  Export/Import.
+- **Keyed to the exact warning set shown at dismissal time**, via a
+  `JSON.stringify` equality check against the live `warnings` array —
+  order-sensitive is fine since `warnings` is built in a fixed order for a
+  given input set. If any input change alters which warnings apply, the
+  stored snapshot no longer matches and the banner reappears automatically.
+- **↺ Reset clears the dismissal** too, alongside the rest of the saved
+  plan.
+
 ## 2026-09-18 — Dark mode support (010)
 
 - **System / Light / Dark toggle**, added to the existing ⚙ Data menu
