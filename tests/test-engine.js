@@ -60,6 +60,7 @@ function loadEngine(html) {
 
   const rawProjectJoint = sandbox.projectJoint;
   const rawMigratePerson = sandbox.migratePerson;
+  const rawFindSupportableDelta = sandbox.findSupportableDelta;
   const CURRENT_YEAR = sandbox.__CURRENT_YEAR;
 
   if (typeof rawProjectJoint !== 'function') {
@@ -67,6 +68,9 @@ function loadEngine(html) {
   }
   if (typeof rawMigratePerson !== 'function') {
     throw new Error('Extraction sanity check failed: migratePerson is not a function after eval');
+  }
+  if (typeof rawFindSupportableDelta !== 'function') {
+    throw new Error('Extraction sanity check failed: findSupportableDelta is not a function after eval');
   }
   if (typeof CURRENT_YEAR !== 'number') {
     throw new Error('Extraction sanity check failed: CURRENT_YEAR is not a number after eval');
@@ -81,13 +85,16 @@ function loadEngine(html) {
     const result = rawMigratePerson(input);
     return result === undefined ? undefined : JSON.parse(JSON.stringify(result));
   };
-  return { projectJoint, migratePerson, CURRENT_YEAR };
+  // findSupportableDelta returns a plain number or null — no cross-realm
+  // object identity issue, so no JSON round-trip needed.
+  const findSupportableDelta = (engineArgs, currentlySucceeds) => rawFindSupportableDelta(engineArgs, currentlySucceeds);
+  return { projectJoint, migratePerson, findSupportableDelta, CURRENT_YEAR };
 }
 
-let projectJoint, migratePerson, CURRENT_YEAR;
+let projectJoint, migratePerson, findSupportableDelta, CURRENT_YEAR;
 try {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
-  ({ projectJoint, migratePerson, CURRENT_YEAR } = loadEngine(html));
+  ({ projectJoint, migratePerson, findSupportableDelta, CURRENT_YEAR } = loadEngine(html));
 } catch (err) {
   console.error('FATAL: could not extract a runnable projectJoint() from index.html');
   console.error(err.message);
@@ -371,6 +378,103 @@ const SCENARIO_DRAW_ORDER = {
   person2: null
 };
 
+// Scenario J — solo, plan already comfortably succeeds today (a pension pot
+// far larger than needed at the standard withdrawal rate).
+// Covers: findSupportableDelta() bidirectional search, earliest-retirement branch.
+const SCENARIO_SUPPORTABLE_ALREADY_SUCCEEDS = {
+  inflationRate: 2,
+  withdrawalRate: 4,
+  annualExpenses: 5000,
+  healthcareCosts: 0,
+  mortgagePayment: 0,
+  mortgageYears: 0,
+  person1: person({
+    currentAge: 50,
+    retirementAge: 65,
+    lifeExpectancy: 90,
+    pensionPot: 2000000,
+    pensionContribution: 0,
+    employerContribution: 0,
+    pensionGrowth: 5,
+    ssIsaBalance: 0,
+    ssIsaContribution: 0,
+    takeLumpSum: false
+  }),
+  person2: null
+};
+
+// Scenario K — solo, plan fails today but a later retirement age (within the
+// existing [max(50, currentAge+1), 75] slider bounds) fixes it. Low pension
+// growth (2%) relative to the fixed 4%-rule withdrawal is what makes the pot
+// eventually deplete; delaying retirement both shrinks the years remaining
+// before the (retirement-age-independent) plan horizon and lets the pot run
+// a few more years before the same relative depletion catches up with it.
+// Covers: findSupportableDelta() bidirectional search, fix-a-failing-plan
+// branch, and that it returns the *smallest* delta that fixes it (verified
+// against a manual scan of every delta from 1 to the bound).
+const SCENARIO_SUPPORTABLE_FIXABLE = {
+  inflationRate: 2,
+  withdrawalRate: 4,
+  annualExpenses: 30000,
+  healthcareCosts: 0,
+  mortgagePayment: 0,
+  mortgageYears: 0,
+  person1: person({
+    currentAge: 60,
+    retirementAge: 61,
+    lifeExpectancy: 95,
+    statePensionAge: 67,
+    statePensionAmount: 0,
+    pensionPot: 100000,
+    pensionContribution: 0,
+    employerContribution: 0,
+    pensionGrowth: 2,
+    ssIsaBalance: 0,
+    ssIsaContribution: 0,
+    takeLumpSum: false
+  }),
+  person2: null
+};
+
+// Scenario L — couple, same shape as Scenario K, confirming the shared-delta
+// search applies the same delta to both people rather than solving per-person.
+const SCENARIO_SUPPORTABLE_FIXABLE_COUPLE = {
+  inflationRate: 2,
+  withdrawalRate: 4,
+  annualExpenses: 30000,
+  healthcareCosts: 0,
+  mortgagePayment: 0,
+  mortgageYears: 0,
+  person1: person({
+    currentAge: 60,
+    retirementAge: 61,
+    lifeExpectancy: 95,
+    statePensionAge: 67,
+    statePensionAmount: 0,
+    pensionPot: 60000,
+    pensionContribution: 0,
+    employerContribution: 0,
+    pensionGrowth: 2,
+    ssIsaBalance: 0,
+    ssIsaContribution: 0,
+    takeLumpSum: false
+  }),
+  person2: person({
+    currentAge: 58,
+    retirementAge: 61,
+    lifeExpectancy: 93,
+    statePensionAge: 67,
+    statePensionAmount: 0,
+    pensionPot: 60000,
+    pensionContribution: 0,
+    employerContribution: 0,
+    pensionGrowth: 2,
+    ssIsaBalance: 0,
+    ssIsaContribution: 0,
+    takeLumpSum: false
+  })
+};
+
 // Individual-mode regression baseline — a fully-literal, self-documenting
 // scenario using the app's own real default input values. Regenerating this
 // fixture (via --update-baseline) is a deliberate, reviewed act, never done
@@ -611,6 +715,72 @@ check('migratePerson() is a no-op on an already-new-shape save, and on undefined
   const newShape = { ...DEFAULT_PERSON };
   assert.deepStrictEqual(migratePerson(newShape), newShape);
   assert.strictEqual(migratePerson(undefined), undefined);
+});
+
+// Same £1,000/first-retirement/longer-life-expectancy rule findSupportableDelta
+// itself uses (spec/done/011-can-i-retire-headline.md) — hand-rolled here
+// rather than calling the engine's internal planSucceeds(), consistent with
+// this file's existing style of re-deriving depletion from raw projectJoint()
+// output (see the Depletion check above) rather than depending on unexported
+// helpers.
+function succeedsAt(args) {
+  const data = projectJoint(args);
+  const people = [args.person1, args.person2].filter(Boolean);
+  const firstRet = Math.min(...people.map((p) => CURRENT_YEAR + (p.retirementAge - p.currentAge)));
+  const planEnd = Math.max(...people.map((p) => CURRENT_YEAR + (p.lifeExpectancy - p.currentAge)));
+  for (const row of data) {
+    if (row.year < firstRet) continue;
+    if (row.totalPension + row.totalIsa + row.totalOtherSavings < 1000) return row.year > planEnd;
+  }
+  return true;
+}
+// Bumps every present person's retirementAge by the same delta, mirroring
+// findSupportableDelta()'s own shared-delta bump.
+function bumpRetirementAge(args, delta) {
+  const bump = (p) => (p ? { ...p, retirementAge: p.retirementAge + delta } : p);
+  return { ...args, person1: bump(args.person1), person2: bump(args.person2) };
+}
+
+check('findSupportableDelta() finds the earliest workable retirement when the plan already succeeds', () => {
+  const succeeds = succeedsAt(SCENARIO_SUPPORTABLE_ALREADY_SUCCEEDS);
+  assert.strictEqual(succeeds, true, 'expected this scenario to already succeed at its current retirement age');
+  const delta = findSupportableDelta(SCENARIO_SUPPORTABLE_ALREADY_SUCCEEDS, succeeds);
+  // Person1 is 50, so the earliest retirement age the slider allows is
+  // max(50, 50+1) = 51, i.e. a delta of 51 - 65 = -14 — the floor of the
+  // search range, since the pot is far larger than this plan ever needs.
+  assert.strictEqual(delta, -14);
+  assert.strictEqual(succeedsAt(bumpRetirementAge(SCENARIO_SUPPORTABLE_ALREADY_SUCCEEDS, delta)), true);
+});
+
+check('findSupportableDelta() finds the smallest fix for a plan that currently fails', () => {
+  const succeeds = succeedsAt(SCENARIO_SUPPORTABLE_FIXABLE);
+  assert.strictEqual(succeeds, false, 'expected this scenario to fail at its current retirement age');
+  const delta = findSupportableDelta(SCENARIO_SUPPORTABLE_FIXABLE, succeeds);
+  assert.strictEqual(typeof delta, 'number');
+  assert.ok(delta > 0, 'expected a positive (later) delta to fix a currently-failing plan');
+  // Every smaller in-range delta must still fail, or `delta` wouldn't be the smallest fix.
+  for (let d = 1; d < delta; d++) {
+    assert.strictEqual(succeedsAt(bumpRetirementAge(SCENARIO_SUPPORTABLE_FIXABLE, d)), false, `delta ${d} unexpectedly already fixed the plan`);
+  }
+  assert.strictEqual(succeedsAt(bumpRetirementAge(SCENARIO_SUPPORTABLE_FIXABLE, delta)), true);
+});
+
+check('findSupportableDelta() applies one shared delta to both people in couple mode, not two independent ones', () => {
+  const succeeds = succeedsAt(SCENARIO_SUPPORTABLE_FIXABLE_COUPLE);
+  assert.strictEqual(succeeds, false, 'expected this scenario to fail at its current retirement ages');
+  const delta = findSupportableDelta(SCENARIO_SUPPORTABLE_FIXABLE_COUPLE, succeeds);
+  assert.ok(delta > 0, 'expected a positive (later) delta to fix a currently-failing plan');
+  const bumped = bumpRetirementAge(SCENARIO_SUPPORTABLE_FIXABLE_COUPLE, delta);
+  // The same delta was applied to both people, not solved independently.
+  assert.strictEqual(bumped.person1.retirementAge, SCENARIO_SUPPORTABLE_FIXABLE_COUPLE.person1.retirementAge + delta);
+  assert.strictEqual(bumped.person2.retirementAge, SCENARIO_SUPPORTABLE_FIXABLE_COUPLE.person2.retirementAge + delta);
+  assert.strictEqual(succeedsAt(bumped), true);
+});
+
+check('findSupportableDelta() returns null when no in-range delta fixes a failing plan', () => {
+  const succeeds = succeedsAt(SCENARIO_F);
+  assert.strictEqual(succeeds, false, 'expected the deliberately under-funded Scenario F to fail');
+  assert.strictEqual(findSupportableDelta(SCENARIO_F, succeeds), null);
 });
 
 check('Individual-mode results are byte-for-byte identical to a known-good baseline', () => {
