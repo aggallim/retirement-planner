@@ -791,6 +791,21 @@ const saveTheme = theme => {
   } catch {}
 };
 
+/* ---------------- Dismissed warnings ---------------- */
+// Separate from STORE_KEY/PERSISTED_FIELDS on purpose, same reasoning as
+// THEME_KEY above — "have I seen this warning set" is device-local UI
+// state, not plan data, so it never round-trips through Export/Import
+// (spec/done/008-dismissable-warning-banner.md decision 5).
+const DISMISSED_WARNINGS_KEY = 'ukRetirementPlanner.dismissedWarnings.v1';
+const DISMISSED = (() => {
+  try {
+    const raw = localStorage.getItem(DISMISSED_WARNINGS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+})();
+
 /* ---------------- Export / Import (JSON) ---------------- */
 // PERSISTED_FIELDS is the single source of truth for "what's in a plan" —
 // the auto-save effect in RetirementCalculator, exportPlan and
@@ -836,6 +851,11 @@ const importPlanFields = parsed => {
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v9',
+  date: '2026-09-20',
+  title: 'Warning banner can now be dismissed',
+  items: ['The red warning banner (pension/ISA allowance breaches, a State Pension gap, income below the minimum living standard, funds running out early) can now be closed with the × button once you\'ve seen it. It stays hidden across reloads, but reappears if the underlying warnings change, and is cleared by ↺ Reset.']
+}, {
   version: 'v8',
   date: '2026-09-18',
   title: 'Added dark mode',
@@ -1954,6 +1974,7 @@ function RetirementCalculator() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [theme, setTheme] = useState(loadTheme()); // 'system' | 'light' | 'dark'
   const [systemPrefersDark, setSystemPrefersDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [dismissedWarnings, setDismissedWarnings] = useState(DISMISSED);
   const isDark = theme === 'dark' || theme === 'system' && systemPrefersDark;
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 420);
@@ -1998,6 +2019,9 @@ function RetirementCalculator() {
   const resetAll = useCallback(() => {
     if (!window.confirm('Reset all figures back to defaults? Your saved plan will be cleared.')) return;
     clearSaved();
+    try {
+      localStorage.removeItem(DISMISSED_WARNINGS_KEY);
+    } catch {}
     window.location.reload();
   }, []);
 
@@ -2181,6 +2205,16 @@ function RetirementCalculator() {
     if (longevity.depleted && longevity.depleted <= longevity.planEnd) w.push(`Funds projected to run out in ${longevity.depleted}, before plan end (${longevity.planEnd})`);
     return w;
   }, [d.p1, d.p2, isCouple, household, longevity]);
+  // Order-sensitive is fine — warnings is built in a fixed, deterministic
+  // order for a given input set, so two equal warning sets always produce
+  // the same array (spec/done/008-dismissable-warning-banner.md).
+  const warningsDismissed = dismissedWarnings !== null && JSON.stringify(dismissedWarnings) === JSON.stringify(warnings);
+  const dismissWarnings = useCallback(() => {
+    setDismissedWarnings(warnings);
+    try {
+      localStorage.setItem(DISMISSED_WARNINGS_KEY, JSON.stringify(warnings));
+    } catch {}
+  }, [warnings]);
   const incomeData = useMemo(() => projections.filter(r => r.year >= longevity.firstRet && r.year <= longevity.firstRet + 30).map(r => ({
     year: r.year,
     Pension: r.pensionWithdrawal,
@@ -2374,16 +2408,22 @@ function RetirementCalculator() {
     className: `text-xs md:text-xl font-bold break-words ${livingStandard.color}`
   }, livingStandard.level)))), /*#__PURE__*/React.createElement("div", {
     className: "max-w-7xl mx-auto px-6 py-8"
-  }, warnings.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, warnings.length > 0 && !warningsDismissed && /*#__PURE__*/React.createElement("div", {
     className: "mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start"
   }, /*#__PURE__*/React.createElement(AlertTriangle, {
     className: "h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0"
   }), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-1.5"
+    className: "space-y-1.5 flex-1"
   }, warnings.map((w, i) => /*#__PURE__*/React.createElement("p", {
     key: i,
     className: "text-red-800 text-sm font-medium"
-  }, w)))), /*#__PURE__*/React.createElement("div", {
+  }, w))), /*#__PURE__*/React.createElement("button", {
+    onClick: dismissWarnings,
+    "aria-label": "Dismiss warnings",
+    className: "ml-3 flex-shrink-0 text-red-600 hover:text-red-800"
+  }, /*#__PURE__*/React.createElement(X, {
+    className: "h-4 w-4"
+  }))), /*#__PURE__*/React.createElement("div", {
     className: `grid grid-cols-1 ${isCouple ? 'lg:grid-cols-4' : 'md:grid-cols-3'} gap-5 mb-8`
   }, isCouple && /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-5 border border-slate-200"
