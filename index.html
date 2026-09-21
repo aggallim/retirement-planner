@@ -1655,9 +1655,8 @@ const VerdictHero = memo(function VerdictHero({
       bar: 'bg-red-600'
     }
   }[status];
-  const nameAt = (name, age) => isCouple ? `${name} at ${age}` : `age ${age}`;
-  const currentAges = isCouple ? `${nameAt(p1Name, p1RetirementAge)}, ${nameAt(p2Name, p2RetirementAge)}` : `age ${p1RetirementAge}`;
-  const supportableAges = supportableDelta !== null ? isCouple ? `${nameAt(p1Name, p1RetirementAge + supportableDelta)}, ${nameAt(p2Name, p2RetirementAge + supportableDelta)}` : `age ${p1RetirementAge + supportableDelta}` : null;
+  const currentAges = isCouple ? `${nameAtAge(p1Name, p1RetirementAge, isCouple)}, ${nameAtAge(p2Name, p2RetirementAge, isCouple)}` : `age ${p1RetirementAge}`;
+  const supportableAges = supportableDelta !== null ? isCouple ? `${nameAtAge(p1Name, p1RetirementAge + supportableDelta, isCouple)}, ${nameAtAge(p2Name, p2RetirementAge + supportableDelta, isCouple)}` : `age ${p1RetirementAge + supportableDelta}` : null;
   let headline;
   if (succeeds && supportableDelta === null) {
     headline = `Under these assumptions, your plan currently supports retiring at ${currentAges}.`;
@@ -1700,7 +1699,64 @@ const VerdictHero = memo(function VerdictHero({
     className: "flex justify-between text-xs text-slate-600 mt-2 mb-4"
   }, /*#__PURE__*/React.createElement("span", null, "First retirement (", firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", planEnd, ")")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-3"
-  }, "Based on a fixed average return, no tax on retirement income, and no sequence-of-returns risk — see Known limitations in the Assumptions panel."));
+  }, "Based on a fixed average return, no tax on retirement income, and no sequence-of-returns risk — see Known limitations in the ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => scrollAndHighlight('assumptions-panel'),
+    className: "underline hover:text-slate-700"
+  }, "Assumptions panel"), "."));
+});
+const AssumptionsPanel = memo(function AssumptionsPanel({
+  isCouple,
+  p1Name,
+  p2Name,
+  p1PensionGrowth,
+  p2PensionGrowth,
+  p1RetirementAge,
+  p2RetirementAge,
+  p1LifeExpectancy,
+  p2LifeExpectancy,
+  p1StatePensionAmount,
+  p1StatePensionAge,
+  p2StatePensionAmount,
+  p2StatePensionAge,
+  inflationRate,
+  annualExpenses,
+  onShowFullAssumptions
+}) {
+  const valueBtn = (text, anchorId) => /*#__PURE__*/React.createElement("button", {
+    key: anchorId,
+    type: "button",
+    onClick: () => scrollAndHighlight(anchorId),
+    className: "text-sm font-semibold text-slate-900 hover:text-blue-600 underline decoration-dotted underline-offset-2"
+  }, text);
+  const personPair = (p1Text, p1Anchor, p2Text, p2Anchor) => isCouple ? [valueBtn(p1Text, p1Anchor), ", ", valueBtn(p2Text, p2Anchor)] : valueBtn(p1Text, p1Anchor);
+  const row = (label, value, tooltip) => /*#__PURE__*/React.createElement("div", {
+    key: label,
+    className: "flex items-start justify-between gap-3 py-2 border-b border-slate-100 last:border-b-0"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm text-slate-600 flex items-center gap-1.5"
+  }, label, tooltip && /*#__PURE__*/React.createElement("span", {
+    className: "tooltip-trigger relative inline-flex"
+  }, /*#__PURE__*/React.createElement(Info, {
+    className: "h-3.5 w-3.5 text-slate-400 cursor-help"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "tooltip-content absolute left-0 bottom-full mb-2 w-56 bg-slate-900 text-white text-xs p-2.5 rounded-lg shadow-xl z-20 font-normal"
+  }, tooltip))), /*#__PURE__*/React.createElement("span", {
+    className: "text-right"
+  }, value));
+  const rows = [row('Return', personPair(nameValue(p1Name, `${p1PensionGrowth}%`, isCouple), `assumption-return-p1`, nameValue(p2Name, `${p2PensionGrowth}%`, isCouple), `assumption-return-p2`), "Shown as each person's pension growth rate — the figure most closely tied to retirement outcomes. Cash ISA, Stocks & Shares ISA and LISA growth rates are set separately below."), row('Inflation', valueBtn(`${inflationRate}%`, 'assumption-inflation')), row('Retirement age', personPair(nameAtAge(p1Name, p1RetirementAge, isCouple), `assumption-retirement-age-p1`, nameAtAge(p2Name, p2RetirementAge, isCouple), `assumption-retirement-age-p2`)), row('Life expectancy', personPair(nameAtAge(p1Name, p1LifeExpectancy, isCouple), `assumption-life-expectancy-p1`, nameAtAge(p2Name, p2LifeExpectancy, isCouple), `assumption-life-expectancy-p2`)), row('Spending', valueBtn(`${formatCurrency(annualExpenses)}/yr (excl. mortgage)`, 'assumption-spending')), row('State Pension', personPair(nameValue(p1Name, `${formatCurrency(p1StatePensionAmount)}/yr from age ${p1StatePensionAge}`, isCouple), `assumption-state-pension-p1`, nameValue(p2Name, `${formatCurrency(p2StatePensionAmount)}/yr from age ${p2StatePensionAge}`, isCouple), `assumption-state-pension-p2`))];
+  return /*#__PURE__*/React.createElement("div", {
+    id: "assumptions-panel",
+    className: "mb-8 bg-white rounded-xl shadow-lg p-6 border border-slate-200"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-bold text-slate-900 mb-1 serif"
+  }, "Your projection assumes..."), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-slate-500 mb-4"
+  }, "Click any figure to jump to where it's set."), /*#__PURE__*/React.createElement("div", null, rows), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onShowFullAssumptions,
+    className: "mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
+  }, "See full assumptions & disclaimers ↓"));
 });
 
 /* ---------------- Projection engine ---------------- */
@@ -2186,6 +2242,10 @@ function RetirementCalculator() {
     }, 600);
     return () => clearTimeout(t);
   }, [hasPartner, person1, person2, annualExpenses, healthcareCosts, mortgagePayment, mortgageYears, inflationRate, withdrawalRate]);
+  const jumpToFullAssumptions = useCallback(() => {
+    setShowAssumptions(true);
+    scrollAndHighlight('assumptions-disclaimers');
+  }, []);
   const resetAll = useCallback(() => {
     if (!window.confirm('Reset all figures back to defaults? Your saved plan will be cleared.')) return;
     clearSaved();
@@ -2613,6 +2673,23 @@ function RetirementCalculator() {
     p1RetirementAge: d.p1.retirementAge,
     p2Name: d.p2.name,
     p2RetirementAge: d.p2.retirementAge
+  }), /*#__PURE__*/React.createElement(AssumptionsPanel, {
+    isCouple: isCouple,
+    p1Name: d.p1.name,
+    p2Name: d.p2.name,
+    p1PensionGrowth: d.p1.pensionGrowth,
+    p2PensionGrowth: d.p2.pensionGrowth,
+    p1RetirementAge: d.p1.retirementAge,
+    p2RetirementAge: d.p2.retirementAge,
+    p1LifeExpectancy: d.p1.lifeExpectancy,
+    p2LifeExpectancy: d.p2.lifeExpectancy,
+    p1StatePensionAmount: d.p1.statePensionAmount,
+    p1StatePensionAge: d.p1.statePensionAge,
+    p2StatePensionAmount: d.p2.statePensionAmount,
+    p2StatePensionAge: d.p2.statePensionAge,
+    inflationRate: d.infl,
+    annualExpenses: d.exp,
+    onShowFullAssumptions: jumpToFullAssumptions
   }), /*#__PURE__*/React.createElement("div", {
     className: `grid grid-cols-1 ${isCouple ? 'lg:grid-cols-4' : 'md:grid-cols-3'} gap-5 mb-8`
   }, isCouple && /*#__PURE__*/React.createElement("div", {
