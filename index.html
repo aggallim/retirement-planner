@@ -1726,7 +1726,13 @@ const VerdictHero = memo(function VerdictHero({
     className: "flex justify-between text-xs text-slate-600 mt-2 mb-4"
   }, /*#__PURE__*/React.createElement("span", null, "First retirement (", firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", planEnd, ")")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-3"
-  }, "Based on a fixed average return, no tax on retirement income, and no sequence-of-returns risk — see Known limitations in the ", /*#__PURE__*/React.createElement("button", {
+  }, "Based on a fixed average return, no tax on retirement income, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement("span", {
+    className: "tooltip-trigger relative inline-flex align-text-top"
+  }, /*#__PURE__*/React.createElement(Info, {
+    className: "h-3 w-3 text-slate-400 cursor-help"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "tooltip-content absolute left-0 bottom-full mb-2 w-56 bg-slate-900 text-white text-xs p-2.5 rounded-lg shadow-xl z-20 font-normal"
+  }, "Sometimes called \"sequence-of-returns risk\" — a poor run of returns in your first few retirement years does more damage than the same average return spread evenly, because you're drawing down your pot at the same time.")), " — see Known limitations in the ", /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => scrollAndHighlight('assumptions-panel'),
     className: "underline hover:text-slate-700"
