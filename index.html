@@ -2275,6 +2275,7 @@ function RetirementCalculator() {
   const [withdrawalRate, setWithdrawalRate] = useState(pick('withdrawalRate', 4));
   const [justSaved, setJustSaved] = useState(false);
   const [showAssumptions, setShowAssumptions] = useState(false);
+  const [showPotBreakdown, setShowPotBreakdown] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [theme, setTheme] = useState(loadTheme()); // 'system' | 'light' | 'dark'
   const [systemPrefersDark, setSystemPrefersDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -2470,6 +2471,7 @@ function RetirementCalculator() {
     };
   }, [projections, d.p1, d.p2, isCouple, p1Summary, p2Summary]);
   const livingStandard = useMemo(() => livingStandardFor(household.annualIncome, isCouple), [household.annualIncome, isCouple]);
+  const potBreakdown = useMemo(() => computePotBreakdown(isCouple ? [d.p1, d.p2] : [d.p1], projections, household.year), [d.p1, d.p2, isCouple, projections, household.year]);
   const longevity = useMemo(() => {
     const firstRet = Math.min(CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge) : Infinity);
     const planEnd = Math.max(CURRENT_YEAR + (d.p1.lifeExpectancy - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.lifeExpectancy - d.p2.currentAge) : -Infinity);
@@ -2798,7 +2800,24 @@ function RetirementCalculator() {
     className: "text-sm font-semibold text-slate-500 tabular mt-0.5"
   }, formatToday(deflate(household.totalPot, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
-  }, "Under these assumptions — when ", isCouple ? 'both retired' : 'retired', " (", household.year, ")")), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions — when ", isCouple ? 'both retired' : 'retired', " (", household.year, ")"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setShowPotBreakdown(v => !v),
+    className: "mt-3 flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+  }, "Explain this ", showPotBreakdown ? /*#__PURE__*/React.createElement(ChevronUp, {
+    className: "h-3.5 w-3.5"
+  }) : /*#__PURE__*/React.createElement(ChevronDown, {
+    className: "h-3.5 w-3.5"
+  })), showPotBreakdown && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 pt-2 border-t border-slate-100 space-y-1 text-xs"
+  }, [['Starting balance', potBreakdown.startingBalance], ['Contributions', potBreakdown.contributions], ['Growth', potBreakdown.growth], ['Withdrawals', potBreakdown.withdrawals]].map(([label, value]) => /*#__PURE__*/React.createElement("div", {
+    key: label,
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-500"
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-slate-900 tabular"
+  }, formatCurrency(value)))))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-5 border border-slate-200"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-2"
