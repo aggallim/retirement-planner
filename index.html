@@ -1959,6 +1959,27 @@ function findSupportableDelta(engineArgs, currentlySucceeds) {
 }
 // ENGINE-EXTRACT-END
 
+// Scroll+highlight for any assumption anchor (spec/012-assumptions-panel.md
+// decision 4). Pure DOM: getElementById + a CSS animation class, restarted
+// on repeat clicks via a forced reflow. No React state needed — this is
+// the "plain refs/DOM ids are enough for a single-file app" case the
+// intent's constraints call out.
+function scrollAndHighlight(anchorId) {
+  const el = document.getElementById(anchorId);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.remove('assumption-highlight');
+  void el.offsetWidth; // restart the animation if the same target is clicked again quickly
+  el.classList.add('assumption-highlight');
+}
+// Shared couple-mode age formatting (was VerdictHero's local `nameAt`,
+// index.html:1649 — hoisted so AssumptionsPanel can reuse it without
+// duplicating the string logic).
+const nameAtAge = (name, age, isCouple) => isCouple ? `${name} at ${age}` : `age ${age}`;
+// Non-age per-person values (%, £) read oddly with "at" ("Aaron at 6%"),
+// so they get their own separator rather than forcing nameAtAge's pattern.
+const nameValue = (name, value, isCouple) => isCouple ? `${name}: ${value}` : value;
+
 /* ---------------- Settings menu: export / import (module level + memoized) ---------------- */
 const THEME_OPTIONS = [['system', Monitor, 'System'], ['light', Sun, 'Light'], ['dark', Moon, 'Dark']];
 const SettingsMenu = memo(function SettingsMenu({
@@ -2391,6 +2412,16 @@ function RetirementCalculator() {
     className: "min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100"
   }, /*#__PURE__*/React.createElement("style", null, `
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&display=swap');
+        @keyframes assumption-highlight-flash {
+          0% { background-color: rgba(37,99,235,.18); box-shadow: 0 0 0 3px rgba(37,99,235,.35); }
+          100% { background-color: transparent; box-shadow: 0 0 0 3px rgba(37,99,235,0); }
+        }
+        .assumption-highlight { animation: assumption-highlight-flash 1.6s ease-out; border-radius: 0.75rem; }
+        .dark .assumption-highlight { animation-name: assumption-highlight-flash-dark; }
+        @keyframes assumption-highlight-flash-dark {
+          0% { background-color: rgba(96,165,250,.18); box-shadow: 0 0 0 3px rgba(96,165,250,.35); }
+          100% { background-color: transparent; box-shadow: 0 0 0 3px rgba(96,165,250,0); }
+        }
         * { font-family: 'Inter Tight', sans-serif; }
         h1,h2,h3,h4,.serif { font-family: 'Fraunces', serif; letter-spacing: -0.01em; }
         .tabular { font-variant-numeric: tabular-nums; }
