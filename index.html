@@ -2194,6 +2194,12 @@ const SettingsMenu = memo(function SettingsMenu({
   }, React.createElement(X, {
     className: "h-4 w-4 text-slate-400 hover:text-slate-600"
   }))), view === 'menu' ? React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "flex items-start gap-2 pb-2 border-b border-slate-100"
+  }, React.createElement(Lock, {
+    className: "h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5"
+  }), React.createElement("p", {
+    className: "text-xs text-slate-500"
+  }, "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file yourself.")), React.createElement("div", {
     className: "space-y-2"
   }, React.createElement("p", {
     className: "text-xs text-slate-500"
@@ -3190,7 +3196,11 @@ function RetirementCalculator() {
     className: "text-slate-400"
   }, "UK Retirement Planner • For illustrative purposes only • Not financial advice"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm mt-2"
-  }, "Based on 2026/27 UK tax year allowances and PLSA Retirement Living Standards")));
+  }, "Based on 2026/27 UK tax year allowances and PLSA Retirement Living Standards"), /*#__PURE__*/React.createElement("p", {
+    className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
+  }, /*#__PURE__*/React.createElement(Lock, {
+    className: "h-3.5 w-3.5 flex-shrink-0"
+  }), "Your data stays on this device — no account, no upload, no bank connection, no analytics.")));
 }</script>
 <script>
   (function () {
