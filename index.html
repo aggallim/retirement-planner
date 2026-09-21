@@ -1322,14 +1322,18 @@ const PersonInputs = memo(function PersonInputs({
 const ChartTooltip = ({
   active,
   payload,
-  label
+  label,
+  inflationRate,
+  excludeFromTotal = []
 }) => {
   if (!active || !payload || !payload.length) return null;
+  const visible = payload.filter(e => e.value !== 0);
+  const total = payload.reduce((s, e) => excludeFromTotal.includes(e.name) ? s : s + e.value, 0);
   return /*#__PURE__*/React.createElement("div", {
     className: "bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl border border-slate-700"
   }, /*#__PURE__*/React.createElement("p", {
     className: "font-bold mb-2 text-slate-200"
-  }, label), payload.filter(e => e.value !== 0).map((e, i) => /*#__PURE__*/React.createElement("p", {
+  }, label), visible.map((e, i) => /*#__PURE__*/React.createElement("p", {
     key: i,
     className: "text-sm flex items-center justify-between gap-4",
     style: {
@@ -1337,7 +1341,11 @@ const ChartTooltip = ({
     }
   }, /*#__PURE__*/React.createElement("span", null, e.name), /*#__PURE__*/React.createElement("span", {
     className: "font-semibold tabular"
-  }, formatCurrency(Math.abs(e.value))))));
+  }, formatCurrency(Math.abs(e.value))))), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm flex items-center justify-between gap-4 mt-2 pt-2 border-t border-slate-700 font-bold text-white"
+  }, /*#__PURE__*/React.createElement("span", null, "Total (today's money)"), /*#__PURE__*/React.createElement("span", {
+    className: "tabular"
+  }, formatToday(deflate(total, label, inflationRate)))));
 };
 
 /* ---------------- Charts (memoized so drags don't re-render them) ---------------- */
@@ -1364,7 +1372,8 @@ const WealthChart = memo(function WealthChart({
   p1RetYear,
   p2RetYear,
   mortgageFreeYear,
-  isDark
+  isDark,
+  inflationRate
 }) {
   return /*#__PURE__*/React.createElement(ResponsiveContainer, {
     width: "100%",
@@ -1459,7 +1468,7 @@ const WealthChart = memo(function WealthChart({
     },
     tickFormatter: formatCurrencyK
   }), /*#__PURE__*/React.createElement(Tooltip, {
-    content: /*#__PURE__*/React.createElement(ChartTooltip, null)
+    content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate })
   }), /*#__PURE__*/React.createElement(Legend, {
     wrapperStyle: {
       paddingTop: 16,
@@ -1568,7 +1577,8 @@ const WealthChart = memo(function WealthChart({
 });
 const IncomeChart = memo(function IncomeChart({
   data,
-  isDark
+  isDark,
+  inflationRate
 }) {
   return /*#__PURE__*/React.createElement(ResponsiveContainer, {
     width: "100%",
@@ -1594,7 +1604,7 @@ const IncomeChart = memo(function IncomeChart({
     },
     tickFormatter: formatCurrencyK
   }), /*#__PURE__*/React.createElement(Tooltip, {
-    content: /*#__PURE__*/React.createElement(ChartTooltip, null)
+    content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate, excludeFromTotal: ['Target Expenses'] })
   }), /*#__PURE__*/React.createElement(Legend, {
     wrapperStyle: {
       paddingTop: 16,
@@ -2785,6 +2795,8 @@ function RetirementCalculator() {
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-2xl font-bold text-slate-900 tabular"
   }, formatCurrency(household.totalPot)), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-slate-500 tabular mt-0.5"
+  }, formatToday(deflate(household.totalPot, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
   }, "When ", isCouple ? 'both retired' : 'retired', " (", household.year, ")")), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-5 border border-slate-200"
@@ -2797,6 +2809,8 @@ function RetirementCalculator() {
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-2xl font-bold text-slate-900 tabular"
   }, formatCurrency(household.annualIncome)), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-slate-500 tabular mt-0.5"
+  }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
   }, "Sustainable, year one")), /*#__PURE__*/React.createElement("div", {
     className: `rounded-xl shadow-lg p-5 border ${livingStandard.bg} ${livingStandard.border}`
@@ -3024,7 +3038,8 @@ function RetirementCalculator() {
     p1RetYear: p1RetYear,
     p2RetYear: p2RetYear,
     mortgageFreeYear: d.my > 0 ? CURRENT_YEAR + d.my : null,
-    isDark: isDark
+    isDark: isDark,
+    inflationRate: d.infl
   })), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("h2", {
@@ -3033,7 +3048,8 @@ function RetirementCalculator() {
     className: "text-sm text-slate-500 mb-6"
   }, isCouple ? 'Combined household' : 'Your', " income by source against target spending (inflation-adjusted)."), /*#__PURE__*/React.createElement(IncomeChart, {
     data: incomeData,
-    isDark: isDark
+    isDark: isDark,
+    inflationRate: d.infl
   })), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("h2", {
@@ -3045,6 +3061,8 @@ function RetirementCalculator() {
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-5xl font-bold gradient-text mb-1 tabular"
   }, formatCurrency(household.annualIncome)), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-slate-500 tabular mb-1"
+  }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm"
   }, "Sustainable annual income, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 flex-wrap"
@@ -3107,7 +3125,9 @@ function RetirementCalculator() {
     className: `text-2xl font-bold ${livingStandard.color} text-center`
   }, livingStandard.level, " Living Standard"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 text-center mt-1"
-  }, "PLSA ", isCouple ? 'two-person' : 'one-person', " household, outside London")))), /*#__PURE__*/React.createElement("div", {
+  }, "PLSA ", isCouple ? 'two-person' : 'one-person', " household, outside London")), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-400 text-center mt-2"
+  }, "The income above is shown in future £, before adjusting for inflation. The PLSA bands are today's-money figures, so the two aren't directly comparable."))), /*#__PURE__*/React.createElement("div", {
     id: "assumptions-disclaimers",
     className: "bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
