@@ -1694,9 +1694,9 @@ const VerdictHero = memo(function VerdictHero({
   } else {
     headline = `Under these assumptions, your plan doesn't currently support retiring at ${currentAges}, and no later retirement age within typical limits fixes this.`;
   }
-  const insights = [succeeds ? 'Your pot is projected to last beyond your plan horizon.' : `Your pot is projected to run out in ${fundedTo} — ${planEnd - fundedTo} year${planEnd - fundedTo === 1 ? '' : 's'} before your plan horizon of ${planEnd}.`];
+  const insights = [succeeds ? 'Under these assumptions, your pot is projected to last beyond your plan horizon.' : `Under these assumptions, your pot is projected to run out in ${fundedTo} — ${planEnd - fundedTo} year${planEnd - fundedTo === 1 ? '' : 's'} before your plan horizon of ${planEnd}.`];
   if (supportableDelta !== null && supportableDelta < 0) {
-    insights.push(`You have a ${-supportableDelta}-year buffer past your target retirement age${isCouple ? 's' : ''}.`);
+    insights.push(`Under these assumptions, you have a ${-supportableDelta}-year buffer past your target retirement age${isCouple ? 's' : ''}.`);
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "mb-8 bg-white rounded-xl shadow-lg p-6 border border-slate-200"
@@ -2798,7 +2798,7 @@ function RetirementCalculator() {
     className: "text-sm font-semibold text-slate-500 tabular mt-0.5"
   }, formatToday(deflate(household.totalPot, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
-  }, "When ", isCouple ? 'both retired' : 'retired', " (", household.year, ")")), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions — when ", isCouple ? 'both retired' : 'retired', " (", household.year, ")")), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-5 border border-slate-200"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-2"
@@ -2812,7 +2812,7 @@ function RetirementCalculator() {
     className: "text-sm font-semibold text-slate-500 tabular mt-0.5"
   }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
-  }, "Sustainable, year one")), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions, sustainable in year one.")), /*#__PURE__*/React.createElement("div", {
     className: `rounded-xl shadow-lg p-5 border ${livingStandard.bg} ${livingStandard.border}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-2"
@@ -3064,7 +3064,7 @@ function RetirementCalculator() {
     className: "text-sm font-semibold text-slate-500 tabular mb-1"
   }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm"
-  }, "Sustainable annual income, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions, sustainable annual income, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 flex-wrap"
   }, /*#__PURE__*/React.createElement("span", {
     className: "flex items-center gap-1.5"
