@@ -599,6 +599,18 @@ const Settings = ({
     __html: "<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />"
   }
 });
+const Lock = ({ className }) => React.createElement("svg", {
+  className,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  dangerouslySetInnerHTML: {
+    __html: "<rect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\" /><path d=\"M7 11V7a5 5 0 0 1 10 0v4\" />"
+  }
+});
 // Theme toggle icons (spec/done/010-dark-mode.md decision 3), same
 // inline-SVG pattern as the icons above.
 const Monitor = ({
@@ -851,6 +863,11 @@ const importPlanFields = parsed => {
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v12',
+  date: '2026-09-21', // set to the actual merge date
+  title: "Today's-money figures, an \"Explain this\" breakdown, and a privacy note added",
+  items: ['Your Combined/Total Pot and Household/Annual Income figures now show a smaller "in today\'s money" line underneath the main number, so it\'s clear what that figure is actually worth after inflation. The Living Standard gauge also now notes that its bands are today\'s-money figures while your income is shown in future pounds. Hovering any point on the two charts now also shows a "Total (today\'s money)" line.', 'Click "Explain this" under your Pot figure to see how it\'s made up — starting balance, contributions, investment growth, and any withdrawals already taken.', 'The footer and the ⚙ Data menu now state plainly that your figures stay on this device — no account, no upload, no bank connection, and no analytics.']
+}, {
   version: 'v11',
   date: '2026-09-21',
   title: '"Your projection assumes..." panel added near your results',
@@ -1310,14 +1327,18 @@ const PersonInputs = memo(function PersonInputs({
 const ChartTooltip = ({
   active,
   payload,
-  label
+  label,
+  inflationRate,
+  excludeFromTotal = []
 }) => {
   if (!active || !payload || !payload.length) return null;
+  const visible = payload.filter(e => e.value !== 0);
+  const total = payload.reduce((s, e) => excludeFromTotal.includes(e.name) ? s : s + e.value, 0);
   return /*#__PURE__*/React.createElement("div", {
     className: "bg-slate-900/95 text-white p-4 rounded-xl shadow-2xl border border-slate-700"
   }, /*#__PURE__*/React.createElement("p", {
     className: "font-bold mb-2 text-slate-200"
-  }, label), payload.filter(e => e.value !== 0).map((e, i) => /*#__PURE__*/React.createElement("p", {
+  }, label), visible.map((e, i) => /*#__PURE__*/React.createElement("p", {
     key: i,
     className: "text-sm flex items-center justify-between gap-4",
     style: {
@@ -1325,7 +1346,11 @@ const ChartTooltip = ({
     }
   }, /*#__PURE__*/React.createElement("span", null, e.name), /*#__PURE__*/React.createElement("span", {
     className: "font-semibold tabular"
-  }, formatCurrency(Math.abs(e.value))))));
+  }, formatCurrency(Math.abs(e.value))))), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm flex items-center justify-between gap-4 mt-2 pt-2 border-t border-slate-700 font-bold text-white"
+  }, /*#__PURE__*/React.createElement("span", null, "Total (today's money)"), /*#__PURE__*/React.createElement("span", {
+    className: "tabular"
+  }, formatToday(deflate(total, label, inflationRate)))));
 };
 
 /* ---------------- Charts (memoized so drags don't re-render them) ---------------- */
@@ -1352,7 +1377,8 @@ const WealthChart = memo(function WealthChart({
   p1RetYear,
   p2RetYear,
   mortgageFreeYear,
-  isDark
+  isDark,
+  inflationRate
 }) {
   return /*#__PURE__*/React.createElement(ResponsiveContainer, {
     width: "100%",
@@ -1447,7 +1473,7 @@ const WealthChart = memo(function WealthChart({
     },
     tickFormatter: formatCurrencyK
   }), /*#__PURE__*/React.createElement(Tooltip, {
-    content: /*#__PURE__*/React.createElement(ChartTooltip, null)
+    content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate })
   }), /*#__PURE__*/React.createElement(Legend, {
     wrapperStyle: {
       paddingTop: 16,
@@ -1556,7 +1582,8 @@ const WealthChart = memo(function WealthChart({
 });
 const IncomeChart = memo(function IncomeChart({
   data,
-  isDark
+  isDark,
+  inflationRate
 }) {
   return /*#__PURE__*/React.createElement(ResponsiveContainer, {
     width: "100%",
@@ -1582,7 +1609,7 @@ const IncomeChart = memo(function IncomeChart({
     },
     tickFormatter: formatCurrencyK
   }), /*#__PURE__*/React.createElement(Tooltip, {
-    content: /*#__PURE__*/React.createElement(ChartTooltip, null)
+    content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate, excludeFromTotal: ['Target Expenses'] })
   }), /*#__PURE__*/React.createElement(Legend, {
     wrapperStyle: {
       paddingTop: 16,
@@ -1672,9 +1699,9 @@ const VerdictHero = memo(function VerdictHero({
   } else {
     headline = `Under these assumptions, your plan doesn't currently support retiring at ${currentAges}, and no later retirement age within typical limits fixes this.`;
   }
-  const insights = [succeeds ? 'Your pot is projected to last beyond your plan horizon.' : `Your pot is projected to run out in ${fundedTo} — ${planEnd - fundedTo} year${planEnd - fundedTo === 1 ? '' : 's'} before your plan horizon of ${planEnd}.`];
+  const insights = [succeeds ? 'Under these assumptions, your pot is projected to last beyond your plan horizon.' : `Under these assumptions, your pot is projected to run out in ${fundedTo} — ${planEnd - fundedTo} year${planEnd - fundedTo === 1 ? '' : 's'} before your plan horizon of ${planEnd}.`];
   if (supportableDelta !== null && supportableDelta < 0) {
-    insights.push(`You have a ${-supportableDelta}-year buffer past your target retirement age${isCouple ? 's' : ''}.`);
+    insights.push(`Under these assumptions, you have a ${-supportableDelta}-year buffer past your target retirement age${isCouple ? 's' : ''}.`);
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "mb-8 bg-white rounded-xl shadow-lg p-6 border border-slate-200"
@@ -1704,7 +1731,13 @@ const VerdictHero = memo(function VerdictHero({
     className: "flex justify-between text-xs text-slate-600 mt-2 mb-4"
   }, /*#__PURE__*/React.createElement("span", null, "First retirement (", firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", planEnd, ")")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-3"
-  }, "Based on a fixed average return, no tax on retirement income, and no sequence-of-returns risk — see Known limitations in the ", /*#__PURE__*/React.createElement("button", {
+  }, "Based on a fixed average return, no tax on retirement income, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement("span", {
+    className: "tooltip-trigger relative inline-flex align-text-top"
+  }, /*#__PURE__*/React.createElement(Info, {
+    className: "h-3 w-3 text-slate-400 cursor-help"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "tooltip-content absolute left-0 bottom-full mb-2 w-56 bg-slate-900 text-white text-xs p-2.5 rounded-lg shadow-xl z-20 font-normal"
+  }, "Sometimes called \"sequence-of-returns risk\" — a poor run of returns in your first few retirement years does more damage than the same average return spread evenly, because you're drawing down your pot at the same time.")), " — see Known limitations in the ", /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => scrollAndHighlight('assumptions-panel'),
     className: "underline hover:text-slate-700"
@@ -2027,6 +2060,41 @@ function findSupportableDelta(engineArgs, currentlySucceeds) {
   }
   return null;
 }
+// Post-hoc reconstruction of the Pot figure's accumulation history for the
+// "Explain this" breakdown (intent/015). Walks known INPUT figures (not
+// projectJoint()'s internal per-account state) plus the already-computed
+// per-year data array — projectJoint() itself and its output shape are
+// completely untouched (intent/015 decision 3; same constraint as 013/014).
+// A separate function from deflate() — no today's-money treatment here
+// (intent/015 decision 6). people is [person1] or [person1, person2].
+function computePotBreakdown(people, projections, bothYear) {
+  const cap = 60000; // pension annual allowance, same cap projectJoint() applies
+  let startingBalance = 0;
+  let contributions = 0;
+  people.forEach(p => {
+    startingBalance += p.pensionPot + p.cashIsaBalance + p.ssIsaBalance + p.lisaBalance
+      + (p.otherSavings || []).reduce((s, a) => s + a.balance, 0);
+    // A person only contributes up to their own retirement — bothYear is
+    // defined as the LATER of the two retirement years, so every person's
+    // own retirement always falls at or before bothYear; no min() needed.
+    const years = Math.max(0, p.retirementAge - p.currentAge);
+    const pensionMonthly = Math.min(p.pensionContribution + p.employerContribution, cap / 12);
+    contributions += pensionMonthly * 12 * years;
+    contributions += p.cashIsaContribution * 12 * years;
+    contributions += p.ssIsaContribution * 12 * years;
+    contributions += p.lisaContribution * 1.25 * 12 * years; // 25% government bonus, same as projectJoint()
+    contributions += (p.otherSavings || []).reduce((s, a) => s + a.contribution * 12 * years, 0);
+  });
+  let withdrawals = 0;
+  for (const r of projections) {
+    if (r.year >= bothYear) break; // bothYear's own row is pre-that-year's-drawdown
+    withdrawals += r.pensionWithdrawal + r.isaWithdrawal + r.otherSavingsWithdrawal;
+  }
+  const endRow = projections.find(r => r.year === bothYear) || projections[projections.length - 1];
+  const totalPot = endRow.totalPension + endRow.totalIsa + endRow.totalOtherSavings;
+  const growth = totalPot - startingBalance - contributions + withdrawals;
+  return { startingBalance, contributions, growth, withdrawals, totalPot };
+}
 // ENGINE-EXTRACT-END
 
 // Scroll+highlight for any assumption anchor (spec/012-assumptions-panel.md
@@ -2049,6 +2117,22 @@ const nameAtAge = (name, age, isCouple) => isCouple ? `${name} at ${age}` : `age
 // Non-age per-person values (%, £) read oddly with "at" ("Aaron at 6%"),
 // so they get their own separator rather than forcing nameAtAge's pattern.
 const nameValue = (name, value, isCouple) => isCouple ? `${name}: ${value}` : value;
+
+// Discounts a nominal figure from its target calendar year back to
+// CURRENT_YEAR ("today's money"), at whatever single inflation rate is
+// passed in (the household's d.infl — the only inflation figure the model
+// has; intent/013 decision 5). Pure and display-layer only — projectJoint()
+// and its output shape are untouched (intent/013 decision 7). Takes
+// inflationRate explicitly rather than closing over d.infl so it stays a
+// plain module-level function, matching every other helper here.
+const deflate = (nominalValue, targetYear, inflationRate) =>
+  nominalValue / Math.pow(1 + inflationRate / 100, Math.max(0, targetYear - CURRENT_YEAR));
+
+// Rounds to the nearest £100 and prefixes "≈" (intent/013 decision 6) — a
+// deflated figure carries one more assumption (the inflation rate) than
+// the exact nominal figure it's derived from, so it shouldn't be shown
+// with formatCurrency's same whole-pound precision.
+const formatToday = v => `≈ ${formatCurrency(Math.round((v || 0) / 100) * 100)}`;
 
 /* ---------------- Settings menu: export / import (module level + memoized) ---------------- */
 const THEME_OPTIONS = [['system', Monitor, 'System'], ['light', Sun, 'Light'], ['dark', Moon, 'Dark']];
@@ -2115,6 +2199,12 @@ const SettingsMenu = memo(function SettingsMenu({
   }, React.createElement(X, {
     className: "h-4 w-4 text-slate-400 hover:text-slate-600"
   }))), view === 'menu' ? React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "flex items-start gap-2 pb-2 border-b border-slate-100"
+  }, React.createElement(Lock, {
+    className: "h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5"
+  }), React.createElement("p", {
+    className: "text-xs text-slate-500"
+  }, "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file yourself.")), React.createElement("div", {
     className: "space-y-2"
   }, React.createElement("p", {
     className: "text-xs text-slate-500"
@@ -2202,6 +2292,7 @@ function RetirementCalculator() {
   const [withdrawalRate, setWithdrawalRate] = useState(pick('withdrawalRate', 4));
   const [justSaved, setJustSaved] = useState(false);
   const [showAssumptions, setShowAssumptions] = useState(false);
+  const [showPotBreakdown, setShowPotBreakdown] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [theme, setTheme] = useState(loadTheme()); // 'system' | 'light' | 'dark'
   const [systemPrefersDark, setSystemPrefersDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -2397,6 +2488,7 @@ function RetirementCalculator() {
     };
   }, [projections, d.p1, d.p2, isCouple, p1Summary, p2Summary]);
   const livingStandard = useMemo(() => livingStandardFor(household.annualIncome, isCouple), [household.annualIncome, isCouple]);
+  const potBreakdown = useMemo(() => computePotBreakdown(isCouple ? [d.p1, d.p2] : [d.p1], projections, household.year), [d.p1, d.p2, isCouple, projections, household.year]);
   const longevity = useMemo(() => {
     const firstRet = Math.min(CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge) : Infinity);
     const planEnd = Math.max(CURRENT_YEAR + (d.p1.lifeExpectancy - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.lifeExpectancy - d.p2.currentAge) : -Infinity);
@@ -2722,8 +2814,27 @@ function RetirementCalculator() {
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-2xl font-bold text-slate-900 tabular"
   }, formatCurrency(household.totalPot)), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-slate-500 tabular mt-0.5"
+  }, formatToday(deflate(household.totalPot, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
-  }, "When ", isCouple ? 'both retired' : 'retired', " (", household.year, ")")), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions — when ", isCouple ? 'both retired' : 'retired', " (", household.year, ")"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setShowPotBreakdown(v => !v),
+    className: "mt-3 flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+  }, "Explain this ", showPotBreakdown ? /*#__PURE__*/React.createElement(ChevronUp, {
+    className: "h-3.5 w-3.5"
+  }) : /*#__PURE__*/React.createElement(ChevronDown, {
+    className: "h-3.5 w-3.5"
+  })), showPotBreakdown && /*#__PURE__*/React.createElement("div", {
+    className: "mt-2 pt-2 border-t border-slate-100 space-y-1 text-xs"
+  }, [['Starting balance', potBreakdown.startingBalance], ['Contributions', potBreakdown.contributions], ['Growth', potBreakdown.growth], ['Withdrawals', potBreakdown.withdrawals]].map(([label, value]) => /*#__PURE__*/React.createElement("div", {
+    key: label,
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-500"
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-slate-900 tabular"
+  }, formatCurrency(value)))))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-5 border border-slate-200"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-2"
@@ -2734,8 +2845,10 @@ function RetirementCalculator() {
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-2xl font-bold text-slate-900 tabular"
   }, formatCurrency(household.annualIncome)), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-slate-500 tabular mt-0.5"
+  }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
-  }, "Sustainable, year one")), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions, sustainable in year one.")), /*#__PURE__*/React.createElement("div", {
     className: `rounded-xl shadow-lg p-5 border ${livingStandard.bg} ${livingStandard.border}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-2"
@@ -2961,7 +3074,8 @@ function RetirementCalculator() {
     p1RetYear: p1RetYear,
     p2RetYear: p2RetYear,
     mortgageFreeYear: d.my > 0 ? CURRENT_YEAR + d.my : null,
-    isDark: isDark
+    isDark: isDark,
+    inflationRate: d.infl
   })), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("h2", {
@@ -2970,7 +3084,8 @@ function RetirementCalculator() {
     className: "text-sm text-slate-500 mb-6"
   }, isCouple ? 'Combined household' : 'Your', " income by source against target spending (inflation-adjusted)."), /*#__PURE__*/React.createElement(IncomeChart, {
     data: incomeData,
-    isDark: isDark
+    isDark: isDark,
+    inflationRate: d.infl
   })), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("h2", {
@@ -2982,8 +3097,10 @@ function RetirementCalculator() {
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-5xl font-bold gradient-text mb-1 tabular"
   }, formatCurrency(household.annualIncome)), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-slate-500 tabular mb-1"
+  }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm"
-  }, "Sustainable annual income, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions, sustainable annual income, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 flex-wrap"
   }, /*#__PURE__*/React.createElement("span", {
     className: "flex items-center gap-1.5"
@@ -3044,7 +3161,9 @@ function RetirementCalculator() {
     className: `text-2xl font-bold ${livingStandard.color} text-center`
   }, livingStandard.level, " Living Standard"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 text-center mt-1"
-  }, "PLSA ", isCouple ? 'two-person' : 'one-person', " household, outside London")))), /*#__PURE__*/React.createElement("div", {
+  }, "PLSA ", isCouple ? 'two-person' : 'one-person', " household, outside London")), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-400 text-center mt-2"
+  }, "The income above is shown in future £, before adjusting for inflation. The PLSA bands are today's-money figures, so the two aren't directly comparable."))), /*#__PURE__*/React.createElement("div", {
     id: "assumptions-disclaimers",
     className: "bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
@@ -3082,7 +3201,11 @@ function RetirementCalculator() {
     className: "text-slate-400"
   }, "UK Retirement Planner • For illustrative purposes only • Not financial advice"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm mt-2"
-  }, "Based on 2026/27 UK tax year allowances and PLSA Retirement Living Standards")));
+  }, "Based on 2026/27 UK tax year allowances and PLSA Retirement Living Standards"), /*#__PURE__*/React.createElement("p", {
+    className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
+  }, /*#__PURE__*/React.createElement(Lock, {
+    className: "h-3.5 w-3.5 flex-shrink-0"
+  }), "Your data stays on this device — no account, no upload, no bank connection, no analytics.")));
 }</script>
 <script>
   (function () {
