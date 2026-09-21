@@ -599,6 +599,18 @@ const Settings = ({
     __html: "<path d=\"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />"
   }
 });
+const Lock = ({ className }) => React.createElement("svg", {
+  className,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  dangerouslySetInnerHTML: {
+    __html: "<rect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\" /><path d=\"M7 11V7a5 5 0 0 1 10 0v4\" />"
+  }
+});
 // Theme toggle icons (spec/done/010-dark-mode.md decision 3), same
 // inline-SVG pattern as the icons above.
 const Monitor = ({
@@ -2027,6 +2039,41 @@ function findSupportableDelta(engineArgs, currentlySucceeds) {
   }
   return null;
 }
+// Post-hoc reconstruction of the Pot figure's accumulation history for the
+// "Explain this" breakdown (intent/015). Walks known INPUT figures (not
+// projectJoint()'s internal per-account state) plus the already-computed
+// per-year data array — projectJoint() itself and its output shape are
+// completely untouched (intent/015 decision 3; same constraint as 013/014).
+// A separate function from deflate() — no today's-money treatment here
+// (intent/015 decision 6). people is [person1] or [person1, person2].
+function computePotBreakdown(people, projections, bothYear) {
+  const cap = 60000; // pension annual allowance, same cap projectJoint() applies
+  let startingBalance = 0;
+  let contributions = 0;
+  people.forEach(p => {
+    startingBalance += p.pensionPot + p.cashIsaBalance + p.ssIsaBalance + p.lisaBalance
+      + (p.otherSavings || []).reduce((s, a) => s + a.balance, 0);
+    // A person only contributes up to their own retirement — bothYear is
+    // defined as the LATER of the two retirement years, so every person's
+    // own retirement always falls at or before bothYear; no min() needed.
+    const years = Math.max(0, p.retirementAge - p.currentAge);
+    const pensionMonthly = Math.min(p.pensionContribution + p.employerContribution, cap / 12);
+    contributions += pensionMonthly * 12 * years;
+    contributions += p.cashIsaContribution * 12 * years;
+    contributions += p.ssIsaContribution * 12 * years;
+    contributions += p.lisaContribution * 1.25 * 12 * years; // 25% government bonus, same as projectJoint()
+    contributions += (p.otherSavings || []).reduce((s, a) => s + a.contribution * 12 * years, 0);
+  });
+  let withdrawals = 0;
+  for (const r of projections) {
+    if (r.year >= bothYear) break; // bothYear's own row is pre-that-year's-drawdown
+    withdrawals += r.pensionWithdrawal + r.isaWithdrawal + r.otherSavingsWithdrawal;
+  }
+  const endRow = projections.find(r => r.year === bothYear) || projections[projections.length - 1];
+  const totalPot = endRow.totalPension + endRow.totalIsa + endRow.totalOtherSavings;
+  const growth = totalPot - startingBalance - contributions + withdrawals;
+  return { startingBalance, contributions, growth, withdrawals, totalPot };
+}
 // ENGINE-EXTRACT-END
 
 // Scroll+highlight for any assumption anchor (spec/012-assumptions-panel.md
@@ -2049,6 +2096,22 @@ const nameAtAge = (name, age, isCouple) => isCouple ? `${name} at ${age}` : `age
 // Non-age per-person values (%, £) read oddly with "at" ("Aaron at 6%"),
 // so they get their own separator rather than forcing nameAtAge's pattern.
 const nameValue = (name, value, isCouple) => isCouple ? `${name}: ${value}` : value;
+
+// Discounts a nominal figure from its target calendar year back to
+// CURRENT_YEAR ("today's money"), at whatever single inflation rate is
+// passed in (the household's d.infl — the only inflation figure the model
+// has; intent/013 decision 5). Pure and display-layer only — projectJoint()
+// and its output shape are untouched (intent/013 decision 7). Takes
+// inflationRate explicitly rather than closing over d.infl so it stays a
+// plain module-level function, matching every other helper here.
+const deflate = (nominalValue, targetYear, inflationRate) =>
+  nominalValue / Math.pow(1 + inflationRate / 100, Math.max(0, targetYear - CURRENT_YEAR));
+
+// Rounds to the nearest £100 and prefixes "≈" (intent/013 decision 6) — a
+// deflated figure carries one more assumption (the inflation rate) than
+// the exact nominal figure it's derived from, so it shouldn't be shown
+// with formatCurrency's same whole-pound precision.
+const formatToday = v => `≈ ${formatCurrency(Math.round((v || 0) / 100) * 100)}`;
 
 /* ---------------- Settings menu: export / import (module level + memoized) ---------------- */
 const THEME_OPTIONS = [['system', Monitor, 'System'], ['light', Sun, 'Light'], ['dark', Moon, 'Dark']];

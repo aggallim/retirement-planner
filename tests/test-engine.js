@@ -61,6 +61,7 @@ function loadEngine(html) {
   const rawProjectJoint = sandbox.projectJoint;
   const rawMigratePerson = sandbox.migratePerson;
   const rawFindSupportableDelta = sandbox.findSupportableDelta;
+  const rawComputePotBreakdown = sandbox.computePotBreakdown;
   const CURRENT_YEAR = sandbox.__CURRENT_YEAR;
 
   if (typeof rawProjectJoint !== 'function') {
@@ -71,6 +72,9 @@ function loadEngine(html) {
   }
   if (typeof rawFindSupportableDelta !== 'function') {
     throw new Error('Extraction sanity check failed: findSupportableDelta is not a function after eval');
+  }
+  if (typeof rawComputePotBreakdown !== 'function') {
+    throw new Error('Extraction sanity check failed: computePotBreakdown is not a function after eval');
   }
   if (typeof CURRENT_YEAR !== 'number') {
     throw new Error('Extraction sanity check failed: CURRENT_YEAR is not a number after eval');
@@ -88,13 +92,15 @@ function loadEngine(html) {
   // findSupportableDelta returns a plain number or null — no cross-realm
   // object identity issue, so no JSON round-trip needed.
   const findSupportableDelta = (engineArgs, currentlySucceeds) => rawFindSupportableDelta(engineArgs, currentlySucceeds);
-  return { projectJoint, migratePerson, findSupportableDelta, CURRENT_YEAR };
+  // computePotBreakdown returns a plain object of numbers — same no-identity-issue reasoning.
+  const computePotBreakdown = (people, projections, bothYear) => rawComputePotBreakdown(people, projections, bothYear);
+  return { projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR };
 }
 
-let projectJoint, migratePerson, findSupportableDelta, CURRENT_YEAR;
+let projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR;
 try {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
-  ({ projectJoint, migratePerson, findSupportableDelta, CURRENT_YEAR } = loadEngine(html));
+  ({ projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR } = loadEngine(html));
 } catch (err) {
   console.error('FATAL: could not extract a runnable projectJoint() from index.html');
   console.error(err.message);
@@ -475,6 +481,80 @@ const SCENARIO_SUPPORTABLE_FIXABLE_COUPLE = {
   })
 };
 
+// Scenario M — couple, staggered retirement ages, identical per-category
+// contribution rates for both people so their contribution totals differ
+// only by years-of-eligibility, not by rate.
+// Covers (spec/013-wave-1-bundle.md §11): computePotBreakdown()'s
+// reconciliation identity in couple mode; withdrawals provably nonzero
+// before bothYear (person1 retires at bothYear-14, person2 at bothYear);
+// the pension-contribution cap (person1's combined monthly pension +
+// employer contribution is above the £60,000/yr cap); and that each
+// person's contribution years stop at their own retirementAge, not bothYear
+// (person1 only has 1 year of eligibility, person2 has 15, at the same
+// monthly rate for every other account).
+const SCENARIO_POT_BREAKDOWN_COUPLE = {
+  inflationRate: 2,
+  withdrawalRate: 4,
+  annualExpenses: 25000,
+  healthcareCosts: 1500,
+  mortgagePayment: 0,
+  mortgageYears: 0,
+  person1: person({
+    currentAge: 60,
+    retirementAge: 61, // 1 year of contribution eligibility
+    lifeExpectancy: 90,
+    statePensionAge: 67,
+    statePensionAmount: 8000,
+    pensionPot: 150000,
+    pensionContribution: 3000, // combined with employerContribution, above the £60k/yr cap
+    employerContribution: 2500,
+    pensionGrowth: 4,
+    cashIsaBalance: 5000,
+    cashIsaContribution: 100,
+    cashIsaGrowth: 2,
+    ssIsaBalance: 20000,
+    ssIsaContribution: 100,
+    ssIsaGrowth: 3,
+    lisaBalance: 0,
+    lisaContribution: 50,
+    lisaGrowth: 5,
+    otherSavings: [],
+    takeLumpSum: true,
+    inheritanceAmount: 0,
+    inheritanceAge: 999
+  }),
+  person2: person({
+    currentAge: 50,
+    retirementAge: 65, // 15 years of contribution eligibility, same rates as person1 below
+    lifeExpectancy: 95,
+    statePensionAge: 67,
+    statePensionAmount: 9000,
+    pensionPot: 120000,
+    pensionContribution: 400,
+    employerContribution: 300,
+    pensionGrowth: 5,
+    cashIsaBalance: 3000,
+    cashIsaContribution: 100,
+    cashIsaGrowth: 2,
+    ssIsaBalance: 15000,
+    ssIsaContribution: 100,
+    ssIsaGrowth: 4,
+    lisaBalance: 2000,
+    lisaContribution: 50,
+    lisaGrowth: 5,
+    otherSavings: [{
+      id: 'other-1',
+      name: 'Premium Bonds',
+      balance: 1000,
+      contribution: 20,
+      growth: 3
+    }],
+    takeLumpSum: true,
+    inheritanceAmount: 0,
+    inheritanceAge: 999
+  })
+};
+
 // Individual-mode regression baseline — a fully-literal, self-documenting
 // scenario using the app's own real default input values. Regenerating this
 // fixture (via --update-baseline) is a deliberate, reviewed act, never done
@@ -781,6 +861,94 @@ check('findSupportableDelta() returns null when no in-range delta fixes a failin
   const succeeds = succeedsAt(SCENARIO_F);
   assert.strictEqual(succeeds, false, 'expected the deliberately under-funded Scenario F to fail');
   assert.strictEqual(findSupportableDelta(SCENARIO_F, succeeds), null);
+});
+
+// computePotBreakdown()'s own household.totalPot row-lookup rule
+// (index.html's `household` useMemo) — mirrored here rather than depending
+// on an unexported helper, consistent with this file's style elsewhere.
+function bothYearFor(args) {
+  const people = [args.person1, args.person2].filter(Boolean);
+  return Math.max(...people.map((p) => CURRENT_YEAR + (p.retirementAge - p.currentAge)));
+}
+function householdTotalPot(data, bothYear) {
+  const row = data.find((r) => r.year === bothYear) || data[data.length - 1];
+  return row.totalPension + row.totalIsa + row.totalOtherSavings;
+}
+
+check('computePotBreakdown() reconciles against household.totalPot in individual mode', () => {
+  const data = projectJoint(BASELINE_INPUT);
+  const bothYear = bothYearFor(BASELINE_INPUT);
+  const breakdown = computePotBreakdown([BASELINE_INPUT.person1], data, bothYear);
+  assert.strictEqual(
+    breakdown.startingBalance + breakdown.contributions + breakdown.growth - breakdown.withdrawals,
+    breakdown.totalPot
+  );
+  assert.strictEqual(breakdown.totalPot, householdTotalPot(data, bothYear));
+});
+
+check('computePotBreakdown() reconciles against household.totalPot in couple mode, with nonzero withdrawals before bothYear', () => {
+  const data = projectJoint(SCENARIO_POT_BREAKDOWN_COUPLE);
+  const bothYear = bothYearFor(SCENARIO_POT_BREAKDOWN_COUPLE);
+  const breakdown = computePotBreakdown(
+    [SCENARIO_POT_BREAKDOWN_COUPLE.person1, SCENARIO_POT_BREAKDOWN_COUPLE.person2],
+    data,
+    bothYear
+  );
+  assert.strictEqual(
+    breakdown.startingBalance + breakdown.contributions + breakdown.growth - breakdown.withdrawals,
+    breakdown.totalPot
+  );
+  assert.strictEqual(breakdown.totalPot, householdTotalPot(data, bothYear));
+
+  // person1 retires 14 years before bothYear (person2's later retirement) —
+  // confirms withdrawals accrue before bothYear, not only at/after it.
+  const withdrawalsBeforeBothYear = data
+    .filter((r) => r.year < bothYear)
+    .reduce((s, r) => s + r.pensionWithdrawal + r.isaWithdrawal + r.otherSavingsWithdrawal, 0);
+  assert.ok(withdrawalsBeforeBothYear > 0, 'expected nonzero withdrawals before bothYear in a staggered-retirement couple');
+  assert.strictEqual(breakdown.withdrawals, withdrawalsBeforeBothYear);
+});
+
+check('computePotBreakdown() caps pension contributions at £60,000/year, and stops each person\'s contribution years at their own retirementAge', () => {
+  const { person1: p1, person2: p2 } = SCENARIO_POT_BREAKDOWN_COUPLE;
+  const data = projectJoint(SCENARIO_POT_BREAKDOWN_COUPLE);
+  const bothYear = bothYearFor(SCENARIO_POT_BREAKDOWN_COUPLE);
+  const breakdown = computePotBreakdown([p1, p2], data, bothYear);
+
+  const cap = 60000;
+  const years1 = p1.retirementAge - p1.currentAge; // 1
+  const years2 = p2.retirementAge - p2.currentAge; // 15
+
+  // p1's combined pension + employer contribution (£5,500/mo = £66,000/yr)
+  // is above the cap, so the capped £60,000/yr (£5,000/mo) must be used.
+  const pensionMonthly1 = Math.min(p1.pensionContribution + p1.employerContribution, cap / 12);
+  assert.strictEqual(pensionMonthly1, cap / 12, 'expected p1\'s pension contribution to be capped');
+  const uncappedPensionMonthly1 = p1.pensionContribution + p1.employerContribution;
+  assert.notStrictEqual(pensionMonthly1, uncappedPensionMonthly1);
+
+  const pensionMonthly2 = Math.min(p2.pensionContribution + p2.employerContribution, cap / 12);
+
+  const expectedContributions =
+    pensionMonthly1 * 12 * years1 + p1.cashIsaContribution * 12 * years1 + p1.ssIsaContribution * 12 * years1 +
+      p1.lisaContribution * 1.25 * 12 * years1 +
+    pensionMonthly2 * 12 * years2 + p2.cashIsaContribution * 12 * years2 + p2.ssIsaContribution * 12 * years2 +
+      p2.lisaContribution * 1.25 * 12 * years2 + p2.otherSavings.reduce((s, a) => s + a.contribution * 12 * years2, 0);
+
+  assert.strictEqual(breakdown.contributions, expectedContributions);
+
+  // Negative check: using the uncapped rate, or using bothYear (15 years)
+  // for both people instead of each person's own retirementAge, would both
+  // produce a different (wrong) total.
+  const wrongUncapped = expectedContributions + (uncappedPensionMonthly1 - pensionMonthly1) * 12 * years1;
+  assert.notStrictEqual(breakdown.contributions, wrongUncapped);
+
+  const bothYearYears = bothYear - p1.currentAge; // 15 — wrong if applied to p1
+  const wrongYears =
+    pensionMonthly1 * 12 * bothYearYears + p1.cashIsaContribution * 12 * bothYearYears + p1.ssIsaContribution * 12 * bothYearYears +
+      p1.lisaContribution * 1.25 * 12 * bothYearYears +
+    pensionMonthly2 * 12 * years2 + p2.cashIsaContribution * 12 * years2 + p2.ssIsaContribution * 12 * years2 +
+      p2.lisaContribution * 1.25 * 12 * years2 + p2.otherSavings.reduce((s, a) => s + a.contribution * 12 * years2, 0);
+  assert.notStrictEqual(breakdown.contributions, wrongYears, 'expected p1\'s contribution years to stop at retirementAge, not bothYear');
 });
 
 check('Individual-mode results are byte-for-byte identical to a known-good baseline', () => {
