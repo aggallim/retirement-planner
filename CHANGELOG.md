@@ -7,6 +7,42 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-21 — Explorable assumptions panel (012)
+
+- **New "Your projection assumes..." panel**, directly below the "Can I
+  retire?" headline: a compact, module-level `AssumptionsPanel` component
+  listing the six roadmap-named assumption categories in a fixed order —
+  return (each person's pension growth rate, not the full 4-account ×
+  2-person breakdown), inflation, retirement age, life expectancy,
+  spending, and State Pension (amount and start age combined into one
+  line). Couple-mode rows show a per-person pair where the underlying
+  figure genuinely is per-person; inflation and spending stay single
+  shared figures. The existing bottom "Assumptions & Disclaimers" section
+  is untouched — the new panel links down to it for full detail rather
+  than absorbing or duplicating its content.
+- **Scroll-and-highlight click-through** — a new `scrollAndHighlight()`
+  module-level helper (plain DOM `getElementById` + a restartable CSS
+  animation class, no new state/ref plumbing) that every panel value is
+  wired to, jumping to and briefly flashing the input card that sets it.
+  Ten new DOM anchor ids were added (four per-person, doubled for `p1`/
+  `p2`, plus two shared and one for the "Assumptions & Disclaimers" outer
+  card) as small, additive wrapper `<div>`s — no restructuring of
+  `PersonInputs` or the shared-assumptions cards.
+- **`VerdictHero`'s existing caveat is repointed**, not reworded: "the
+  Assumptions panel" changes from plain text to a button that scrolls to
+  and highlights the new panel — the caveat's wording ("...see Known
+  limitations in the Assumptions panel.") already made sense once that
+  panel existed to point at.
+- `VerdictHero`'s local `nameAt` helper is hoisted to a shared,
+  module-level `nameAtAge()` (plus a new `nameValue()` for non-age
+  per-person figures) so `AssumptionsPanel` can reuse the same couple-mode
+  formatting convention without duplicating it — a behaviour-preserving
+  refactor, not a copy change.
+- **No calculation logic changed.** `AssumptionsPanel` only reads state
+  `projectJoint()`/`verdict`/`longevity` already compute or that the
+  sliders already hold; `node tests/test-engine.js` passes unchanged
+  (18/18, no new cases needed).
+
 ## 2026-09-20 — "Can I retire?" headline verdict (011)
 
 - **New headline at the top of results**, replacing the mid-page "Longevity
