@@ -1109,7 +1109,8 @@ const PersonInputs = memo(function PersonInputs({
   onOtherAdd,
   onOtherRemove,
   onOtherChange,
-  accent
+  accent,
+  personKey
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
@@ -1123,7 +1124,9 @@ const PersonInputs = memo(function PersonInputs({
     min: 18,
     max: 80,
     accent: accent
-  }), /*#__PURE__*/React.createElement(SliderWithInput, {
+  }), /*#__PURE__*/React.createElement("div", {
+    id: `assumption-retirement-age-${personKey}`
+  }, /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Retirement Age",
     field: "retirementAge",
     value: person.retirementAge,
@@ -1132,7 +1135,9 @@ const PersonInputs = memo(function PersonInputs({
     max: 75,
     accent: accent,
     subtitle: `Retires in ${CURRENT_YEAR + (person.retirementAge - person.currentAge)}`
-  }), /*#__PURE__*/React.createElement(SliderWithInput, {
+  })), /*#__PURE__*/React.createElement("div", {
+    id: `assumption-life-expectancy-${personKey}`
+  }, /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Life Expectancy",
     field: "lifeExpectancy",
     value: person.lifeExpectancy,
@@ -1140,7 +1145,7 @@ const PersonInputs = memo(function PersonInputs({
     min: 85,
     max: 100,
     accent: accent
-  })), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
     className: "pt-4 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-slate-800 mb-4 flex items-center gap-2"
@@ -1229,13 +1234,15 @@ const PersonInputs = memo(function PersonInputs({
     accent: accent,
     subtitle: `Total: ${formatCurrency((person.pensionContribution + person.employerContribution) * 12)}/year`,
     tooltip: "Combined annual allowance is £60,000 including employer contributions."
-  }), /*#__PURE__*/React.createElement(GrowthProfile, {
+  }), /*#__PURE__*/React.createElement("div", {
+    id: `assumption-return-${personKey}`
+  }, /*#__PURE__*/React.createElement(GrowthProfile, {
     value: person.pensionGrowth,
     field: "pensionGrowth",
     onChange: onChange,
     options: PEN_OPTS,
     accent: accent
-  }), /*#__PURE__*/React.createElement("label", {
+  })), /*#__PURE__*/React.createElement("label", {
     className: "flex items-center cursor-pointer pt-1"
   }, /*#__PURE__*/React.createElement("input", {
     type: "checkbox",
@@ -1260,7 +1267,9 @@ const PersonInputs = memo(function PersonInputs({
     min: 65,
     max: 70,
     accent: accent
-  }), /*#__PURE__*/React.createElement(SliderWithInput, {
+  }), /*#__PURE__*/React.createElement("div", {
+    id: `assumption-state-pension-${personKey}`
+  }, /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "State Pension (Annual)",
     field: "statePensionAmount",
     value: person.statePensionAmount,
@@ -1271,7 +1280,7 @@ const PersonInputs = memo(function PersonInputs({
     prefix: "£",
     accent: accent,
     tooltip: "Full new State Pension is £12,548/year (2026/27). Needs ~35 qualifying NI years."
-  }), /*#__PURE__*/React.createElement(SliderWithInput, {
+  })), /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Expected Inheritance",
     field: "inheritanceAmount",
     value: person.inheritanceAmount,
@@ -2727,7 +2736,8 @@ function RetirementCalculator() {
     onOtherAdd: addOtherP1,
     onOtherRemove: removeOtherP1,
     onOtherChange: updateOtherP1,
-    accent: "blue"
+    accent: "blue",
+    personKey: "p1"
   })), hasPartner ? /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("div", {
@@ -2754,7 +2764,8 @@ function RetirementCalculator() {
     onOtherAdd: addOtherP2,
     onOtherRemove: removeOtherP2,
     onOtherChange: updateOtherP2,
-    accent: "teal"
+    accent: "teal",
+    personKey: "p2"
   })) : /*#__PURE__*/React.createElement("button", {
     onClick: () => setHasPartner(true),
     className: "w-full bg-white rounded-xl shadow-lg p-6 border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-teal-50/30 transition-colors text-center"
@@ -2776,6 +2787,8 @@ function RetirementCalculator() {
     className: "text-sm text-slate-500 mb-6"
   }, hasPartner ? 'Joint household' : 'Your current', " spending (excluding mortgage) and housing costs, adjusted for inflation in retirement."), /*#__PURE__*/React.createElement("div", {
     className: "space-y-5"
+  }, /*#__PURE__*/React.createElement("div", {
+    id: "assumption-spending"
   }, /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Annual Expenses (exc. mortgage)",
     field: "annualExpenses",
@@ -2786,7 +2799,7 @@ function RetirementCalculator() {
     step: 500,
     prefix: "£",
     subtitle: mortgagePayment > 0 ? `With mortgage: ${formatCurrency(annualExpenses + mortgagePayment * 12)}/yr` : undefined
-  }), /*#__PURE__*/React.createElement(SliderWithInput, {
+  })), /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Monthly Mortgage",
     field: "mortgagePayment",
     value: mortgagePayment,
@@ -2821,7 +2834,9 @@ function RetirementCalculator() {
     className: "text-sm text-slate-500 mb-6"
   }, "Shared assumptions applied across the whole plan."), /*#__PURE__*/React.createElement("div", {
     className: "space-y-5"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  }, /*#__PURE__*/React.createElement("div", {
+    id: "assumption-inflation"
+  }, /*#__PURE__*/React.createElement("label", {
     className: "block text-sm font-semibold text-slate-700 mb-3"
   }, "Inflation Assumption"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2"
@@ -2948,6 +2963,7 @@ function RetirementCalculator() {
   }, livingStandard.level, " Living Standard"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 text-center mt-1"
   }, "PLSA ", isCouple ? 'two-person' : 'one-person', " household, outside London")))), /*#__PURE__*/React.createElement("div", {
+    id: "assumptions-disclaimers",
     className: "bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowAssumptions(v => !v),
