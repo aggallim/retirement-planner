@@ -863,6 +863,11 @@ const importPlanFields = parsed => {
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v12',
+  date: '2026-09-21', // set to the actual merge date
+  title: "Today's-money figures, an \"Explain this\" breakdown, and a privacy note added",
+  items: ['Your Combined/Total Pot and Household/Annual Income figures now show a smaller "in today\'s money" line underneath the main number, so it\'s clear what that figure is actually worth after inflation. The Living Standard gauge also now notes that its bands are today\'s-money figures while your income is shown in future pounds. Hovering any point on the two charts now also shows a "Total (today\'s money)" line.', 'Click "Explain this" under your Pot figure to see how it\'s made up — starting balance, contributions, investment growth, and any withdrawals already taken.', 'The footer and the ⚙ Data menu now state plainly that your figures stay on this device — no account, no upload, no bank connection, and no analytics.']
+}, {
   version: 'v11',
   date: '2026-09-21',
   title: '"Your projection assumes..." panel added near your results',

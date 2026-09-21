@@ -7,6 +7,83 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-21 — Wave 1 bundle: today's-money, confidence language, "Explain this", plain language, privacy (013–017)
+
+Five roadmap items (9, 20, 17, 18, 10) delivered as one shared spec, branch,
+PR and build version (`sw.js` `v11` → `v12`), per the bundling decision
+recorded in `intent/013-today-vs-nominal-money.md`'s Status section.
+Implements `intent/013-today-vs-nominal-money.md`,
+`intent/014-confidence-language.md`,
+`intent/015-explain-this-breakdown.md`,
+`intent/016-plain-language-pass.md` and
+`intent/017-privacy-feature-messaging.md` /
+`spec/013-wave-1-bundle.md`. `projectJoint()` itself is untouched
+throughout — the one calculation-adjacent addition is the new, purely
+additive `computePotBreakdown()` reconstruction, which reads
+`projectJoint()`'s output rather than changing it.
+
+- **013 — today's-money vs. nominal money.** New module-level
+  `deflate()`/`formatToday()` display helpers (outside the engine-extract
+  span; pure arithmetic on already-computed figures, at the household's
+  single inflation rate). The Combined/Total Pot and Household/Annual
+  Income summary cards, and the Living Standard detail card's big income
+  figure, each gain a "≈ £X in today's money" line under the nominal
+  figure. `ChartTooltip` (shared by `WealthChart` and `IncomeChart`) gains
+  a "Total (today's money)" row after the per-series figures; `IncomeChart`
+  excludes its `Target Expenses` reference series from that total (a
+  spending target, not income), `WealthChart` nets in `Mortgage Debt`
+  as-is. A permanent caveat line is added under the PLSA gauge, making
+  existing known limitation #6 (PLSA bands aren't inflated forward)
+  visible in the UI for the first time — not fixed; that's roadmap item
+  #23. The sticky mobile bar and the per-person breakdown grid are
+  deliberately unchanged (stay nominal-only).
+- **014 — confidence/hedge language.** The Pot/Income card captions, the
+  Living Standard detail card's caption, and both of `VerdictHero`'s
+  insight lines now open with "Under these assumptions", reusing the
+  phrase the existing headline sentence already established rather than
+  inventing parallel wording. The status badge and the warning banner are
+  deliberately untouched (stay plain/blunt).
+- **015 — "Explain this" breakdown on the Pot figure.** New module-level
+  `computePotBreakdown(people, projections, bothYear)`, added inside the
+  existing `ENGINE-EXTRACT` span so `tests/test-engine.js` picks it up
+  with no harness changes. Walks each person's known input balances/
+  contribution rates (capped at the £60,000/year pension allowance, with
+  the 25% LISA bonus, and each person's own contribution years stopping at
+  their own `retirementAge` rather than the later `bothYear`) plus the
+  per-year projection data to reconstruct Starting balance / Contributions
+  / Growth (a residual) / Withdrawals, reconciling exactly against
+  `household.totalPot`. A new "Explain this" click-to-expand button/panel
+  on the Pot card (reusing the existing `ChevronUp`/`ChevronDown`
+  collapse pattern) shows all four lines, always, including any that are
+  £0. No breakdown added to Income, Living Standard, or the per-person
+  grid.
+- **016 — plain-language pass.** `VerdictHero`'s caveat sentence drops
+  "sequence-of-returns risk" from the visible text; the term and its
+  explanation move into an `Info`-icon hover tooltip, reusing
+  `SliderWithInput`'s exact tooltip markup rather than inventing a new
+  disclosure pattern. A review of 013/014/015's own new copy against the
+  same plain-language standard needed no further changes beyond that
+  rewording and 013's already-plain PLSA caveat wording.
+  `docs/TOOL_DOCUMENTATION.md`'s own use of "sequence-of-returns risk"
+  (developer documentation, a different audience) is untouched.
+- **017 — privacy as a visible product feature.** New `Lock` icon, added
+  to the existing hand-copied inline-SVG icon set. The footer gains a
+  third line, and the ⚙ Data menu gains a fuller paragraph above
+  Export/Import, both stating plainly that figures stay on this device —
+  no account, no upload, no bank connection, no analytics — using the new
+  icon. Neither claims zero network activity (Google Fonts loading is
+  unaffected/unmentioned). No new prominent UI element added near the top
+  of the input form (explicit non-goal).
+- `tests/test-engine.js` gains `computePotBreakdown()` coverage: an
+  individual-mode fixture and a new staggered-retirement couple fixture
+  (withdrawals provably nonzero before `bothYear`), asserting the
+  reconciliation identity, `totalPot` matching `household.totalPot`'s
+  row-lookup rule, the pension-contribution cap, and that each person's
+  contribution years stop at their own `retirementAge`.
+- `docs/TOOL_DOCUMENTATION.md` §3.4 and §3.7 updated to describe all of the
+  above; §4.7 and §7 are unchanged (013's PLSA caveat makes an existing
+  limitation visible in the UI, it doesn't change what the limitation is).
+
 ## 2026-09-21 — Explorable assumptions panel (012)
 
 - **New "Your projection assumes..." panel**, directly below the "Can I
