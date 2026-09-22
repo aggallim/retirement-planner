@@ -215,5 +215,9 @@ Align the branch type with commit types where possible (e.g., `feature/*` branch
 Requirement branches here are named `<type>/NNN-slug`, where `NNN-slug`
 matches the corresponding `intent/`/`spec/` file slug (see `CLAUDE.md`).
 `<type>` is chosen per the table above — most requirements are `feature/`.
-Harness-assigned agent branch names (e.g. `claude/laughing-cannon-lz90c5`)
-already satisfy the AI-agent prefix rule as-is; don't rename them.
+Agent sessions follow this too. If the harness assigned a branch (e.g.
+`claude/pensive-newton-rymumn`), don't use it for requirement work: create
+`<type>/NNN-slug` off `main` per the workflow above and push there. The
+repo docs are standing permission to do so. Fall back to the assigned
+branch only if that push is rejected, and tell the user why. Full details
+are in `CONTRIBUTING.md`, "Agent sessions with a harness-assigned branch".

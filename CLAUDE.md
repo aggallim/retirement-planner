@@ -129,14 +129,20 @@ whoever started it.
    `bug/` prefix, so branch names stay within the published spec; most
    other requirements here are `feature/`. `NNN-slug` matches the intent's
    slug either way — only the branch gets the type prefix, the intent/spec
-   *files* keep the plain `NNN-slug` naming. One branch per requirement. A
-   harness-assigned agent branch name (e.g. `claude/laughing-cannon-lz90c5`)
-   already satisfies the spec's AI-agent prefix — don't rename it. Create
-   it once grilling has settled the slug, before writing the intent. Push
-   it with the intent commit, then open a **draft PR** into `main` straight
-   away — the intent commit gives it a diff, so don't wait for the spec,
-   plan or implementation. See `CONTRIBUTING.md` for why
-   (cross-device/cross-session continuity) and the exact command.
+   *files* keep the plain `NNN-slug` naming. One branch per requirement.
+   **Agent sessions too:** if the harness assigned a branch (e.g.
+   `claude/pensive-newton-rymumn`), don't use it for requirement work —
+   create `<type>/NNN-slug` off `main` yourself and push there. This line
+   is your standing permission to push to a branch other than the
+   assigned one; no need to ask each session. Only if that push is
+   rejected (e.g. a proxy 403) fall back to the assigned branch, and tell
+   the user why. See `CONTRIBUTING.md`'s "Agent sessions with a
+   harness-assigned branch". Create the branch once grilling has settled
+   the slug, before writing the intent. Push it with the intent commit,
+   then open a **draft PR** into `main` straight away — the intent commit
+   gives it a diff, so don't wait for the spec, plan or implementation.
+   See `CONTRIBUTING.md` for why (cross-device/cross-session continuity)
+   and the exact command.
 4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
    implementation plan. It's a working file for the branch only — it never
    lands on `main`. Delete it (`git rm plan.md`) as part of the same PR that

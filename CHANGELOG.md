@@ -20,8 +20,27 @@ non-trivial calculation change, why — in one place.
 - `CONTRIBUTING.md` step order is now 1 Intent, 2 Branch, 3 Open the draft
   PR, 4 Spec, with the cross-references, diagram and "Opening the PR"
   section updated to match. `CLAUDE.md` keeps its step numbers.
+- 019's "Agent sessions with a harness-assigned branch" section now lists
+  the intent among the steps done on the `<type>/NNN-slug` branch.
 - Process only — no user-facing change, no `USER_CHANGELOG` entry.
 - Implements `intent/done/020-intent-on-branch.md`.
+
+## 2026-09-22 — Agent sessions use `<type>/NNN-slug` branch names (019)
+
+- Agent sessions no longer do requirement work on their harness-assigned
+  branch (e.g. `claude/pensive-newton-rymumn`). They now create
+  `<type>/NNN-slug` off `main` like any contributor. Before this, the docs
+  exempted those names because they pass the grammar via the `claude/`
+  prefix. But the names are random, so they broke the repo's
+  `<type>/NNN-slug` traceability and the skill's description guidelines.
+- **Why now:** the exemption assumed a remote session could only push to
+  its assigned branch. A test push of a new branch (this one) succeeded.
+- `CLAUDE.md` step 3, `CONTRIBUTING.md` ("Agent sessions with a
+  harness-assigned branch") and the `conventional-branch` skill's "Use in
+  this repo" section record this as standing permission. They also give a
+  fallback to the assigned branch if a push is ever rejected.
+- Process only — no user-facing change, no `USER_CHANGELOG` entry.
+- Implements `intent/done/019-conventional-branch-names.md`.
 
 ## 2026-09-22 — UK income tax in retirement, Lump Sum Allowance, reference figures, methodology (018)
 

@@ -158,24 +158,32 @@ reading every commit). Mark it ready for review at step 8.
 later, follow its structure for the PR body instead of the free-form
 "Implements + Status" line above.
 
-## Agent sessions bound to a pre-named branch
+## Agent sessions with a harness-assigned branch
 
-Some agent environments (e.g. Claude Code remote sessions) assign a fixed
-branch name up front rather than letting the agent pick `<type>/NNN-slug`
-itself. In that case, skip step 2 (the branch already exists) but
-everything else still applies exactly as above: commit and push the intent
-immediately, push the spec's first commit, open the draft PR as soon as
-that commit exists, and keep pushing every subsequent stage to that same
-branch/PR.
+Some agent environments (e.g. Claude Code remote sessions) assign a branch
+up front, with a random name like `claude/pensive-newton-rymumn`. That name
+passes Conventional Branch's grammar through its `claude/` AI-agent prefix,
+but it fails the `conventional-branch` skill's description guidelines and
+this repo's `<type>/NNN-slug` scheme: it says nothing about the work, its
+type, or which intent/spec it belongs to. **Don't use it for requirement
+work.**
 
-A harness-assigned branch name like `claude/laughing-cannon-lz90c5` already
-satisfies Conventional Branch's AI-agent prefix rule (`claude/`) as-is —
-don't try to rename it to fit the `<type>/NNN-slug` pattern above by
-default; that pattern is only for branches this lifecycle names itself. If
-the user explicitly asks for the `<type>/NNN-slug` convention to be used
-regardless, that request takes precedence: create and push a
-correctly-named branch off the pre-named branch's work instead, and open
-the PR from there.
+Instead, follow step 2 exactly as a human contributor would: create
+`<type>/NNN-slug` off `main`, push it, and do everything else (intent,
+draft PR, spec, plan, implementation) on that branch. Leave the harness-assigned branch
+unused.
+
+- **Permission.** This section (and `CLAUDE.md` step 3) is standing
+  permission from the repo owner to push to a branch other than the one the
+  harness assigned. An agent doesn't need to ask each session.
+- **Fallback.** Pushing a new branch from a Claude Code remote session was
+  tested and works. If the push is ever rejected (e.g. a proxy 403), don't
+  keep retrying: work on the harness-assigned branch instead, open the PR
+  from it, and tell the user why the name doesn't follow the convention.
+- **Cleanup.** If the unused harness-assigned branch exists on the remote,
+  it's inert. The user can delete it from
+  **https://github.com/aggallim/retirement-planner/branches** along with
+  merged branches (step 10).
 
 ## Other conventions
 
