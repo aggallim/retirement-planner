@@ -29,7 +29,7 @@ calculation logic.
 | `sw.js` | Service worker — offline caching. |
 | `icon.svg` | Home screen icon. |
 | `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
-| `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → spec → branch → plan → implement → PR → merge lifecycle below, including when to open the PR. |
+| `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → branch → draft PR → spec → plan → implement → merge lifecycle below, including when to open the PR. |
 | `CHANGELOG.md` | Short, chronological "what shipped when," one entry per requirement. |
 | `tests/test-engine.js` | Dependency-free `node` test harness for `projectJoint()`. Run with `node tests/test-engine.js` from the repo root. |
 | `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
@@ -112,10 +112,14 @@ whoever started it.
    user-invoked `grill-me` skill; see `.claude/skills/`) to interrogate the
    requirement's design tree until every branch is resolved. Then write
    `intent/NNN-slug.md` from those resolved decisions — describing what's
-   wanted and why — on `main`. For a bug, this is the problem report:
+   wanted and why — as the **first commit on the requirement's branch**
+   (step 3; create it first). Never commit it to `main`: `main` only
+   changes via PR (see "Branch protection"), so the intent reaches `main`
+   through the requirement's own PR. For a bug, this is the problem report:
    what's broken, how it was observed (e.g. a screenshot or repro steps),
    and any root cause already known.
-2. **Spec** — `spec/NNN-slug.md` turns that intent into a concrete spec.
+2. **Spec** — `spec/NNN-slug.md`, committed on the branch, turns that
+   intent into a concrete spec.
 3. **Branch** — create `<type>/NNN-slug` off `main` (e.g.
    `feature/003-inheritance-tax`, `bugfix/006-mobile-data-menu-overflow`),
    following the [Conventional Branch](https://conventionalbranch.org) spec
@@ -127,13 +131,12 @@ whoever started it.
    slug either way — only the branch gets the type prefix, the intent/spec
    *files* keep the plain `NNN-slug` naming. One branch per requirement. A
    harness-assigned agent branch name (e.g. `claude/laughing-cannon-lz90c5`)
-   already satisfies the spec's AI-agent prefix — don't rename it. Push it
-   immediately, then push the spec's first commit, then open a **draft PR**
-   into `main` — don't wait for the plan or implementation. (Not
-   immediately after just the intent: GitHub won't open a PR with no diff
-   against `main`, and a freshly-branched branch has nothing beyond `main`
-   yet.) See `CONTRIBUTING.md` for why (cross-device/cross-session
-   continuity) and the exact command.
+   already satisfies the spec's AI-agent prefix — don't rename it. Create
+   it once grilling has settled the slug, before writing the intent. Push
+   it with the intent commit, then open a **draft PR** into `main` straight
+   away — the intent commit gives it a diff, so don't wait for the spec,
+   plan or implementation. See `CONTRIBUTING.md` for why
+   (cross-device/cross-session continuity) and the exact command.
 4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
    implementation plan. It's a working file for the branch only — it never
    lands on `main`. Delete it (`git rm plan.md`) as part of the same PR that

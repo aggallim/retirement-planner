@@ -7,6 +7,22 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-22 — Intent files are committed on the requirement branch (020)
+
+- Lifecycle step 1 in `CLAUDE.md` and `CONTRIBUTING.md` said to commit the
+  intent "straight to `main`". Branch protection (007) forbids that, and
+  every intent since has actually landed through its requirement's PR. The
+  docs now say so: grill, create the branch, commit the intent as its first
+  commit, never to `main`.
+- The draft PR now opens right after the intent commit instead of waiting
+  for the spec. The only reason to wait was that a fresh branch had no diff
+  against `main`; the intent commit gives it one.
+- `CONTRIBUTING.md` step order is now 1 Intent, 2 Branch, 3 Open the draft
+  PR, 4 Spec, with the cross-references, diagram and "Opening the PR"
+  section updated to match. `CLAUDE.md` keeps its step numbers.
+- Process only — no user-facing change, no `USER_CHANGELOG` entry.
+- Implements `intent/done/020-intent-on-branch.md`.
+
 ## 2026-09-22 — UK income tax in retirement, Lump Sum Allowance, reference figures, methodology (018)
 
 Implements `intent/018-uk-income-tax.md` / `spec/018-uk-income-tax.md`,
