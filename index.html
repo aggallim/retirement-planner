@@ -740,13 +740,18 @@ const UK_REFERENCE = {
     source: 'https://www.gov.uk/lifetime-isa',
     sourceLabel: 'GOV.UK: Lifetime ISA'
   },
+  // Retirement Living Standards 2026, published by Pensions UK (formerly
+  // the PLSA), May 2026 (spec/018 user decision Q2). The key stays `plsa`
+  // so the PLSA alias, livingStandardFor() and the gauge are unchanged.
   plsa: {
-    year: '2025/26',
+    year: '2026',
+    publisher: 'Pensions UK',
+    label: 'Retirement Living Standards 2026 (Pensions UK, formerly the PLSA)',
     basis: 'after tax, excluding housing costs, outside London',
-    single: { minimum: 13400, moderate: 31700, comfortable: 43900 },
-    couple: { minimum: 21600, moderate: 43900, comfortable: 60600 },
-    source: 'https://www.retirementlivingstandards.org.uk/',
-    sourceLabel: 'Retirement Living Standards'
+    single: { minimum: 13900, moderate: 32700, comfortable: 45400 },
+    couple: { minimum: 22500, moderate: 45400, comfortable: 62700 },
+    source: 'https://www.retirementlivingstandards.org.uk/news/2026-rls-update',
+    sourceLabel: 'Pensions UK: 2026 Retirement Living Standards'
   },
   // Known-limitation references only — not modelled (intent decisions 5, 6, 10).
   notModelled: {
@@ -1722,6 +1727,9 @@ const IncomeChart = memo(function IncomeChart({
     name: "Target Expenses"
   })));
 });
+// Source link beside a reference figure in "How we calculate this"
+// (spec/018 §11) — a plain module-level helper, not a component.
+const sourceLink = (href, label) => React.createElement("a", { href, target: "_blank", rel: "noopener noreferrer", className: "text-blue-600 font-semibold" }, label, " ↗");
 // Wording for the "Tax notes" panel (spec/018 §9.2). Bound by the
 // fact-only rule in spec/018 §9.1: each note states only what happens,
 // when, and the threshold, then links the gov.uk page that sets it — never
@@ -1863,7 +1871,7 @@ const VerdictHero = memo(function VerdictHero({
     className: "flex justify-between text-xs text-slate-600 mt-2 mb-4"
   }, /*#__PURE__*/React.createElement("span", null, "First retirement (", firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", planEnd, ")")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-3"
-  }, "Based on a fixed average return, no tax on retirement income, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement("span", {
+  }, "Based on a fixed average return, estimated Income Tax at England, Wales and Northern Ireland rates, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement("span", {
     className: "tooltip-trigger relative inline-flex align-text-top"
   }, /*#__PURE__*/React.createElement(Info, {
     className: "h-3 w-3 text-slate-400 cursor-help"
@@ -1926,7 +1934,7 @@ const AssumptionsPanel = memo(function AssumptionsPanel({
     type: "button",
     onClick: onShowFullAssumptions,
     className: "mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
-  }, "See full assumptions & disclaimers ↓"));
+  }, "See how we calculate this ↓"));
 });
 
 /* ---------------- Projection engine ---------------- */
@@ -3125,7 +3133,7 @@ function RetirementCalculator() {
     className: `text-2xl font-bold ${livingStandard.color}`
   }, livingStandard.level), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
-  }, "PLSA ", isCouple ? 'two-person' : 'one-person'))), isCouple && /*#__PURE__*/React.createElement("div", {
+  }, UK_REFERENCE.plsa.publisher, " ", isCouple ? 'two-person' : 'one-person'))), isCouple && /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 md:grid-cols-2 gap-5 mb-8"
   }, [{
     s: p1Summary,
@@ -3322,7 +3330,7 @@ function RetirementCalculator() {
     max: 5,
     step: 0.1,
     suffix: "%",
-    tooltip: "The 4% rule: withdraw 4% of the pot in year one, then increase with inflation each year."
+    tooltip: "The 4% rule: withdraw 4% of the pot in year one, then increase with inflation each year. The rate applies to the amount taken out before Income Tax."
   })))), /*#__PURE__*/React.createElement("div", {
     className: "lg:col-span-2 space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3440,9 +3448,9 @@ function RetirementCalculator() {
     className: `text-2xl font-bold ${livingStandard.color} text-center`
   }, livingStandard.level, " Living Standard"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 text-center mt-1"
-  }, "PLSA ", isCouple ? 'two-person' : 'one-person', " household, outside London")), /*#__PURE__*/React.createElement("p", {
+  }, UK_REFERENCE.plsa.publisher, " ", isCouple ? 'two-person' : 'one-person', " household, outside London")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 text-center mt-2"
-  }, "The income above is shown in future £, before adjusting for inflation. The PLSA bands are today's-money figures, so the two aren't directly comparable."))), /*#__PURE__*/React.createElement("div", {
+  }, "The income above is shown in future £, before adjusting for inflation. The Pensions UK bands are today's-money figures, so the two aren't directly comparable."))), /*#__PURE__*/React.createElement("div", {
     id: "assumptions-disclaimers",
     className: "bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
@@ -3450,37 +3458,66 @@ function RetirementCalculator() {
     className: "w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-bold text-slate-900 serif"
-  }, "Assumptions & Disclaimers"), showAssumptions ? /*#__PURE__*/React.createElement(ChevronUp, {
+  }, "How we calculate this"), showAssumptions ? /*#__PURE__*/React.createElement(ChevronUp, {
     className: "h-6 w-6 text-slate-600"
   }) : /*#__PURE__*/React.createElement(ChevronDown, {
     className: "h-6 w-6 text-slate-600"
   })), showAssumptions && /*#__PURE__*/React.createElement("div", {
     className: "px-6 pb-6 space-y-4 text-sm text-slate-700 border-t border-slate-200 pt-4"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, React.createElement("p", { className: "text-xs text-slate-500" }, "Figures last updated: ", UK_REFERENCE.lastUpdated, " (", UK_REFERENCE.taxYear, " tax year)"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
   }, "Joint planning model"), /*#__PURE__*/React.createElement("p", null, "Each person’s pension and ISA grow and are drawn independently using their own ages and retirement dates. Shared living costs and the mortgage are treated as one joint liability funded from combined pots once the first person retires. The still-working partner’s salary is not modelled, so household costs are drawn from savings from the first retirement onward — a deliberately cautious assumption.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
   }, "Investment growth"), /*#__PURE__*/React.createElement("p", null, "Growth rates are illustrative. Actual returns vary with markets and fees.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
-  }, "Safe withdrawal rate (4% rule)"), /*#__PURE__*/React.createElement("p", null, "Each person withdraws their chosen rate of their pension pot in their first year of retirement, then increases it with inflation. Any remaining spending gap is drawn from other savings first, then Cash ISA, then Stocks & Shares ISA, then the LISA (from age 60).")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mb-1"
-  }, "PLSA Retirement Living Standards (2025/26)"), /*#__PURE__*/React.createElement("p", null, "One-person: Minimum £13,400, Moderate £31,700, Comfortable £43,900. Two-person: Minimum £21,600, Moderate £43,900, Comfortable £60,600. After-tax, excluding housing, outside London.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mb-1"
-  }, "State Pension"), /*#__PURE__*/React.createElement("p", null, "Full new State Pension is £12,548/year (2026/27), beginning at each person’s State Pension age (rising 66→67). Actual amounts depend on NI record.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mb-1"
-  }, "Allowances"), /*#__PURE__*/React.createElement("p", null, "Pension annual allowance £60,000 (incl. employer); combined Cash ISA + Stocks & Shares ISA + LISA allowance £20,000, of which up to £4,000 can be LISA (2026/27). LISA contributions get a 25% government bonus and aren't accessible before age 60 in this tool.")), /*#__PURE__*/React.createElement("div", {
+  }, "Safe withdrawal rate (4% rule)"), /*#__PURE__*/React.createElement("p", null, "Each person withdraws their chosen rate of their pension pot in their first year of retirement, then increases it with inflation. Any remaining spending gap is drawn from other savings first, then Cash ISA, then Stocks & Shares ISA, then the LISA (from age 60). The rate applies to the amount taken out of the pension before Income Tax.")),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Income Tax"),
+    React.createElement("p", null,
+      `Income Tax is worked out for each person separately, every year, on their pension withdrawals plus their State Pension, using ${UK_REFERENCE.incomeTax.region} rates for ${UK_REFERENCE.taxYear}: a tax-free Personal Allowance of ${formatCurrency(UK_REFERENCE.incomeTax.personalAllowance)}, ${Math.round(UK_REFERENCE.incomeTax.basicRate * 100)}% on income up to ${formatCurrency(UK_REFERENCE.incomeTax.higherRateThreshold)}, ${Math.round(UK_REFERENCE.incomeTax.higherRate * 100)}% above that, and ${Math.round(UK_REFERENCE.incomeTax.additionalRate * 100)}% above ${formatCurrency(UK_REFERENCE.incomeTax.additionalRateThreshold)}. The Personal Allowance goes down by £1 for every £2 of income above ${formatCurrency(UK_REFERENCE.incomeTax.taperThreshold)}. Money taken from ISAs, the LISA and other savings, and the tax-free lump sum, is not taxed. Tax is taken off your income, and any shortfall against your spending is covered from your savings in the usual order. Each person uses their own Personal Allowance.`,
+      " ", sourceLink(UK_REFERENCE.incomeTax.source, UK_REFERENCE.incomeTax.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Tax thresholds in future years"),
+    React.createElement("p", null,
+      `The government has kept the Personal Allowance and the higher-rate threshold at today's amounts until 5 April 2031 (the end of the ${UK_REFERENCE.incomeTax.freezeLastTaxYear} tax year). This projection keeps all the thresholds above, including ${formatCurrency(UK_REFERENCE.incomeTax.taperThreshold)} and ${formatCurrency(UK_REFERENCE.incomeTax.additionalRateThreshold)}, at today's amounts until then, and from the following tax year raises them each year by your inflation assumption. Future government policy may be different.`,
+      " ", sourceLink(UK_REFERENCE.incomeTax.freezeSource, UK_REFERENCE.incomeTax.freezeSourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Tax-free lump sum"),
+    React.createElement("p", null,
+      `If you choose to take it, the tax-free lump sum is ${Math.round(UK_REFERENCE.lumpSumAllowance.fraction * 100)}% of your pension pot at retirement, up to the Lump Sum Allowance of ${formatCurrency(UK_REFERENCE.lumpSumAllowance.amount)} per person. If ${Math.round(UK_REFERENCE.lumpSumAllowance.fraction * 100)}% would be more than that, the rest stays in your pension and is taxed as income when you draw it. The allowance is kept at ${formatCurrency(UK_REFERENCE.lumpSumAllowance.amount)} in every future year.`,
+      " ", sourceLink(UK_REFERENCE.lumpSumAllowance.source, UK_REFERENCE.lumpSumAllowance.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, UK_REFERENCE.plsa.label),
+    React.createElement("p", null,
+      `One-person: Minimum ${formatCurrency(UK_REFERENCE.plsa.single.minimum)}, Moderate ${formatCurrency(UK_REFERENCE.plsa.single.moderate)}, Comfortable ${formatCurrency(UK_REFERENCE.plsa.single.comfortable)}. Two-person: Minimum ${formatCurrency(UK_REFERENCE.plsa.couple.minimum)}, Moderate ${formatCurrency(UK_REFERENCE.plsa.couple.moderate)}, Comfortable ${formatCurrency(UK_REFERENCE.plsa.couple.comfortable)}. ${UK_REFERENCE.plsa.basis.charAt(0).toUpperCase()}${UK_REFERENCE.plsa.basis.slice(1)}.`,
+      " ", sourceLink(UK_REFERENCE.plsa.source, UK_REFERENCE.plsa.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "State Pension"),
+    React.createElement("p", null,
+      `Full new State Pension is ${formatCurrency(UK_REFERENCE.statePension.fullNewAnnual)}/year (£${UK_REFERENCE.statePension.fullNewWeekly.toFixed(2)}/week, ${UK_REFERENCE.taxYear}), beginning at each person’s State Pension age (rising 66→67). Actual amounts depend on NI record. The State Pension is taxable income. If it is more than the Personal Allowance on its own, some tax is due on it. The government has announced that from 2027/28 people whose only income is the basic or new State Pension won't have to pay small amounts of tax on it through Simple Assessment; this projection doesn't include that.`,
+      " ", sourceLink(UK_REFERENCE.statePension.source, UK_REFERENCE.statePension.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.statePension.taxSource, UK_REFERENCE.statePension.taxSourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Allowances"),
+    React.createElement("p", null,
+      `Pension annual allowance ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} (incl. employer); combined Cash ISA + Stocks & Shares ISA + LISA allowance ${formatCurrency(UK_REFERENCE.isa.allowance)}, of which up to ${formatCurrency(UK_REFERENCE.lisa.annualLimit)} can be LISA (${UK_REFERENCE.taxYear}). LISA contributions get a ${Math.round(UK_REFERENCE.lisa.bonusRate * 100)}% government bonus and aren't accessible before age ${UK_REFERENCE.lisa.accessAge} in this tool. Pension contributions above the ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} annual allowance (including employer contributions) are capped in this projection rather than taxed. The lower ${formatCurrency(UK_REFERENCE.moneyPurchaseAnnualAllowance.amount)} Money Purchase Annual Allowance, which applies once someone starts taking money flexibly from a pension while still paying in, can't arise here, because contributions stop in the same year withdrawals start.`,
+      " ", sourceLink(UK_REFERENCE.pensionAnnualAllowance.source, UK_REFERENCE.pensionAnnualAllowance.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.moneyPurchaseAnnualAllowance.source, UK_REFERENCE.moneyPurchaseAnnualAllowance.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.isa.source, UK_REFERENCE.isa.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.lisa.source, UK_REFERENCE.lisa.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Not included"),
+    React.createElement("p", null,
+      "Scottish Income Tax rates, tax on interest from savings outside ISAs (the Personal Savings Allowance), Marriage Allowance, Blind Person's Allowance and other reliefs are not included.",
+      " ", sourceLink(UK_REFERENCE.notModelled.scottishIncomeTax, "GOV.UK: Scottish Income Tax"),
+      " · ", sourceLink(UK_REFERENCE.notModelled.personalSavingsAllowance, "GOV.UK: tax on savings interest"),
+      " · ", sourceLink(UK_REFERENCE.notModelled.marriageAllowance, "GOV.UK: Marriage Allowance"),
+      " · ", sourceLink(UK_REFERENCE.notModelled.blindPersonsAllowance, "GOV.UK: Blind Person's Allowance"))), /*#__PURE__*/React.createElement("div", {
     className: "bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r"
   }, /*#__PURE__*/React.createElement("p", {
     className: "font-bold text-amber-900"
   }, "Important"), /*#__PURE__*/React.createElement("p", {
     className: "text-amber-800 mt-1"
-  }, "For planning and illustration only — not financial advice. Retirement income tax is not modelled. Consult a qualified financial adviser for personal recommendations."))))))), /*#__PURE__*/React.createElement("footer", {
+  }, `For planning and illustration only — not financial advice. Income Tax is an estimate using ${UK_REFERENCE.incomeTax.region} rates and doesn't include every allowance or relief. Consult a qualified financial adviser for personal recommendations.`))))))), /*#__PURE__*/React.createElement("footer", {
     className: "bg-slate-900 text-white mt-16 py-8 text-center"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-slate-400"
   }, "UK Retirement Planner • For illustrative purposes only • Not financial advice"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm mt-2"
-  }, "Based on 2026/27 UK tax year allowances and PLSA Retirement Living Standards"), /*#__PURE__*/React.createElement("p", {
+  }, `Based on ${UK_REFERENCE.taxYear} UK tax year figures and ${UK_REFERENCE.plsa.publisher} Retirement Living Standards (${UK_REFERENCE.plsa.year})`), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Lock, {
     className: "h-3.5 w-3.5 flex-shrink-0"
