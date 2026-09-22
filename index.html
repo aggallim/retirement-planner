@@ -1722,6 +1722,65 @@ const IncomeChart = memo(function IncomeChart({
     name: "Target Expenses"
   })));
 });
+// Wording for the "Tax notes" panel (spec/018 §9.2). Bound by the
+// fact-only rule in spec/018 §9.1: each note states only what happens,
+// when, and the threshold, then links the gov.uk page that sets it — never
+// a recommendation. Rates are read from UK_REFERENCE, not typed as literals
+// (Math.round because e.g. 0.4 * 1.5 * 100 is 60.00000000000001 in JS).
+function taxNoteText(n, name, isCouple) {
+  const R = UK_REFERENCE;
+  const pct = rate => `${Math.round(rate * 100)}%`;
+  const whose = isCouple ? `${name}'s` : 'your';
+  const whoseShort = isCouple ? `${name}'s` : 'your';
+  const fc = formatCurrency;
+  switch (n.type) {
+    case 'higherRate':
+      return {
+        text: `From ${n.year}, ${whose} taxable retirement income (${fc(n.amount)}) is above the higher-rate threshold (${fc(n.threshold)}); income above that threshold is taxed at ${pct(R.incomeTax.higherRate)}.`,
+        href: R.incomeTax.source, label: R.incomeTax.sourceLabel
+      };
+    case 'additionalRate':
+      return {
+        text: `From ${n.year}, ${whose} taxable retirement income (${fc(n.amount)}) is above the additional-rate threshold (${fc(n.threshold)}); income above that threshold is taxed at ${pct(R.incomeTax.additionalRate)}.`,
+        href: R.incomeTax.source, label: R.incomeTax.sourceLabel
+      };
+    case 'taper':
+      return {
+        text: `From ${n.year}, ${whose} taxable retirement income (${fc(n.amount)}) is between ${fc(n.threshold)} and the additional-rate threshold (${fc(n.upper)}). In this range the tax-free Personal Allowance goes down by £1 for every £2 of income above ${fc(n.threshold)}, so income in this range is taxed at an effective rate of ${pct(R.incomeTax.higherRate * 1.5)}.`,
+        href: R.incomeTax.source, label: R.incomeTax.sourceLabel
+      };
+    case 'lumpSumCapped':
+      return {
+        text: `In ${n.year}, ${whose} tax-free lump sum is capped at the Lump Sum Allowance (${fc(n.amount)}). The remaining ${fc(n.excess)} of the ${pct(R.lumpSumAllowance.fraction)} stays in ${whoseShort} pension and is taxed as income when it's drawn.`,
+        href: R.lumpSumAllowance.source, label: R.lumpSumAllowance.sourceLabel
+      };
+    case 'statePensionOverAllowance':
+      return {
+        text: `From ${n.year}, ${whose} State Pension alone (${fc(n.amount)}) is above the Personal Allowance (${fc(n.threshold)}), so some Income Tax is due on it even without other income. The government has announced that, from 2027/28, people whose only income is the basic or new State Pension won't have to pay small amounts of tax on it through Simple Assessment. This projection doesn't include that change.`,
+        href: R.statePension.taxSource, label: R.statePension.taxSourceLabel
+      };
+    default:
+      return { text: '', href: R.incomeTax.source, label: R.incomeTax.sourceLabel };
+  }
+}
+// Neutral, informational "Tax notes" panel (spec/018 §9.3) — module level
+// and memoised per CLAUDE.md / docs §5.3; never the red warning banner.
+const TaxNotesPanel = memo(function TaxNotesPanel({ notes, isCouple, p1Name, p2Name }) {
+  if (!notes.length) return null;
+  const nameOf = i => (i === 0 ? p1Name : p2Name);
+  return React.createElement("div", { className: "mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4" },
+    React.createElement("div", { className: "flex items-center gap-2 mb-2" },
+      React.createElement(Info, { className: "h-4 w-4 text-blue-600 flex-shrink-0" }),
+      React.createElement("h3", { className: "text-sm font-bold text-slate-900" }, "Tax notes")),
+    React.createElement("div", { className: "space-y-1.5" },
+      notes.map(n => {
+        const { text, href, label } = taxNoteText(n, nameOf(n.personIndex), isCouple);
+        return React.createElement("p", { key: `${n.type}-${n.personIndex}`, className: "text-sm text-slate-700" },
+          text, " ",
+          React.createElement("a", { href, target: "_blank", rel: "noopener noreferrer", className: "text-blue-600 font-semibold" },
+            label, " ↗"));
+      })));
+});
 // The "Can I retire?" headline (spec/done/011-can-i-retire-headline.md),
 // replacing the old mid-page "Longevity Analysis" card. The status badge
 // stays direct/unhedged (icon + colour, reusing longevity's own
@@ -3302,7 +3361,7 @@ function RetirementCalculator() {
     React.createElement("span", {
       className: "text-xs font-semibold text-slate-600 bg-slate-100 rounded-full px-2 py-1"
     }, UK_REFERENCE.taxYear, " tax year")
-  )), /*#__PURE__*/React.createElement("div", {
+  ), React.createElement(TaxNotesPanel, { notes: taxNotes, isCouple, p1Name: d.p1.name, p2Name: d.p2.name })), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-2xl font-bold text-slate-900 mb-6 serif"
