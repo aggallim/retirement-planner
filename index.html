@@ -1338,7 +1338,7 @@ const PersonInputs = memo(function PersonInputs({
     className: "w-5 h-5 text-blue-600 rounded border-slate-300"
   }), /*#__PURE__*/React.createElement("span", {
     className: "ml-3 text-sm font-semibold text-slate-700"
-  }, "Take 25% tax-free lump sum at retirement")))), /*#__PURE__*/React.createElement("div", {
+  }, `Take ${UK_REFERENCE.lumpSumAllowance.fraction * 100}% tax-free lump sum at retirement (up to ${formatCurrency(UK_REFERENCE.lumpSumAllowance.amount)})`)))), /*#__PURE__*/React.createElement("div", {
     className: "pt-4 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-slate-800 mb-4 flex items-center gap-2"
@@ -2645,7 +2645,7 @@ function RetirementCalculator() {
       isa,
       otherSavings,
       total: pension + isa + otherSavings,
-      lumpSum: person.takeLumpSum ? pension / 3 : 0,
+      lumpSum: row[`p${key}LumpSum`],
       pensionIncome: pension * (d.wr / 100)
     };
   };
@@ -2655,18 +2655,27 @@ function RetirementCalculator() {
     const bothYear = Math.max(CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge) : -Infinity);
     const row = projections.find(r => r.year === bothYear) || projections[projections.length - 1];
     const y = bothYear - CURRENT_YEAR;
-    let sp = 0;
-    if (d.p1.currentAge + y >= d.p1.statePensionAge) sp += d.p1.statePensionAmount;
-    if (isCouple && d.p2.currentAge + y >= d.p2.statePensionAge) sp += d.p2.statePensionAmount;
+    const sp1 = d.p1.currentAge + y >= d.p1.statePensionAge ? d.p1.statePensionAmount : 0;
+    const sp2 = isCouple && d.p2.currentAge + y >= d.p2.statePensionAge ? d.p2.statePensionAmount : 0;
     const pensionIncome = p1Summary.pensionIncome + (p2Summary ? p2Summary.pensionIncome : 0);
+    // Same per-person helper and same year thresholds as projectJoint()
+    // (intent/018 decisions 7, 13), applied to the components this card
+    // already shows, so "Pension £X · State £Y · Tax −£Z" adds up exactly
+    // to the after-tax figure above it.
+    const th = taxThresholdsFor(bothYear, d.infl);
+    const incomeTax = incomeTaxFor(p1Summary.pensionIncome + sp1, th)
+      + (p2Summary ? incomeTaxFor(p2Summary.pensionIncome + sp2, th) : 0);
+    const grossIncome = pensionIncome + sp1 + sp2;
     return {
       totalPot: row.totalPension + row.totalIsa + row.totalOtherSavings,
       pensionIncome,
-      statePension: sp,
-      annualIncome: pensionIncome + sp,
+      statePension: sp1 + sp2,
+      grossIncome,
+      incomeTax,
+      annualIncome: grossIncome - incomeTax,   // now AFTER tax — every existing reader picks this up
       year: bothYear
     };
-  }, [projections, d.p1, d.p2, isCouple, p1Summary, p2Summary]);
+  }, [projections, d.p1, d.p2, d.infl, isCouple, p1Summary, p2Summary]);
   const livingStandard = useMemo(() => livingStandardFor(household.annualIncome, isCouple), [household.annualIncome, isCouple]);
   const potBreakdown = useMemo(() => computePotBreakdown(isCouple ? [d.p1, d.p2] : [d.p1], projections, household.year), [d.p1, d.p2, isCouple, projections, household.year]);
   const longevity = useMemo(() => {
@@ -2693,6 +2702,14 @@ function RetirementCalculator() {
       status
     };
   }, [projections, d.p1, d.p2, isCouple]);
+  // spec/018 §5.3. Declared after longevity (not beside potBreakdown, which
+  // comes before it) because both read longevity.firstRet/planEnd.
+  const lifetimeTax = useMemo(
+    () => lifetimeTaxTotals(projections, longevity.firstRet, longevity.planEnd, d.infl),
+    [projections, longevity.firstRet, longevity.planEnd, d.infl]);
+  const taxNotes = useMemo(
+    () => computeTaxNotes(projections, isCouple ? [d.p1, d.p2] : [d.p1], d.infl, longevity.planEnd),
+    [projections, isCouple, d.p1, d.p2, d.infl, longevity.planEnd]);
   // The "Can I retire?" headline verdict (spec/done/011-can-i-retire-headline.md).
   // succeeds reuses longevity's own depleted/planEnd fields via the same rule,
   // extracted as planSucceeds() so this and findSupportableDelta() agree.
@@ -2913,7 +2930,7 @@ function RetirementCalculator() {
     className: "bg-emerald-50 rounded-lg px-3 py-2 border border-emerald-200 min-w-0"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide"
-  }, isCouple ? 'Household Income' : 'Annual Income'), /*#__PURE__*/React.createElement("p", {
+  }, 'Income after tax'), /*#__PURE__*/React.createElement("p", {
     className: "text-xs md:text-xl font-bold text-slate-900 tabular break-words"
   }, formatCurrency(household.annualIncome))), /*#__PURE__*/React.createElement("div", {
     className: `rounded-lg px-3 py-2 border min-w-0 ${livingStandard.bg} ${livingStandard.border}`
@@ -3020,7 +3037,7 @@ function RetirementCalculator() {
     className: "flex items-center justify-between mb-2"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "text-xs font-semibold text-slate-600 uppercase tracking-wide"
-  }, isCouple ? 'Household Income' : 'Annual Income'), /*#__PURE__*/React.createElement(Wallet, {
+  }, isCouple ? 'Household Income after tax' : 'Annual Income after tax'), /*#__PURE__*/React.createElement(Wallet, {
     className: "h-5 w-5 text-blue-600"
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-2xl font-bold text-slate-900 tabular"
@@ -3280,7 +3297,7 @@ function RetirementCalculator() {
     className: "text-sm font-semibold text-slate-500 tabular mb-1"
   }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm"
-  }, "Under these assumptions, sustainable annual income, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions, sustainable annual income after tax, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 flex-wrap"
   }, /*#__PURE__*/React.createElement("span", {
     className: "flex items-center gap-1.5"
@@ -3290,7 +3307,11 @@ function RetirementCalculator() {
     className: "flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-full bg-violet-500"
-  }), "State ", formatCurrency(household.statePension)))), /*#__PURE__*/React.createElement("div", {
+  }), "State ", formatCurrency(household.statePension)), household.incomeTax > 0 && React.createElement("span", {
+    className: "flex items-center gap-1.5"
+  }, React.createElement("span", {
+    className: "w-2.5 h-2.5 rounded-full bg-slate-400"
+  }), "Tax −", formatCurrency(household.incomeTax)))), /*#__PURE__*/React.createElement("div", {
     className: "relative pt-10 pb-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "h-9 rounded-full relative overflow-hidden",
