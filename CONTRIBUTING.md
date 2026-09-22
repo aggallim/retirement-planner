@@ -1,7 +1,7 @@
 # Contributing
 
-This repo's requirement lifecycle (intent → spec → branch → plan →
-implement → PR → merge) is defined in `CLAUDE.md`. This file is the fuller,
+This repo's requirement lifecycle (intent → branch → draft PR → spec →
+plan → implement → merge) is defined in `CLAUDE.md`. This file is the fuller,
 step-by-step walkthrough of that same lifecycle — for a human contributor or
 an agent picking up work in this repo, especially across multiple devices or
 sessions.
@@ -15,12 +15,11 @@ laptop, a phone, a different Claude Code session, a CI-triggered agent). The
 only thing every one of those has in common is GitHub. So:
 
 **Push every commit, and open the PR as early as possible — right after the
-spec's first commit, well before the plan or implementation exist.** (Not
-right after the intent: GitHub won't open a PR with no diff between head and
-base, and a freshly-branched `<type>/NNN-slug` has nothing beyond `main` yet — the
-spec is what gives the PR something to show. See step 4 below.) An
-uncommitted local branch, or a pushed branch with no PR, is invisible to
-whoever/whatever picks this up next. A pushed branch with an open (draft) PR
+intent's commit, before the spec, plan or implementation exist.** (GitHub
+won't open a PR with no diff between head and base; the intent, committed
+as the branch's first commit, is what gives the PR something to show. See
+step 3 below.) An uncommitted local branch, or a pushed branch with no PR,
+is invisible to whoever/whatever picks this up next. A pushed branch with an open (draft) PR
 is not — its diff, its description, and its checklist of what's done are all
 one link away, from any device.
 
@@ -35,9 +34,13 @@ few lines. The only difference for a bug is the branch name (step 2).
    user-invoked `grill-me` skill if you're a human contributor — to get
    interrogated about the requirement until every branch of its design tree
    is resolved (see `.claude/skills/grill-me/` and `.claude/skills/grilling/`).
-   Then write `intent/NNN-slug.md` on `main` from those resolved decisions,
-   describing what's wanted and why (for a bug: what's broken and how it
-   was observed). Commit and push straight to `main`.
+   Then create the requirement's branch (step 2) and write
+   `intent/NNN-slug.md` on it from those resolved decisions, describing
+   what's wanted and why (for a bug: what's broken and how it was
+   observed). Commit it as the branch's first commit. Never commit it to
+   `main`: `main` only changes via a reviewed PR (see `CLAUDE.md`'s
+   "Branch protection"), so the intent reaches `main` through this
+   requirement's own PR.
 2. **Branch** — create `<type>/NNN-slug` off `main`, following the
    [Conventional Branch](https://conventionalbranch.org) spec (see
    `.claude/skills/conventional-branch/`): `<type>` is `feature`, `bugfix`,
@@ -45,23 +48,20 @@ few lines. The only difference for a bug is the branch name (step 2).
    are `feature/`; a bug fix is `bugfix/`, not the repo's earlier ad-hoc
    `bug/` prefix, to stay within the published spec), and `NNN-slug` is named
    after the intent's slug as before (e.g. `feature/003-inheritance-tax`,
-   `bugfix/006-mobile-data-menu-overflow`). Push it immediately, even with
-   nothing on it yet beyond `main`'s history.
-3. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
-   questions into a concrete spec. Commit and push to the branch straight
-   away — this is also what makes step 4 possible (see below), not a step to
-   defer.
-4. **Open the PR — as a draft, as soon as there's a first commit on the
-   branch.** GitHub refuses to open a PR with zero diff between head and
-   base, so "immediately" in practice means "right after the spec's first
-   commit," not literally before it — a branch pushed with nothing beyond
-   `main`'s history (end of step 2) can't have a PR opened against it yet.
-   Title the PR after the requirement; body references the intent file path
-   (e.g. "Implements `intent/003-inheritance-tax.md`") and says what stage
-   the work is at. See "Opening the PR" below for the exact command. This is
-   still the step people skip and the step that matters most for
-   cross-device continuity — do it the moment it's possible, not once the
-   code is ready.
+   `bugfix/006-mobile-data-menu-overflow`). Create it once grilling has
+   settled the slug, commit the intent to it (step 1), and push.
+3. **Open the PR — as a draft, as soon as the intent commit is pushed.**
+   GitHub refuses to open a PR with zero diff between head and base; the
+   intent commit is the branch's first diff against `main`, so the PR can
+   open right away. Title the PR after the requirement; body references the
+   intent file path (e.g. "Implements `intent/003-inheritance-tax.md`") and
+   says what stage the work is at. See "Opening the PR" below for the exact
+   command. This is still the step people skip and the step that matters
+   most for cross-device continuity — do it the moment it's possible, not
+   once the code is ready.
+4. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
+   questions into a concrete spec. Commit and push to the branch; the open
+   PR updates with it.
 5. **Plan** — write `plan.md` on the branch, breaking the spec into an
    implementation sequence. Push it too. It's a working file only — it gets
    deleted in the same PR that implements the requirement, never merged to
@@ -100,10 +100,10 @@ few lines. The only difference for a bug is the branch name (step 2).
 ```mermaid
 flowchart TD
     Main[("main")]
-    Intent["1. Intent\nintent/NNN-slug.md\ncommitted straight to main"]
-    Branch["2. Branch\n&lt;type&gt;/NNN-slug off main, pushed immediately"]
-    Spec["3. Spec\nspec/NNN-slug.md\nfirst commit on the branch"]
-    PR["4. Open PR as DRAFT\nhead: &lt;type&gt;/NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(needs step 3's commit to exist)"]
+    Intent["1. Intent\ngrill, then intent/NNN-slug.md\nas the branch's first commit"]
+    Branch["2. Branch\n&lt;type&gt;/NNN-slug off main,\npushed with the intent commit"]
+    PR["3. Open PR as DRAFT\nhead: &lt;type&gt;/NNN-slug -> base: main\nbody links intent/NNN-slug.md\n(right after the intent commit)"]
+    Spec["4. Spec\nspec/NNN-slug.md"]
     Plan["5. Plan\nplan.md (branch-only, never merged)"]
     Impl["6. Implement\nindex.html / sw.js"]
     Docs["7. Test & document\ntest-engine.js, TOOL_DOCUMENTATION.md, CHANGELOG.md,\nUSER_CHANGELOG if user-facing"]
@@ -111,9 +111,10 @@ flowchart TD
     Cleanup["9. Cleanup in the same PR\nintent+spec -> done/, delete plan.md"]
     Merge["10. Merge, sync main, delete local branch,\nhand off remote branch deletion to the user"]
 
-    Main --> Intent --> Branch --> Spec --> PR
-    PR --> Plan --> Impl --> Docs --> Ready --> Cleanup --> Merge --> Main
+    Main --> Intent --> Branch --> PR --> Spec
+    Spec --> Plan --> Impl --> Docs --> Ready --> Cleanup --> Merge --> Main
 
+    Spec -. push, PR updates .-> PR
     Plan -. push, PR updates .-> PR
     Impl -. push, PR updates .-> PR
     Docs -. push, PR updates .-> PR
@@ -124,21 +125,21 @@ flowchart TD
     class Ready ready;
 ```
 
-The dotted arrows are the point: steps 5 through 7 don't happen in one
+The dotted arrows are the point: steps 4 through 7 don't happen in one
 sitting on one machine. Each one is a push to the same branch, updating the
 same already-open PR — so whoever (or whatever) continues the work next just
 needs the PR link, not a handoff.
 
 ## Opening the PR
 
-Once the branch is pushed and the spec's first commit is on it (a PR needs
-at least one commit ahead of `main` to open):
+Once the branch is pushed with the intent commit on it (a PR needs at
+least one commit ahead of `main` to open):
 
 ```sh
 git push -u origin <type>/NNN-slug
 gh pr create --draft --base main --head <type>/NNN-slug \
   --title "Short description of the requirement" \
-  --body "Implements intent/NNN-slug.md. Status: intent + spec drafted, implementation not yet started."
+  --body "Implements intent/NNN-slug.md. Status: intent pushed, spec not yet written."
 ```
 
 For a bug fix, use `bugfix/NNN-slug` as the branch name in both commands
@@ -168,8 +169,8 @@ type, or which intent/spec it belongs to. **Don't use it for requirement
 work.**
 
 Instead, follow step 2 exactly as a human contributor would: create
-`<type>/NNN-slug` off `main`, push it, and do everything else (spec, draft
-PR, plan, implementation) on that branch. Leave the harness-assigned branch
+`<type>/NNN-slug` off `main`, push it, and do everything else (intent,
+draft PR, spec, plan, implementation) on that branch. Leave the harness-assigned branch
 unused.
 
 - **Permission.** This section (and `CLAUDE.md` step 3) is standing
