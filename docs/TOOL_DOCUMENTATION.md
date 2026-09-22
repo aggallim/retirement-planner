@@ -277,8 +277,8 @@ Every figure below lives in one object, `UK_REFERENCE`, in `index.html` (tagged 
 | LISA annual contribution limit | £4,000 (within the £20,000 above) | 2026/27 | https://www.gov.uk/lifetime-isa |
 | LISA government bonus | 25% of contributions | 2026/27 | https://www.gov.uk/lifetime-isa |
 | LISA minimum access age | 60 (no first-home exception modelled) | — | https://www.gov.uk/lifetime-isa |
-| Retirement Living Standards, one-person | Min £13,900 / Mod £32,700 / Comf £45,400 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/news/2026-rls-update |
-| Retirement Living Standards, two-person | Min £22,500 / Mod £45,400 / Comf £62,700 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/news/2026-rls-update |
+| Retirement Living Standards, one-person | Min £13,900 / Mod £32,700 / Comf £45,400 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
+| Retirement Living Standards, two-person | Min £22,500 / Mod £45,400 / Comf £62,700 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
 
 The Retirement Living Standards are the cost of each lifestyle; meeting them needs enough **after-tax** income, which is why the app compares them with after-tax household income. State Pension age is rising from 66 to 67, phased from April 2026.
 

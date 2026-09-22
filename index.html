@@ -750,8 +750,8 @@ const UK_REFERENCE = {
     basis: 'after tax, excluding housing costs, outside London',
     single: { minimum: 13900, moderate: 32700, comfortable: 45400 },
     couple: { minimum: 22500, moderate: 45400, comfortable: 62700 },
-    source: 'https://www.retirementlivingstandards.org.uk/news/2026-rls-update',
-    sourceLabel: 'Pensions UK: 2026 Retirement Living Standards'
+    source: 'https://www.retirementlivingstandards.org.uk/details',
+    sourceLabel: 'Pensions UK: Retirement Living Standards'
   },
   // Known-limitation references only — not modelled (intent decisions 5, 6, 10).
   notModelled: {
@@ -2743,19 +2743,21 @@ function RetirementCalculator() {
     const y = bothYear - CURRENT_YEAR;
     const sp1 = d.p1.currentAge + y >= d.p1.statePensionAge ? d.p1.statePensionAmount : 0;
     const sp2 = isCouple && d.p2.currentAge + y >= d.p2.statePensionAge ? d.p2.statePensionAmount : 0;
-    const pensionIncome = p1Summary.pensionIncome + (p2Summary ? p2Summary.pensionIncome : 0);
     // Same per-person helper and same year thresholds as projectJoint()
     // (intent/018 decisions 7, 13), applied to the components this card
-    // already shows, so "Pension £X · State £Y · Tax −£Z" adds up exactly
-    // to the after-tax figure above it.
+    // already shows. Components are rounded to whole pounds before the
+    // total is derived, so the displayed "Pension £X · State £Y · Tax −£Z"
+    // always adds up exactly to the after-tax figure above it.
     const th = taxThresholdsFor(bothYear, d.infl);
-    const incomeTax = incomeTaxFor(p1Summary.pensionIncome + sp1, th)
-      + (p2Summary ? incomeTaxFor(p2Summary.pensionIncome + sp2, th) : 0);
-    const grossIncome = pensionIncome + sp1 + sp2;
+    const pensionIncome = Math.round(p1Summary.pensionIncome + (p2Summary ? p2Summary.pensionIncome : 0));
+    const statePension = Math.round(sp1 + sp2);
+    const incomeTax = Math.round(incomeTaxFor(p1Summary.pensionIncome + sp1, th)
+      + (p2Summary ? incomeTaxFor(p2Summary.pensionIncome + sp2, th) : 0));
+    const grossIncome = pensionIncome + statePension;
     return {
       totalPot: row.totalPension + row.totalIsa + row.totalOtherSavings,
       pensionIncome,
-      statePension: sp1 + sp2,
+      statePension,
       grossIncome,
       incomeTax,
       annualIncome: grossIncome - incomeTax,   // now AFTER tax — every existing reader picks this up

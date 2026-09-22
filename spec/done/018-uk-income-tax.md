@@ -1254,3 +1254,11 @@ These supersede anything above that conflicts with them.
   immediate follow-up. Keep avoiding those classes in new markup.
 - **Q6 — unchanged.** The user clicks through every source link by hand
   before the PR is marked ready.
+- **RLS source link (2026-09-22, after implementation).** The user saved a
+  copy of the official page and supplied its URL. The page confirms all six
+  outside-London figures above. It also states that the Standards are the
+  cost of each lifestyle, excluding housing, social care, dependants and
+  pets, and that meeting them needs enough after-tax income. The source
+  link is therefore `https://www.retirementlivingstandards.org.uk/details`,
+  replacing the `/news/2026-rls-update` URL. Because the user checked it,
+  it comes off the manual click-through list. The gov.uk links stay on it.
