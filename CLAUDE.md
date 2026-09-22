@@ -125,9 +125,15 @@ whoever started it.
    `bug/` prefix, so branch names stay within the published spec; most
    other requirements here are `feature/`. `NNN-slug` matches the intent's
    slug either way — only the branch gets the type prefix, the intent/spec
-   *files* keep the plain `NNN-slug` naming. One branch per requirement. A
-   harness-assigned agent branch name (e.g. `claude/laughing-cannon-lz90c5`)
-   already satisfies the spec's AI-agent prefix — don't rename it. Push it
+   *files* keep the plain `NNN-slug` naming. One branch per requirement.
+   **Agent sessions too:** if the harness assigned a branch (e.g.
+   `claude/pensive-newton-rymumn`), don't use it for requirement work —
+   create `<type>/NNN-slug` off `main` yourself and push there. This line
+   is your standing permission to push to a branch other than the
+   assigned one; no need to ask each session. Only if that push is
+   rejected (e.g. a proxy 403) fall back to the assigned branch, and tell
+   the user why. See `CONTRIBUTING.md`'s "Agent sessions with a
+   harness-assigned branch". Push it
    immediately, then push the spec's first commit, then open a **draft PR**
    into `main` — don't wait for the plan or implementation. (Not
    immediately after just the intent: GitHub won't open a PR with no diff
