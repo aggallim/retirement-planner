@@ -680,6 +680,87 @@ const {
 } = Recharts;
 // ENGINE-EXTRACT-START
 const CURRENT_YEAR = 2026;
+// Every dated UK reference figure the app uses (intent/018 decision 20).
+// Next tax year's update is this one block. Each figure carries the
+// gov.uk page it was checked against (spec/018 "Fact verification").
+// Row year Y in projectJoint() is treated as tax year Y/Y+1 (2026 ->
+// 2026/27).
+const UK_REFERENCE = {
+  taxYear: '2026/27',
+  lastUpdated: '6 April 2026',
+  incomeTax: {
+    region: 'England, Wales and Northern Ireland',
+    personalAllowance: 12570,
+    taperThreshold: 100000,       // PA reduced by £1 for every £2 above this
+    higherRateThreshold: 50270,   // = PA + £37,700 basic rate limit
+    additionalRateThreshold: 125140,
+    basicRate: 0.20,
+    higherRate: 0.40,
+    additionalRate: 0.45,
+    freezeLastYear: 2030,         // frozen through tax year 2030/31 (to 5 April 2031)
+    freezeLastTaxYear: '2030/31',
+    source: 'https://www.gov.uk/income-tax-rates',
+    sourceLabel: 'GOV.UK: Income Tax rates',
+    freezeSource: 'https://www.gov.uk/government/publications/maintaining-income-tax-and-equivalent-national-insurance-contributions-thresholds-until-5-april-2031',
+    freezeSourceLabel: 'GOV.UK: thresholds maintained until 5 April 2031'
+  },
+  statePension: {
+    fullNewAnnual: 12548,         // £241.30/wk x 52 = £12,547.60, rounded
+    fullNewWeekly: 241.30,
+    source: 'https://www.gov.uk/new-state-pension/what-youll-get',
+    sourceLabel: 'GOV.UK: new State Pension',
+    taxSource: 'https://www.gov.uk/guidance/how-your-state-pension-is-taxed',
+    taxSourceLabel: 'GOV.UK: how your State Pension is taxed'
+  },
+  lumpSumAllowance: {
+    amount: 268275,
+    fraction: 0.25,
+    source: 'https://www.gov.uk/tax-on-your-private-pension/lump-sum-allowance',
+    sourceLabel: 'GOV.UK: Lump Sum Allowance'
+  },
+  pensionAnnualAllowance: {
+    amount: 60000,
+    source: 'https://www.gov.uk/tax-on-your-private-pension/annual-allowance',
+    sourceLabel: 'GOV.UK: annual allowance'
+  },
+  moneyPurchaseAnnualAllowance: {
+    amount: 10000,
+    source: 'https://www.gov.uk/hmrc-internal-manuals/pensions-tax-manual/ptm056510',
+    sourceLabel: 'HMRC: money purchase annual allowance'
+  },
+  isa: {
+    allowance: 20000,
+    source: 'https://www.gov.uk/individual-savings-accounts',
+    sourceLabel: 'GOV.UK: ISAs'
+  },
+  lisa: {
+    annualLimit: 4000,
+    bonusRate: 0.25,
+    accessAge: 60,
+    source: 'https://www.gov.uk/lifetime-isa',
+    sourceLabel: 'GOV.UK: Lifetime ISA'
+  },
+  // Retirement Living Standards 2026, published by Pensions UK (formerly
+  // the PLSA), May 2026 (spec/018 user decision Q2). The key stays `plsa`
+  // so the PLSA alias, livingStandardFor() and the gauge are unchanged.
+  plsa: {
+    year: '2026',
+    publisher: 'Pensions UK',
+    label: 'Retirement Living Standards 2026 (Pensions UK, formerly the PLSA)',
+    basis: 'after tax, excluding housing costs, outside London',
+    single: { minimum: 13900, moderate: 32700, comfortable: 45400 },
+    couple: { minimum: 22500, moderate: 45400, comfortable: 62700 },
+    source: 'https://www.retirementlivingstandards.org.uk/details',
+    sourceLabel: 'Pensions UK: Retirement Living Standards'
+  },
+  // Known-limitation references only — not modelled (intent decisions 5, 6, 10).
+  notModelled: {
+    scottishIncomeTax: 'https://www.gov.uk/scottish-income-tax',
+    personalSavingsAllowance: 'https://www.gov.uk/apply-tax-free-interest-on-savings',
+    marriageAllowance: 'https://www.gov.uk/marriage-allowance',
+    blindPersonsAllowance: 'https://www.gov.uk/blind-persons-allowance'
+  }
+};
 // ENGINE-EXTRACT-END
 const formatCurrency = v => new Intl.NumberFormat('en-GB', {
   style: 'currency',
@@ -687,19 +768,8 @@ const formatCurrency = v => new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0
 }).format(Math.round(v || 0));
-const formatCurrencyK = v => `£${Math.round((v || 0) / 1000)}k`;
-const PLSA = {
-  single: {
-    minimum: 13400,
-    moderate: 31700,
-    comfortable: 43900
-  },
-  couple: {
-    minimum: 21600,
-    moderate: 43900,
-    comfortable: 60600
-  }
-};
+const formatCurrencyK = v => `${v < 0 ? '−' : ''}£${Math.abs(Math.round((v || 0) / 1000))}k`;
+const PLSA = UK_REFERENCE.plsa; // .single/.couple keep their shape — livingStandardFor, warnings and the gauge are unchanged
 const livingStandardFor = (income, isCouple) => {
   const b = isCouple ? PLSA.couple : PLSA.single;
   if (income >= b.comfortable) return {
@@ -733,7 +803,7 @@ const makePerson = (o = {}) => ({
   retirementAge: 65,
   lifeExpectancy: 95,
   statePensionAge: 67,
-  statePensionAmount: 12548,
+  statePensionAmount: UK_REFERENCE.statePension.fullNewAnnual,
   cashIsaBalance: 0,
   cashIsaContribution: 0,
   cashIsaGrowth: 2,
@@ -863,6 +933,17 @@ const importPlanFields = parsed => {
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v13',
+  date: '2026-09-22', // set to the actual merge date
+  title: 'Income Tax is now included in your projection',
+  items: [
+    'Your projection now works out Income Tax on each person\'s pension withdrawals and State Pension every year, using England, Wales and Northern Ireland rates. Your income figures, Living Standard and "Can I retire?" verdict are now after tax, so savings may run down sooner than before.',
+    'The Retirement Income chart shows each year\'s tax as a bar below the line, with an estimate of the total tax over your retirement underneath. A short "Tax notes" list points out facts that apply to your plan — for example, reaching the higher-rate threshold — each with a link to the official GOV.UK page.',
+    'The tax-free lump sum is now limited to £268,275 per person (the Lump Sum Allowance). Anything above that stays in your pension.',
+    '"Assumptions & Disclaimers" is now called "How we calculate this", with a new Income Tax section, the date the figures were last updated, and GOV.UK links beside each figure.',
+    'The Living Standard bands now use the 2026 Retirement Living Standards from Pensions UK (the new name for the PLSA).'
+  ]
+}, {
   version: 'v12',
   date: '2026-09-21', // set to the actual merge date
   title: "Today's-money figures, an \"Explain this\" breakdown, and a privacy note added",
@@ -1175,10 +1256,10 @@ const PersonInputs = memo(function PersonInputs({
     className: "h-4 w-4 text-emerald-600"
   }), " Savings"), /*#__PURE__*/React.createElement(IsaTypeAccount, {
     label: "Cash ISA",
-    tooltip: "£20,000 annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.",
+    tooltip: `${formatCurrency(UK_REFERENCE.isa.allowance)} annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.`,
     balanceField: "cashIsaBalance",
     contributionField: "cashIsaContribution",
-    contributionSubtitle: "Shares the £20,000/yr ISA allowance",
+    contributionSubtitle: `Shares the ${formatCurrency(UK_REFERENCE.isa.allowance)}/yr ISA allowance`,
     growthField: "cashIsaGrowth",
     person: person,
     onChange: onChange,
@@ -1187,10 +1268,10 @@ const PersonInputs = memo(function PersonInputs({
     className: "pt-4"
   }, /*#__PURE__*/React.createElement(IsaTypeAccount, {
     label: "Stocks & Shares ISA",
-    tooltip: "£20,000 annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.",
+    tooltip: `${formatCurrency(UK_REFERENCE.isa.allowance)} annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.`,
     balanceField: "ssIsaBalance",
     contributionField: "ssIsaContribution",
-    contributionSubtitle: "Shares the £20,000/yr ISA allowance",
+    contributionSubtitle: `Shares the ${formatCurrency(UK_REFERENCE.isa.allowance)}/yr ISA allowance`,
     growthField: "ssIsaGrowth",
     person: person,
     onChange: onChange,
@@ -1199,10 +1280,10 @@ const PersonInputs = memo(function PersonInputs({
     className: "pt-4"
   }, /*#__PURE__*/React.createElement(IsaTypeAccount, {
     label: "Lifetime ISA (LISA)",
-    tooltip: "25% government bonus on contributions, up to £4,000/yr. Not accessible before age 60 in this tool (no first-home exception modelled).",
+    tooltip: `${UK_REFERENCE.lisa.bonusRate * 100}% government bonus on contributions, up to ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr. Not accessible before age ${UK_REFERENCE.lisa.accessAge} in this tool (no first-home exception modelled).`,
     balanceField: "lisaBalance",
     contributionField: "lisaContribution",
-    contributionSubtitle: "25% government bonus applied automatically. Max £4,000/yr.",
+    contributionSubtitle: `${UK_REFERENCE.lisa.bonusRate * 100}% government bonus applied automatically. Max ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr.`,
     growthField: "lisaGrowth",
     person: person,
     onChange: onChange,
@@ -1255,7 +1336,7 @@ const PersonInputs = memo(function PersonInputs({
     prefix: "£",
     accent: accent,
     subtitle: `Total: ${formatCurrency((person.pensionContribution + person.employerContribution) * 12)}/year`,
-    tooltip: "Combined annual allowance is £60,000 including employer contributions."
+    tooltip: `Combined annual allowance is ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} including employer contributions.`
   }), /*#__PURE__*/React.createElement("div", {
     id: `assumption-return-${personKey}`
   }, /*#__PURE__*/React.createElement(GrowthProfile, {
@@ -1273,7 +1354,7 @@ const PersonInputs = memo(function PersonInputs({
     className: "w-5 h-5 text-blue-600 rounded border-slate-300"
   }), /*#__PURE__*/React.createElement("span", {
     className: "ml-3 text-sm font-semibold text-slate-700"
-  }, "Take 25% tax-free lump sum at retirement")))), /*#__PURE__*/React.createElement("div", {
+  }, `Take ${UK_REFERENCE.lumpSumAllowance.fraction * 100}% tax-free lump sum at retirement (up to ${formatCurrency(UK_REFERENCE.lumpSumAllowance.amount)})`)))), /*#__PURE__*/React.createElement("div", {
     className: "pt-4 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-slate-800 mb-4 flex items-center gap-2"
@@ -1301,7 +1382,7 @@ const PersonInputs = memo(function PersonInputs({
     step: 100,
     prefix: "£",
     accent: accent,
-    tooltip: "Full new State Pension is £12,548/year (2026/27). Needs ~35 qualifying NI years."
+    tooltip: `Full new State Pension is ${formatCurrency(UK_REFERENCE.statePension.fullNewAnnual)}/year (${UK_REFERENCE.taxYear}). Needs ~35 qualifying NI years.`
   })), /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Expected Inheritance",
     field: "inheritanceAmount",
@@ -1329,7 +1410,8 @@ const ChartTooltip = ({
   payload,
   label,
   inflationRate,
-  excludeFromTotal = []
+  excludeFromTotal = [],
+  totalLabel = "Total (today's money)"
 }) => {
   if (!active || !payload || !payload.length) return null;
   const visible = payload.filter(e => e.value !== 0);
@@ -1348,7 +1430,7 @@ const ChartTooltip = ({
     className: "font-semibold tabular"
   }, formatCurrency(Math.abs(e.value))))), /*#__PURE__*/React.createElement("p", {
     className: "text-sm flex items-center justify-between gap-4 mt-2 pt-2 border-t border-slate-700 font-bold text-white"
-  }, /*#__PURE__*/React.createElement("span", null, "Total (today's money)"), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", null, totalLabel), /*#__PURE__*/React.createElement("span", {
     className: "tabular"
   }, formatToday(deflate(total, label, inflationRate)))));
 };
@@ -1589,12 +1671,13 @@ const IncomeChart = memo(function IncomeChart({
     width: "100%",
     height: 400
   }, /*#__PURE__*/React.createElement(ComposedChart, {
-    data: data
+    data: data,
+    stackOffset: "sign"
   }, /*#__PURE__*/React.createElement(CartesianGrid, {
     strokeDasharray: "3 3",
     stroke: isDark ? CHART_GRID_COLOR.dark : CHART_GRID_COLOR.light,
     vertical: false
-  }), /*#__PURE__*/React.createElement(XAxis, {
+  }), React.createElement(ReferenceLine, { y: 0, stroke: isDark ? CHART_AXIS_COLOR.dark : CHART_AXIS_COLOR.light }), /*#__PURE__*/React.createElement(XAxis, {
     dataKey: "year",
     stroke: isDark ? CHART_AXIS_COLOR.dark : CHART_AXIS_COLOR.light,
     style: {
@@ -1609,7 +1692,7 @@ const IncomeChart = memo(function IncomeChart({
     },
     tickFormatter: formatCurrencyK
   }), /*#__PURE__*/React.createElement(Tooltip, {
-    content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate, excludeFromTotal: ['Target Expenses'] })
+    content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate, excludeFromTotal: ['Target Expenses'], totalLabel: "Total after tax (today's money)" })
   }), /*#__PURE__*/React.createElement(Legend, {
     wrapperStyle: {
       paddingTop: 16,
@@ -1638,6 +1721,12 @@ const IncomeChart = memo(function IncomeChart({
     stackId: "a",
     fill: "#7c3aed",
     radius: [3, 3, 0, 0]
+  }), React.createElement(Bar, {
+    isAnimationActive: false,
+    dataKey: "Income Tax",
+    stackId: "a",
+    fill: "#64748b",
+    radius: [0, 0, 3, 3]
   }), /*#__PURE__*/React.createElement(Line, {
     isAnimationActive: false,
     type: "monotone",
@@ -1648,6 +1737,68 @@ const IncomeChart = memo(function IncomeChart({
     dot: false,
     name: "Target Expenses"
   })));
+});
+// Source link beside a reference figure in "How we calculate this"
+// (spec/018 §11) — a plain module-level helper, not a component.
+const sourceLink = (href, label) => React.createElement("a", { href, target: "_blank", rel: "noopener noreferrer", className: "text-blue-600 font-semibold" }, label, " ↗");
+// Wording for the "Tax notes" panel (spec/018 §9.2). Bound by the
+// fact-only rule in spec/018 §9.1: each note states only what happens,
+// when, and the threshold, then links the gov.uk page that sets it — never
+// a recommendation. Rates are read from UK_REFERENCE, not typed as literals
+// (Math.round because e.g. 0.4 * 1.5 * 100 is 60.00000000000001 in JS).
+function taxNoteText(n, name, isCouple) {
+  const R = UK_REFERENCE;
+  const pct = rate => `${Math.round(rate * 100)}%`;
+  const whose = isCouple ? `${name}'s` : 'your';
+  const whoseShort = isCouple ? `${name}'s` : 'your';
+  const fc = formatCurrency;
+  switch (n.type) {
+    case 'higherRate':
+      return {
+        text: `From ${n.year}, ${whose} taxable retirement income (${fc(n.amount)}) is above the higher-rate threshold (${fc(n.threshold)}); income above that threshold is taxed at ${pct(R.incomeTax.higherRate)}.`,
+        href: R.incomeTax.source, label: R.incomeTax.sourceLabel
+      };
+    case 'additionalRate':
+      return {
+        text: `From ${n.year}, ${whose} taxable retirement income (${fc(n.amount)}) is above the additional-rate threshold (${fc(n.threshold)}); income above that threshold is taxed at ${pct(R.incomeTax.additionalRate)}.`,
+        href: R.incomeTax.source, label: R.incomeTax.sourceLabel
+      };
+    case 'taper':
+      return {
+        text: `From ${n.year}, ${whose} taxable retirement income (${fc(n.amount)}) is between ${fc(n.threshold)} and the additional-rate threshold (${fc(n.upper)}). In this range the tax-free Personal Allowance goes down by £1 for every £2 of income above ${fc(n.threshold)}, so income in this range is taxed at an effective rate of ${pct(R.incomeTax.higherRate * 1.5)}.`,
+        href: R.incomeTax.source, label: R.incomeTax.sourceLabel
+      };
+    case 'lumpSumCapped':
+      return {
+        text: `In ${n.year}, ${whose} tax-free lump sum is capped at the Lump Sum Allowance (${fc(n.amount)}). The remaining ${fc(n.excess)} of the ${pct(R.lumpSumAllowance.fraction)} stays in ${whoseShort} pension and is taxed as income when it's drawn.`,
+        href: R.lumpSumAllowance.source, label: R.lumpSumAllowance.sourceLabel
+      };
+    case 'statePensionOverAllowance':
+      return {
+        text: `From ${n.year}, ${whose} State Pension alone (${fc(n.amount)}) is above the Personal Allowance (${fc(n.threshold)}), so some Income Tax is due on it even without other income. The government has announced that, from 2027/28, people whose only income is the basic or new State Pension won't have to pay small amounts of tax on it through Simple Assessment. This projection doesn't include that change.`,
+        href: R.statePension.taxSource, label: R.statePension.taxSourceLabel
+      };
+    default:
+      return { text: '', href: R.incomeTax.source, label: R.incomeTax.sourceLabel };
+  }
+}
+// Neutral, informational "Tax notes" panel (spec/018 §9.3) — module level
+// and memoised per CLAUDE.md / docs §5.3; never the red warning banner.
+const TaxNotesPanel = memo(function TaxNotesPanel({ notes, isCouple, p1Name, p2Name }) {
+  if (!notes.length) return null;
+  const nameOf = i => (i === 0 ? p1Name : p2Name);
+  return React.createElement("div", { className: "mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4" },
+    React.createElement("div", { className: "flex items-center gap-2 mb-2" },
+      React.createElement(Info, { className: "h-4 w-4 text-blue-600 flex-shrink-0" }),
+      React.createElement("h3", { className: "text-sm font-bold text-slate-900" }, "Tax notes")),
+    React.createElement("div", { className: "space-y-1.5" },
+      notes.map(n => {
+        const { text, href, label } = taxNoteText(n, nameOf(n.personIndex), isCouple);
+        return React.createElement("p", { key: `${n.type}-${n.personIndex}`, className: "text-sm text-slate-700" },
+          text, " ",
+          React.createElement("a", { href, target: "_blank", rel: "noopener noreferrer", className: "text-blue-600 font-semibold" },
+            label, " ↗"));
+      })));
 });
 // The "Can I retire?" headline (spec/done/011-can-i-retire-headline.md),
 // replacing the old mid-page "Longevity Analysis" card. The status badge
@@ -1731,7 +1882,7 @@ const VerdictHero = memo(function VerdictHero({
     className: "flex justify-between text-xs text-slate-600 mt-2 mb-4"
   }, /*#__PURE__*/React.createElement("span", null, "First retirement (", firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", planEnd, ")")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-3"
-  }, "Based on a fixed average return, no tax on retirement income, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement("span", {
+  }, "Based on a fixed average return, estimated Income Tax at England, Wales and Northern Ireland rates, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement("span", {
     className: "tooltip-trigger relative inline-flex align-text-top"
   }, /*#__PURE__*/React.createElement(Info, {
     className: "h-3 w-3 text-slate-400 cursor-help"
@@ -1794,7 +1945,7 @@ const AssumptionsPanel = memo(function AssumptionsPanel({
     type: "button",
     onClick: onShowFullAssumptions,
     className: "mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700"
-  }, "See full assumptions & disclaimers ↓"));
+  }, "See how we calculate this ↓"));
 });
 
 /* ---------------- Projection engine ---------------- */
@@ -1837,6 +1988,39 @@ function drawFromTier(instances, gap) {
     drawn: draws.reduce((s, d) => s + d, 0)
   };
 }
+// Income tax thresholds for row year `year` (tax year year/year+1):
+// frozen at the UK_REFERENCE figures through freezeLastYear, then uprated
+// by the household inflation input each year after (intent/018 decision 10).
+// All four thresholds move together, so the taper still ends exactly
+// at the additional-rate threshold (taper + 2 x PA) in every year.
+function taxThresholdsFor(year, inflationRate) {
+  const t = UK_REFERENCE.incomeTax;
+  const k = Math.pow(1 + inflationRate / 100, Math.max(0, year - t.freezeLastYear));
+  return {
+    personalAllowance: t.personalAllowance * k,
+    taperThreshold: t.taperThreshold * k,
+    higherRateThreshold: t.higherRateThreshold * k,
+    additionalRateThreshold: t.additionalRateThreshold * k
+  };
+}
+// Rest-of-UK income tax on one person's non-savings income for one year
+// (intent/018 decisions 5-7). The basic-rate band has a fixed width
+// (higherRateThreshold - personalAllowance = £37,700 today) above
+// whatever allowance remains after the £100k taper, and the additional
+// rate applies above additionalRateThreshold of taxable income. This is
+// HMRC's own structure, which gives the 60% effective marginal rate in
+// the taper zone.
+function incomeTaxFor(taxableIncome, th) {
+  const t = UK_REFERENCE.incomeTax;
+  if (!(taxableIncome > 0)) return 0;
+  const allowance = Math.max(0, th.personalAllowance - Math.max(0, taxableIncome - th.taperThreshold) / 2);
+  const taxable = Math.max(0, taxableIncome - allowance);
+  const basicBand = th.higherRateThreshold - th.personalAllowance;
+  const basic = Math.min(taxable, basicBand);
+  const higher = Math.min(Math.max(0, taxable - basicBand), th.additionalRateThreshold - basicBand);
+  const additional = Math.max(0, taxable - th.additionalRateThreshold);
+  return basic * t.basicRate + higher * t.higherRate + additional * t.additionalRate;
+}
 function projectJoint({
   inflationRate,
   withdrawalRate,
@@ -1848,7 +2032,7 @@ function projectJoint({
   person2
 }) {
   const inflM = y => Math.pow(1 + inflationRate / 100, Math.max(0, y));
-  const cap = 60000;
+  const cap = UK_REFERENCE.pensionAnnualAllowance.amount;
   const init = p => ({
     cfg: p,
     cashIsa: p.cashIsaBalance,
@@ -1878,11 +2062,19 @@ function projectJoint({
       const age = p.cfg.currentAge + y;
       const retired = age >= p.cfg.retirementAge;
       const hasSP = age >= p.cfg.statePensionAge;
+      let lumpSum = 0;
+      let lumpSumExcess = 0;
       if (retired && !p.appliedLump) {
         if (p.cfg.takeLumpSum) {
-          const ls = p.pension * 0.25;
-          p.pension -= ls;
-          p.ssIsa += ls;
+          // Tax-free cash = min(25% of pot, Lump Sum Allowance), per person.
+          // Any excess simply stays in the pension and is taxed as income when
+          // drawn (intent/018 decision 12). There is no one-off taxable payment.
+          const lsa = UK_REFERENCE.lumpSumAllowance;
+          const uncapped = p.pension * lsa.fraction;
+          lumpSum = Math.min(uncapped, lsa.amount);
+          lumpSumExcess = uncapped - lumpSum;
+          p.pension -= lumpSum;
+          p.ssIsa += lumpSum;
         }
         p.initialWithdrawal = p.pension * (withdrawalRate / 100);
         p.appliedLump = true;
@@ -1892,7 +2084,9 @@ function projectJoint({
         p,
         age,
         retired,
-        statePension: hasSP ? p.cfg.statePensionAmount * jInfl : 0
+        statePension: hasSP ? p.cfg.statePensionAmount * jInfl : 0,
+        lumpSum,
+        lumpSumExcess
       };
     });
     const anyRetired = year >= firstRetYear;
@@ -1905,7 +2099,16 @@ function projectJoint({
       totalPenW += d;
       return d;
     });
-    let gap = Math.max(0, targetExpenses - totalSP - totalPenW);
+    // Per-person taxable income = own pension draw + own State Pension
+    // (intent/018 decision 7). ISA/LISA/other-savings draws and the tax-free
+    // lump sum are not taxable. The 4%-rule draw stays gross (decision 8).
+    // Tax reduces net income, and the larger gap is funded from the existing
+    // tax-free savings tiers in the existing order. There is no gross-up.
+    const th = taxThresholdsFor(year, inflationRate);
+    const taxableIncomes = pp.map((x, i) => penDraws[i] + x.statePension);
+    const taxes = taxableIncomes.map(t => incomeTaxFor(t, th));
+    const totalTax = taxes.reduce((s, t) => s + t, 0);
+    let gap = Math.max(0, targetExpenses - (totalSP + totalPenW - totalTax));
 
     // Fixed drawdown priority: other savings -> Cash ISA -> S&S ISA -> LISA
     // (from age 60), each tier drawn proportionally-by-balance across every
@@ -1939,7 +2142,7 @@ function projectJoint({
 
     const lisaInstances = pp.map((x, pi) => ({
       pi,
-      balance: x.retired && x.age >= 60 ? x.p.lisa : 0
+      balance: x.retired && x.age >= UK_REFERENCE.lisa.accessAge ? x.p.lisa : 0
     }));
     const lisaResult = drawFromTier(lisaInstances, gap);
     gap = Math.max(0, gap - lisaResult.drawn);
@@ -1964,13 +2167,25 @@ function projectJoint({
       p2CashIsa: pp[1] ? Math.round(pp[1].p.cashIsa) : 0,
       p2SsIsa: pp[1] ? Math.round(pp[1].p.ssIsa) : 0,
       p2Lisa: pp[1] ? Math.round(pp[1].p.lisa) : 0,
-      p2OtherSavings: pp[1] ? Math.round(otherSavingsOf(1)) : 0
+      p2OtherSavings: pp[1] ? Math.round(otherSavingsOf(1)) : 0,
+      p1StatePension: Math.round(pp[0].statePension),
+      p2StatePension: pp[1] ? Math.round(pp[1].statePension) : 0,
+      p1TaxableIncome: Math.round(taxableIncomes[0]),
+      p2TaxableIncome: pp[1] ? Math.round(taxableIncomes[1]) : 0,
+      p1Tax: Math.round(taxes[0]),
+      p2Tax: pp[1] ? Math.round(taxes[1]) : 0,
+      p1LumpSum: Math.round(pp[0].lumpSum),           // non-zero only in that person's retirement year
+      p2LumpSum: pp[1] ? Math.round(pp[1].lumpSum) : 0,
+      p1LumpSumExcess: Math.round(pp[0].lumpSumExcess),
+      p2LumpSumExcess: pp[1] ? Math.round(pp[1].lumpSumExcess) : 0
     };
     row.p1Isa = row.p1CashIsa + row.p1SsIsa + row.p1Lisa;
     row.p2Isa = row.p2CashIsa + row.p2SsIsa + row.p2Lisa;
     row.p1Total = row.p1Pension + row.p1Isa + row.p1OtherSavings;
     row.p2Total = row.p2Pension + row.p2Isa + row.p2OtherSavings;
     row.totalPension = row.p1Pension + row.p2Pension;
+    row.incomeTax = row.p1Tax + row.p2Tax;          // household, from rounded parts (same pattern as totalPension)
+    row.netIncome = row.statePension + row.pensionWithdrawal - row.incomeTax; // taxable income after tax; excludes savings draws
     row.totalIsa = row.p1Isa + row.p2Isa;
     row.totalOtherSavings = row.p1OtherSavings + row.p2OtherSavings;
     data.push(row);
@@ -1989,7 +2204,7 @@ function projectJoint({
       if (!x.retired) {
         for (let m = 0; m < 12; m++) x.p.cashIsa = x.p.cashIsa * (1 + x.p.mCashIsaG) + x.p.cfg.cashIsaContribution;
         for (let m = 0; m < 12; m++) x.p.ssIsa = x.p.ssIsa * (1 + x.p.mSsIsaG) + x.p.cfg.ssIsaContribution;
-        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + x.p.cfg.lisaContribution * 1.25;
+        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + x.p.cfg.lisaContribution * (1 + UK_REFERENCE.lisa.bonusRate);
         x.p.other.forEach(acc => {
           const mG = Math.pow(1 + acc.growth / 100, 1 / 12) - 1;
           for (let m = 0; m < 12; m++) acc.balance = acc.balance * (1 + mG) + acc.contribution;
@@ -2068,7 +2283,7 @@ function findSupportableDelta(engineArgs, currentlySucceeds) {
 // A separate function from deflate() — no today's-money treatment here
 // (intent/015 decision 6). people is [person1] or [person1, person2].
 function computePotBreakdown(people, projections, bothYear) {
-  const cap = 60000; // pension annual allowance, same cap projectJoint() applies
+  const cap = UK_REFERENCE.pensionAnnualAllowance.amount; // pension annual allowance, same cap projectJoint() applies
   let startingBalance = 0;
   let contributions = 0;
   people.forEach(p => {
@@ -2082,7 +2297,7 @@ function computePotBreakdown(people, projections, bothYear) {
     contributions += pensionMonthly * 12 * years;
     contributions += p.cashIsaContribution * 12 * years;
     contributions += p.ssIsaContribution * 12 * years;
-    contributions += p.lisaContribution * 1.25 * 12 * years; // 25% government bonus, same as projectJoint()
+    contributions += p.lisaContribution * (1 + UK_REFERENCE.lisa.bonusRate) * 12 * years; // 25% government bonus, same as projectJoint()
     contributions += (p.otherSavings || []).reduce((s, a) => s + a.contribution * 12 * years, 0);
   });
   let withdrawals = 0;
@@ -2094,6 +2309,64 @@ function computePotBreakdown(people, projections, bothYear) {
   const totalPot = endRow.totalPension + endRow.totalIsa + endRow.totalOtherSavings;
   const growth = totalPot - startingBalance - contributions + withdrawals;
   return { startingBalance, contributions, growth, withdrawals, totalPot };
+}
+// Discounts a nominal figure from its target calendar year back to
+// CURRENT_YEAR ("today's money"), at whatever single inflation rate is
+// passed in (the household's d.infl — the only inflation figure the model
+// has; intent/013 decision 5). Pure and display-layer only — projectJoint()
+// and its output shape are untouched (intent/013 decision 7). Takes
+// inflationRate explicitly rather than closing over d.infl so it stays a
+// plain module-level function, matching every other helper here.
+const deflate = (nominalValue, targetYear, inflationRate) =>
+  nominalValue / Math.pow(1 + inflationRate / 100, Math.max(0, targetYear - CURRENT_YEAR));
+// "Estimated income tax over retirement" (intent/018 decision 15). The
+// today's-money figure deflates EACH YEAR's tax from its own year and
+// sums the results. Deflating the nominal total once, from any single
+// year, would be wrong: tax paid in 2060 and 2090 is discounted by
+// different amounts.
+function lifetimeTaxTotals(projections, firstRet, planEnd, inflationRate) {
+  let nominal = 0;
+  let today = 0;
+  for (const r of projections) {
+    if (r.year < firstRet || r.year > planEnd) continue;
+    nominal += r.incomeTax;
+    today += deflate(r.incomeTax, r.year, inflationRate);
+  }
+  return { nominal, today };
+}
+// Facts for the "Tax notes" panel (intent/018 decisions 16-18). Per
+// person, the FIRST row (year <= planEnd) where each condition holds.
+// Returns data only; the wording lives in taxNoteText() (display layer).
+const TAX_NOTE_ORDER = ['higherRate', 'additionalRate', 'taper', 'lumpSumCapped', 'statePensionOverAllowance'];
+function computeTaxNotes(projections, people, inflationRate, planEnd) {
+  const notes = [];
+  people.forEach((_, i) => {
+    const k = `p${i + 1}`;
+    const rows = projections.filter(r => r.year <= planEnd);
+    const find = test => {
+      for (const r of rows) {
+        const th = taxThresholdsFor(r.year, inflationRate);
+        if (test(r, th)) return { r, th };
+      }
+      return null;
+    };
+    const add = (type, hit, fields) => {
+      if (hit) notes.push({ type, personIndex: i, year: hit.r.year, ...fields(hit.r, hit.th) });
+    };
+    const income = r => r[`${k}TaxableIncome`];
+    add('higherRate', find((r, th) => income(r) > th.higherRateThreshold),
+      (r, th) => ({ amount: income(r), threshold: th.higherRateThreshold }));
+    add('additionalRate', find((r, th) => income(r) > th.additionalRateThreshold),
+      (r, th) => ({ amount: income(r), threshold: th.additionalRateThreshold }));
+    add('taper', find((r, th) => income(r) > th.taperThreshold && income(r) < th.additionalRateThreshold),
+      (r, th) => ({ amount: income(r), threshold: th.taperThreshold, upper: th.additionalRateThreshold }));
+    add('lumpSumCapped', find(r => r[`${k}LumpSumExcess`] > 0),
+      r => ({ amount: r[`${k}LumpSum`], excess: r[`${k}LumpSumExcess`] }));
+    add('statePensionOverAllowance', find((r, th) => r[`${k}StatePension`] > th.personalAllowance),
+      (r, th) => ({ amount: r[`${k}StatePension`], threshold: th.personalAllowance }));
+  });
+  return notes.sort((a, b) => a.year - b.year || a.personIndex - b.personIndex
+    || TAX_NOTE_ORDER.indexOf(a.type) - TAX_NOTE_ORDER.indexOf(b.type));
 }
 // ENGINE-EXTRACT-END
 
@@ -2118,15 +2391,8 @@ const nameAtAge = (name, age, isCouple) => isCouple ? `${name} at ${age}` : `age
 // so they get their own separator rather than forcing nameAtAge's pattern.
 const nameValue = (name, value, isCouple) => isCouple ? `${name}: ${value}` : value;
 
-// Discounts a nominal figure from its target calendar year back to
-// CURRENT_YEAR ("today's money"), at whatever single inflation rate is
-// passed in (the household's d.infl — the only inflation figure the model
-// has; intent/013 decision 5). Pure and display-layer only — projectJoint()
-// and its output shape are untouched (intent/013 decision 7). Takes
-// inflationRate explicitly rather than closing over d.infl so it stays a
-// plain module-level function, matching every other helper here.
-const deflate = (nominalValue, targetYear, inflationRate) =>
-  nominalValue / Math.pow(1 + inflationRate / 100, Math.max(0, targetYear - CURRENT_YEAR));
+// deflate() now lives inside the ENGINE-EXTRACT span above, beside
+// lifetimeTaxTotals() (spec/018 §4.1), so the test harness can exercise it.
 
 // Rounds to the nearest £100 and prefixes "≈" (intent/013 decision 6) — a
 // deflated figure carries one more assumption (the inflation rate) than
@@ -2465,7 +2731,7 @@ function RetirementCalculator() {
       isa,
       otherSavings,
       total: pension + isa + otherSavings,
-      lumpSum: person.takeLumpSum ? pension / 3 : 0,
+      lumpSum: row[`p${key}LumpSum`],
       pensionIncome: pension * (d.wr / 100)
     };
   };
@@ -2475,18 +2741,29 @@ function RetirementCalculator() {
     const bothYear = Math.max(CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge) : -Infinity);
     const row = projections.find(r => r.year === bothYear) || projections[projections.length - 1];
     const y = bothYear - CURRENT_YEAR;
-    let sp = 0;
-    if (d.p1.currentAge + y >= d.p1.statePensionAge) sp += d.p1.statePensionAmount;
-    if (isCouple && d.p2.currentAge + y >= d.p2.statePensionAge) sp += d.p2.statePensionAmount;
-    const pensionIncome = p1Summary.pensionIncome + (p2Summary ? p2Summary.pensionIncome : 0);
+    const sp1 = d.p1.currentAge + y >= d.p1.statePensionAge ? d.p1.statePensionAmount : 0;
+    const sp2 = isCouple && d.p2.currentAge + y >= d.p2.statePensionAge ? d.p2.statePensionAmount : 0;
+    // Same per-person helper and same year thresholds as projectJoint()
+    // (intent/018 decisions 7, 13), applied to the components this card
+    // already shows. Components are rounded to whole pounds before the
+    // total is derived, so the displayed "Pension £X · State £Y · Tax −£Z"
+    // always adds up exactly to the after-tax figure above it.
+    const th = taxThresholdsFor(bothYear, d.infl);
+    const pensionIncome = Math.round(p1Summary.pensionIncome + (p2Summary ? p2Summary.pensionIncome : 0));
+    const statePension = Math.round(sp1 + sp2);
+    const incomeTax = Math.round(incomeTaxFor(p1Summary.pensionIncome + sp1, th)
+      + (p2Summary ? incomeTaxFor(p2Summary.pensionIncome + sp2, th) : 0));
+    const grossIncome = pensionIncome + statePension;
     return {
       totalPot: row.totalPension + row.totalIsa + row.totalOtherSavings,
       pensionIncome,
-      statePension: sp,
-      annualIncome: pensionIncome + sp,
+      statePension,
+      grossIncome,
+      incomeTax,
+      annualIncome: grossIncome - incomeTax,   // now AFTER tax — every existing reader picks this up
       year: bothYear
     };
-  }, [projections, d.p1, d.p2, isCouple, p1Summary, p2Summary]);
+  }, [projections, d.p1, d.p2, d.infl, isCouple, p1Summary, p2Summary]);
   const livingStandard = useMemo(() => livingStandardFor(household.annualIncome, isCouple), [household.annualIncome, isCouple]);
   const potBreakdown = useMemo(() => computePotBreakdown(isCouple ? [d.p1, d.p2] : [d.p1], projections, household.year), [d.p1, d.p2, isCouple, projections, household.year]);
   const longevity = useMemo(() => {
@@ -2513,6 +2790,14 @@ function RetirementCalculator() {
       status
     };
   }, [projections, d.p1, d.p2, isCouple]);
+  // spec/018 §5.3. Declared after longevity (not beside potBreakdown, which
+  // comes before it) because both read longevity.firstRet/planEnd.
+  const lifetimeTax = useMemo(
+    () => lifetimeTaxTotals(projections, longevity.firstRet, longevity.planEnd, d.infl),
+    [projections, longevity.firstRet, longevity.planEnd, d.infl]);
+  const taxNotes = useMemo(
+    () => computeTaxNotes(projections, isCouple ? [d.p1, d.p2] : [d.p1], d.infl, longevity.planEnd),
+    [projections, isCouple, d.p1, d.p2, d.infl, longevity.planEnd]);
   // The "Can I retire?" headline verdict (spec/done/011-can-i-retire-headline.md).
   // succeeds reuses longevity's own depleted/planEnd fields via the same rule,
   // extracted as planSucceeds() so this and findSupportableDelta() agree.
@@ -2537,11 +2822,11 @@ function RetirementCalculator() {
   const warnings = useMemo(() => {
     const w = [];
     const check = (p, label) => {
-      if ((p.pensionContribution + p.employerContribution) * 12 > 60000) w.push(`${label}: pension contributions exceed £60,000 annual allowance`);
+      if ((p.pensionContribution + p.employerContribution) * 12 > UK_REFERENCE.pensionAnnualAllowance.amount) w.push(`${label}: pension contributions exceed ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} annual allowance`);
       if (p.retirementAge < p.statePensionAge) w.push(`${label}: ${p.statePensionAge - p.retirementAge}-year gap before State Pension starts`);
       const isaAnnual = (p.cashIsaContribution + p.ssIsaContribution + p.lisaContribution) * 12;
-      if (isaAnnual > 20000) w.push(`${label}: ISA contributions exceed £20,000 annual allowance`);
-      if (p.lisaContribution * 12 > 4000) w.push(`${label}: LISA contributions exceed £4,000 annual allowance`);
+      if (isaAnnual > UK_REFERENCE.isa.allowance) w.push(`${label}: ISA contributions exceed ${formatCurrency(UK_REFERENCE.isa.allowance)} annual allowance`);
+      if (p.lisaContribution * 12 > UK_REFERENCE.lisa.annualLimit) w.push(`${label}: LISA contributions exceed ${formatCurrency(UK_REFERENCE.lisa.annualLimit)} annual allowance`);
     };
     check(d.p1, isCouple ? d.p1.name : 'You');
     if (isCouple) check(d.p2, d.p2.name);
@@ -2566,6 +2851,7 @@ function RetirementCalculator() {
     ISA: r.isaWithdrawal,
     'Other Savings': r.otherSavingsWithdrawal,
     'State Pension': r.statePension,
+    'Income Tax': -r.incomeTax,
     Expenses: r.targetExpenses
   })), [projections, longevity.firstRet]);
   const bands = isCouple ? PLSA.couple : PLSA.single;
@@ -2733,7 +3019,7 @@ function RetirementCalculator() {
     className: "bg-emerald-50 rounded-lg px-3 py-2 border border-emerald-200 min-w-0"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] md:text-xs font-semibold text-slate-600 uppercase tracking-wide"
-  }, isCouple ? 'Household Income' : 'Annual Income'), /*#__PURE__*/React.createElement("p", {
+  }, 'Income after tax'), /*#__PURE__*/React.createElement("p", {
     className: "text-xs md:text-xl font-bold text-slate-900 tabular break-words"
   }, formatCurrency(household.annualIncome))), /*#__PURE__*/React.createElement("div", {
     className: `rounded-lg px-3 py-2 border min-w-0 ${livingStandard.bg} ${livingStandard.border}`
@@ -2840,7 +3126,7 @@ function RetirementCalculator() {
     className: "flex items-center justify-between mb-2"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "text-xs font-semibold text-slate-600 uppercase tracking-wide"
-  }, isCouple ? 'Household Income' : 'Annual Income'), /*#__PURE__*/React.createElement(Wallet, {
+  }, isCouple ? 'Household Income after tax' : 'Annual Income after tax'), /*#__PURE__*/React.createElement(Wallet, {
     className: "h-5 w-5 text-blue-600"
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-2xl font-bold text-slate-900 tabular"
@@ -2860,7 +3146,7 @@ function RetirementCalculator() {
     className: `text-2xl font-bold ${livingStandard.color}`
   }, livingStandard.level), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-1"
-  }, "PLSA ", isCouple ? 'two-person' : 'one-person'))), isCouple && /*#__PURE__*/React.createElement("div", {
+  }, UK_REFERENCE.plsa.publisher, " ", isCouple ? 'two-person' : 'one-person'))), isCouple && /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-1 md:grid-cols-2 gap-5 mb-8"
   }, [{
     s: p1Summary,
@@ -3057,7 +3343,7 @@ function RetirementCalculator() {
     max: 5,
     step: 0.1,
     suffix: "%",
-    tooltip: "The 4% rule: withdraw 4% of the pot in year one, then increase with inflation each year."
+    tooltip: "The 4% rule: withdraw 4% of the pot in year one, then increase with inflation each year. The rate applies to the amount taken out before Income Tax."
   })))), /*#__PURE__*/React.createElement("div", {
     className: "lg:col-span-2 space-y-6"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3082,11 +3368,21 @@ function RetirementCalculator() {
     className: "text-2xl font-bold text-slate-900 mb-2 serif"
   }, "Retirement Income vs Expenses"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 mb-6"
-  }, isCouple ? 'Combined household' : 'Your', " income by source against target spending (inflation-adjusted)."), /*#__PURE__*/React.createElement(IncomeChart, {
+  }, isCouple ? 'Combined household' : 'Your', " income by source against target spending (inflation-adjusted). Income Tax is shown below the line."), /*#__PURE__*/React.createElement(IncomeChart, {
     data: incomeData,
     isDark: isDark,
     inflationRate: d.infl
-  })), /*#__PURE__*/React.createElement("div", {
+  }), React.createElement("div", {
+    className: "mt-3 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap"
+  },
+    React.createElement("p", { className: "text-sm text-slate-700" },
+      "Estimated income tax over retirement: ",
+      React.createElement("span", { className: "font-bold text-slate-900 tabular" }, formatCurrency(lifetimeTax.nominal)),
+      " (", formatToday(lifetimeTax.today), " in today's money)"),
+    React.createElement("span", {
+      className: "text-xs font-semibold text-slate-600 bg-slate-100 rounded-full px-2 py-1"
+    }, UK_REFERENCE.taxYear, " tax year")
+  ), React.createElement(TaxNotesPanel, { notes: taxNotes, isCouple, p1Name: d.p1.name, p2Name: d.p2.name })), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-2xl font-bold text-slate-900 mb-6 serif"
@@ -3100,7 +3396,7 @@ function RetirementCalculator() {
     className: "text-sm font-semibold text-slate-500 tabular mb-1"
   }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm"
-  }, "Under these assumptions, sustainable annual income, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
+  }, "Under these assumptions, sustainable annual income after tax, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 flex-wrap"
   }, /*#__PURE__*/React.createElement("span", {
     className: "flex items-center gap-1.5"
@@ -3110,7 +3406,11 @@ function RetirementCalculator() {
     className: "flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-full bg-violet-500"
-  }), "State ", formatCurrency(household.statePension)))), /*#__PURE__*/React.createElement("div", {
+  }), "State ", formatCurrency(household.statePension)), household.incomeTax > 0 && React.createElement("span", {
+    className: "flex items-center gap-1.5"
+  }, React.createElement("span", {
+    className: "w-2.5 h-2.5 rounded-full bg-slate-400"
+  }), "Tax −", formatCurrency(household.incomeTax)))), /*#__PURE__*/React.createElement("div", {
     className: "relative pt-10 pb-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "h-9 rounded-full relative overflow-hidden",
@@ -3161,9 +3461,9 @@ function RetirementCalculator() {
     className: `text-2xl font-bold ${livingStandard.color} text-center`
   }, livingStandard.level, " Living Standard"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-slate-500 text-center mt-1"
-  }, "PLSA ", isCouple ? 'two-person' : 'one-person', " household, outside London")), /*#__PURE__*/React.createElement("p", {
+  }, UK_REFERENCE.plsa.publisher, " ", isCouple ? 'two-person' : 'one-person', " household, outside London")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 text-center mt-2"
-  }, "The income above is shown in future £, before adjusting for inflation. The PLSA bands are today's-money figures, so the two aren't directly comparable."))), /*#__PURE__*/React.createElement("div", {
+  }, "The income above is shown in future £, before adjusting for inflation. The Pensions UK bands are today's-money figures, so the two aren't directly comparable."))), /*#__PURE__*/React.createElement("div", {
     id: "assumptions-disclaimers",
     className: "bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
@@ -3171,37 +3471,66 @@ function RetirementCalculator() {
     className: "w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-bold text-slate-900 serif"
-  }, "Assumptions & Disclaimers"), showAssumptions ? /*#__PURE__*/React.createElement(ChevronUp, {
+  }, "How we calculate this"), showAssumptions ? /*#__PURE__*/React.createElement(ChevronUp, {
     className: "h-6 w-6 text-slate-600"
   }) : /*#__PURE__*/React.createElement(ChevronDown, {
     className: "h-6 w-6 text-slate-600"
   })), showAssumptions && /*#__PURE__*/React.createElement("div", {
     className: "px-6 pb-6 space-y-4 text-sm text-slate-700 border-t border-slate-200 pt-4"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, React.createElement("p", { className: "text-xs text-slate-500" }, "Figures last updated: ", UK_REFERENCE.lastUpdated, " (", UK_REFERENCE.taxYear, " tax year)"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
   }, "Joint planning model"), /*#__PURE__*/React.createElement("p", null, "Each person’s pension and ISA grow and are drawn independently using their own ages and retirement dates. Shared living costs and the mortgage are treated as one joint liability funded from combined pots once the first person retires. The still-working partner’s salary is not modelled, so household costs are drawn from savings from the first retirement onward — a deliberately cautious assumption.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
   }, "Investment growth"), /*#__PURE__*/React.createElement("p", null, "Growth rates are illustrative. Actual returns vary with markets and fees.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
-  }, "Safe withdrawal rate (4% rule)"), /*#__PURE__*/React.createElement("p", null, "Each person withdraws their chosen rate of their pension pot in their first year of retirement, then increases it with inflation. Any remaining spending gap is drawn from other savings first, then Cash ISA, then Stocks & Shares ISA, then the LISA (from age 60).")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mb-1"
-  }, "PLSA Retirement Living Standards (2025/26)"), /*#__PURE__*/React.createElement("p", null, "One-person: Minimum £13,400, Moderate £31,700, Comfortable £43,900. Two-person: Minimum £21,600, Moderate £43,900, Comfortable £60,600. After-tax, excluding housing, outside London.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mb-1"
-  }, "State Pension"), /*#__PURE__*/React.createElement("p", null, "Full new State Pension is £12,548/year (2026/27), beginning at each person’s State Pension age (rising 66→67). Actual amounts depend on NI record.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
-    className: "font-bold text-slate-900 mb-1"
-  }, "Allowances"), /*#__PURE__*/React.createElement("p", null, "Pension annual allowance £60,000 (incl. employer); combined Cash ISA + Stocks & Shares ISA + LISA allowance £20,000, of which up to £4,000 can be LISA (2026/27). LISA contributions get a 25% government bonus and aren't accessible before age 60 in this tool.")), /*#__PURE__*/React.createElement("div", {
+  }, "Safe withdrawal rate (4% rule)"), /*#__PURE__*/React.createElement("p", null, "Each person withdraws their chosen rate of their pension pot in their first year of retirement, then increases it with inflation. Any remaining spending gap is drawn from other savings first, then Cash ISA, then Stocks & Shares ISA, then the LISA (from age 60). The rate applies to the amount taken out of the pension before Income Tax.")),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Income Tax"),
+    React.createElement("p", null,
+      `Income Tax is worked out for each person separately, every year, on their pension withdrawals plus their State Pension, using ${UK_REFERENCE.incomeTax.region} rates for ${UK_REFERENCE.taxYear}: a tax-free Personal Allowance of ${formatCurrency(UK_REFERENCE.incomeTax.personalAllowance)}, ${Math.round(UK_REFERENCE.incomeTax.basicRate * 100)}% on income up to ${formatCurrency(UK_REFERENCE.incomeTax.higherRateThreshold)}, ${Math.round(UK_REFERENCE.incomeTax.higherRate * 100)}% above that, and ${Math.round(UK_REFERENCE.incomeTax.additionalRate * 100)}% above ${formatCurrency(UK_REFERENCE.incomeTax.additionalRateThreshold)}. The Personal Allowance goes down by £1 for every £2 of income above ${formatCurrency(UK_REFERENCE.incomeTax.taperThreshold)}. Money taken from ISAs, the LISA and other savings, and the tax-free lump sum, is not taxed. Tax is taken off your income, and any shortfall against your spending is covered from your savings in the usual order. Each person uses their own Personal Allowance.`,
+      " ", sourceLink(UK_REFERENCE.incomeTax.source, UK_REFERENCE.incomeTax.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Tax thresholds in future years"),
+    React.createElement("p", null,
+      `The government has kept the Personal Allowance and the higher-rate threshold at today's amounts until 5 April 2031 (the end of the ${UK_REFERENCE.incomeTax.freezeLastTaxYear} tax year). This projection keeps all the thresholds above, including ${formatCurrency(UK_REFERENCE.incomeTax.taperThreshold)} and ${formatCurrency(UK_REFERENCE.incomeTax.additionalRateThreshold)}, at today's amounts until then, and from the following tax year raises them each year by your inflation assumption. Future government policy may be different.`,
+      " ", sourceLink(UK_REFERENCE.incomeTax.freezeSource, UK_REFERENCE.incomeTax.freezeSourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Tax-free lump sum"),
+    React.createElement("p", null,
+      `If you choose to take it, the tax-free lump sum is ${Math.round(UK_REFERENCE.lumpSumAllowance.fraction * 100)}% of your pension pot at retirement, up to the Lump Sum Allowance of ${formatCurrency(UK_REFERENCE.lumpSumAllowance.amount)} per person. If ${Math.round(UK_REFERENCE.lumpSumAllowance.fraction * 100)}% would be more than that, the rest stays in your pension and is taxed as income when you draw it. The allowance is kept at ${formatCurrency(UK_REFERENCE.lumpSumAllowance.amount)} in every future year.`,
+      " ", sourceLink(UK_REFERENCE.lumpSumAllowance.source, UK_REFERENCE.lumpSumAllowance.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, UK_REFERENCE.plsa.label),
+    React.createElement("p", null,
+      `One-person: Minimum ${formatCurrency(UK_REFERENCE.plsa.single.minimum)}, Moderate ${formatCurrency(UK_REFERENCE.plsa.single.moderate)}, Comfortable ${formatCurrency(UK_REFERENCE.plsa.single.comfortable)}. Two-person: Minimum ${formatCurrency(UK_REFERENCE.plsa.couple.minimum)}, Moderate ${formatCurrency(UK_REFERENCE.plsa.couple.moderate)}, Comfortable ${formatCurrency(UK_REFERENCE.plsa.couple.comfortable)}. ${UK_REFERENCE.plsa.basis.charAt(0).toUpperCase()}${UK_REFERENCE.plsa.basis.slice(1)}.`,
+      " ", sourceLink(UK_REFERENCE.plsa.source, UK_REFERENCE.plsa.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "State Pension"),
+    React.createElement("p", null,
+      `Full new State Pension is ${formatCurrency(UK_REFERENCE.statePension.fullNewAnnual)}/year (£${UK_REFERENCE.statePension.fullNewWeekly.toFixed(2)}/week, ${UK_REFERENCE.taxYear}), beginning at each person’s State Pension age (rising 66→67). Actual amounts depend on NI record. The State Pension is taxable income. If it is more than the Personal Allowance on its own, some tax is due on it. The government has announced that from 2027/28 people whose only income is the basic or new State Pension won't have to pay small amounts of tax on it through Simple Assessment; this projection doesn't include that.`,
+      " ", sourceLink(UK_REFERENCE.statePension.source, UK_REFERENCE.statePension.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.statePension.taxSource, UK_REFERENCE.statePension.taxSourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Allowances"),
+    React.createElement("p", null,
+      `Pension annual allowance ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} (incl. employer); combined Cash ISA + Stocks & Shares ISA + LISA allowance ${formatCurrency(UK_REFERENCE.isa.allowance)}, of which up to ${formatCurrency(UK_REFERENCE.lisa.annualLimit)} can be LISA (${UK_REFERENCE.taxYear}). LISA contributions get a ${Math.round(UK_REFERENCE.lisa.bonusRate * 100)}% government bonus and aren't accessible before age ${UK_REFERENCE.lisa.accessAge} in this tool. Pension contributions above the ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} annual allowance (including employer contributions) are capped in this projection rather than taxed. The lower ${formatCurrency(UK_REFERENCE.moneyPurchaseAnnualAllowance.amount)} Money Purchase Annual Allowance, which applies once someone starts taking money flexibly from a pension while still paying in, can't arise here, because contributions stop in the same year withdrawals start.`,
+      " ", sourceLink(UK_REFERENCE.pensionAnnualAllowance.source, UK_REFERENCE.pensionAnnualAllowance.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.moneyPurchaseAnnualAllowance.source, UK_REFERENCE.moneyPurchaseAnnualAllowance.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.isa.source, UK_REFERENCE.isa.sourceLabel),
+      " · ", sourceLink(UK_REFERENCE.lisa.source, UK_REFERENCE.lisa.sourceLabel))),
+  React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Not included"),
+    React.createElement("p", null,
+      "Scottish Income Tax rates, tax on interest from savings outside ISAs (the Personal Savings Allowance), Marriage Allowance, Blind Person's Allowance and other reliefs are not included.",
+      " ", sourceLink(UK_REFERENCE.notModelled.scottishIncomeTax, "GOV.UK: Scottish Income Tax"),
+      " · ", sourceLink(UK_REFERENCE.notModelled.personalSavingsAllowance, "GOV.UK: tax on savings interest"),
+      " · ", sourceLink(UK_REFERENCE.notModelled.marriageAllowance, "GOV.UK: Marriage Allowance"),
+      " · ", sourceLink(UK_REFERENCE.notModelled.blindPersonsAllowance, "GOV.UK: Blind Person's Allowance"))), /*#__PURE__*/React.createElement("div", {
     className: "bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r"
   }, /*#__PURE__*/React.createElement("p", {
     className: "font-bold text-amber-900"
   }, "Important"), /*#__PURE__*/React.createElement("p", {
     className: "text-amber-800 mt-1"
-  }, "For planning and illustration only — not financial advice. Retirement income tax is not modelled. Consult a qualified financial adviser for personal recommendations."))))))), /*#__PURE__*/React.createElement("footer", {
+  }, `For planning and illustration only — not financial advice. Income Tax is an estimate using ${UK_REFERENCE.incomeTax.region} rates and doesn't include every allowance or relief. Consult a qualified financial adviser for personal recommendations.`))))))), /*#__PURE__*/React.createElement("footer", {
     className: "bg-slate-900 text-white mt-16 py-8 text-center"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-slate-400"
   }, "UK Retirement Planner • For illustrative purposes only • Not financial advice"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm mt-2"
-  }, "Based on 2026/27 UK tax year allowances and PLSA Retirement Living Standards"), /*#__PURE__*/React.createElement("p", {
+  }, `Based on ${UK_REFERENCE.taxYear} UK tax year figures and ${UK_REFERENCE.plsa.publisher} Retirement Living Standards (${UK_REFERENCE.plsa.year})`), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Lock, {
     className: "h-3.5 w-3.5 flex-shrink-0"

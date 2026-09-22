@@ -1,6 +1,6 @@
 # UK Retirement Planner
 
-An interactive, year-by-year UK retirement planning calculator — pensions, ISAs, the State Pension, mortgage runoff and inheritance, benchmarked against the [PLSA Retirement Living Standards](https://www.retirementlivingstandards.org.uk/). Supports individual or joint (couple) planning.
+An interactive, year-by-year UK retirement planning calculator — pensions, ISAs, the State Pension, mortgage runoff and inheritance, benchmarked against the [Retirement Living Standards](https://www.retirementlivingstandards.org.uk/details) (Pensions UK, formerly the PLSA). Supports individual or joint (couple) planning.
 
 **Live app:** https://aggallim.github.io/retirement-planner/
 
