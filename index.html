@@ -1976,11 +1976,19 @@ function projectJoint({
       const age = p.cfg.currentAge + y;
       const retired = age >= p.cfg.retirementAge;
       const hasSP = age >= p.cfg.statePensionAge;
+      let lumpSum = 0;
+      let lumpSumExcess = 0;
       if (retired && !p.appliedLump) {
         if (p.cfg.takeLumpSum) {
-          const ls = p.pension * 0.25;
-          p.pension -= ls;
-          p.ssIsa += ls;
+          // Tax-free cash = min(25% of pot, Lump Sum Allowance), per person.
+          // Any excess simply stays in the pension and is taxed as income when
+          // drawn (intent/018 decision 12). There is no one-off taxable payment.
+          const lsa = UK_REFERENCE.lumpSumAllowance;
+          const uncapped = p.pension * lsa.fraction;
+          lumpSum = Math.min(uncapped, lsa.amount);
+          lumpSumExcess = uncapped - lumpSum;
+          p.pension -= lumpSum;
+          p.ssIsa += lumpSum;
         }
         p.initialWithdrawal = p.pension * (withdrawalRate / 100);
         p.appliedLump = true;
@@ -1990,7 +1998,9 @@ function projectJoint({
         p,
         age,
         retired,
-        statePension: hasSP ? p.cfg.statePensionAmount * jInfl : 0
+        statePension: hasSP ? p.cfg.statePensionAmount * jInfl : 0,
+        lumpSum,
+        lumpSumExcess
       };
     });
     const anyRetired = year >= firstRetYear;
@@ -2003,7 +2013,16 @@ function projectJoint({
       totalPenW += d;
       return d;
     });
-    let gap = Math.max(0, targetExpenses - totalSP - totalPenW);
+    // Per-person taxable income = own pension draw + own State Pension
+    // (intent/018 decision 7). ISA/LISA/other-savings draws and the tax-free
+    // lump sum are not taxable. The 4%-rule draw stays gross (decision 8).
+    // Tax reduces net income, and the larger gap is funded from the existing
+    // tax-free savings tiers in the existing order. There is no gross-up.
+    const th = taxThresholdsFor(year, inflationRate);
+    const taxableIncomes = pp.map((x, i) => penDraws[i] + x.statePension);
+    const taxes = taxableIncomes.map(t => incomeTaxFor(t, th));
+    const totalTax = taxes.reduce((s, t) => s + t, 0);
+    let gap = Math.max(0, targetExpenses - (totalSP + totalPenW - totalTax));
 
     // Fixed drawdown priority: other savings -> Cash ISA -> S&S ISA -> LISA
     // (from age 60), each tier drawn proportionally-by-balance across every
@@ -2062,13 +2081,25 @@ function projectJoint({
       p2CashIsa: pp[1] ? Math.round(pp[1].p.cashIsa) : 0,
       p2SsIsa: pp[1] ? Math.round(pp[1].p.ssIsa) : 0,
       p2Lisa: pp[1] ? Math.round(pp[1].p.lisa) : 0,
-      p2OtherSavings: pp[1] ? Math.round(otherSavingsOf(1)) : 0
+      p2OtherSavings: pp[1] ? Math.round(otherSavingsOf(1)) : 0,
+      p1StatePension: Math.round(pp[0].statePension),
+      p2StatePension: pp[1] ? Math.round(pp[1].statePension) : 0,
+      p1TaxableIncome: Math.round(taxableIncomes[0]),
+      p2TaxableIncome: pp[1] ? Math.round(taxableIncomes[1]) : 0,
+      p1Tax: Math.round(taxes[0]),
+      p2Tax: pp[1] ? Math.round(taxes[1]) : 0,
+      p1LumpSum: Math.round(pp[0].lumpSum),           // non-zero only in that person's retirement year
+      p2LumpSum: pp[1] ? Math.round(pp[1].lumpSum) : 0,
+      p1LumpSumExcess: Math.round(pp[0].lumpSumExcess),
+      p2LumpSumExcess: pp[1] ? Math.round(pp[1].lumpSumExcess) : 0
     };
     row.p1Isa = row.p1CashIsa + row.p1SsIsa + row.p1Lisa;
     row.p2Isa = row.p2CashIsa + row.p2SsIsa + row.p2Lisa;
     row.p1Total = row.p1Pension + row.p1Isa + row.p1OtherSavings;
     row.p2Total = row.p2Pension + row.p2Isa + row.p2OtherSavings;
     row.totalPension = row.p1Pension + row.p2Pension;
+    row.incomeTax = row.p1Tax + row.p2Tax;          // household, from rounded parts (same pattern as totalPension)
+    row.netIncome = row.statePension + row.pensionWithdrawal - row.incomeTax; // taxable income after tax; excludes savings draws
     row.totalIsa = row.p1Isa + row.p2Isa;
     row.totalOtherSavings = row.p1OtherSavings + row.p2OtherSavings;
     data.push(row);
