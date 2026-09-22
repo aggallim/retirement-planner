@@ -764,18 +764,7 @@ const formatCurrency = v => new Intl.NumberFormat('en-GB', {
   maximumFractionDigits: 0
 }).format(Math.round(v || 0));
 const formatCurrencyK = v => `£${Math.round((v || 0) / 1000)}k`;
-const PLSA = {
-  single: {
-    minimum: 13400,
-    moderate: 31700,
-    comfortable: 43900
-  },
-  couple: {
-    minimum: 21600,
-    moderate: 43900,
-    comfortable: 60600
-  }
-};
+const PLSA = UK_REFERENCE.plsa; // .single/.couple keep their shape — livingStandardFor, warnings and the gauge are unchanged
 const livingStandardFor = (income, isCouple) => {
   const b = isCouple ? PLSA.couple : PLSA.single;
   if (income >= b.comfortable) return {
@@ -809,7 +798,7 @@ const makePerson = (o = {}) => ({
   retirementAge: 65,
   lifeExpectancy: 95,
   statePensionAge: 67,
-  statePensionAmount: 12548,
+  statePensionAmount: UK_REFERENCE.statePension.fullNewAnnual,
   cashIsaBalance: 0,
   cashIsaContribution: 0,
   cashIsaGrowth: 2,
@@ -1251,10 +1240,10 @@ const PersonInputs = memo(function PersonInputs({
     className: "h-4 w-4 text-emerald-600"
   }), " Savings"), /*#__PURE__*/React.createElement(IsaTypeAccount, {
     label: "Cash ISA",
-    tooltip: "£20,000 annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.",
+    tooltip: `${formatCurrency(UK_REFERENCE.isa.allowance)} annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.`,
     balanceField: "cashIsaBalance",
     contributionField: "cashIsaContribution",
-    contributionSubtitle: "Shares the £20,000/yr ISA allowance",
+    contributionSubtitle: `Shares the ${formatCurrency(UK_REFERENCE.isa.allowance)}/yr ISA allowance`,
     growthField: "cashIsaGrowth",
     person: person,
     onChange: onChange,
@@ -1263,10 +1252,10 @@ const PersonInputs = memo(function PersonInputs({
     className: "pt-4"
   }, /*#__PURE__*/React.createElement(IsaTypeAccount, {
     label: "Stocks & Shares ISA",
-    tooltip: "£20,000 annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.",
+    tooltip: `${formatCurrency(UK_REFERENCE.isa.allowance)} annual allowance shared across Cash ISA, Stocks & Shares ISA and LISA. Tax-free growth and withdrawals.`,
     balanceField: "ssIsaBalance",
     contributionField: "ssIsaContribution",
-    contributionSubtitle: "Shares the £20,000/yr ISA allowance",
+    contributionSubtitle: `Shares the ${formatCurrency(UK_REFERENCE.isa.allowance)}/yr ISA allowance`,
     growthField: "ssIsaGrowth",
     person: person,
     onChange: onChange,
@@ -1275,10 +1264,10 @@ const PersonInputs = memo(function PersonInputs({
     className: "pt-4"
   }, /*#__PURE__*/React.createElement(IsaTypeAccount, {
     label: "Lifetime ISA (LISA)",
-    tooltip: "25% government bonus on contributions, up to £4,000/yr. Not accessible before age 60 in this tool (no first-home exception modelled).",
+    tooltip: `${UK_REFERENCE.lisa.bonusRate * 100}% government bonus on contributions, up to ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr. Not accessible before age ${UK_REFERENCE.lisa.accessAge} in this tool (no first-home exception modelled).`,
     balanceField: "lisaBalance",
     contributionField: "lisaContribution",
-    contributionSubtitle: "25% government bonus applied automatically. Max £4,000/yr.",
+    contributionSubtitle: `${UK_REFERENCE.lisa.bonusRate * 100}% government bonus applied automatically. Max ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr.`,
     growthField: "lisaGrowth",
     person: person,
     onChange: onChange,
@@ -1331,7 +1320,7 @@ const PersonInputs = memo(function PersonInputs({
     prefix: "£",
     accent: accent,
     subtitle: `Total: ${formatCurrency((person.pensionContribution + person.employerContribution) * 12)}/year`,
-    tooltip: "Combined annual allowance is £60,000 including employer contributions."
+    tooltip: `Combined annual allowance is ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} including employer contributions.`
   }), /*#__PURE__*/React.createElement("div", {
     id: `assumption-return-${personKey}`
   }, /*#__PURE__*/React.createElement(GrowthProfile, {
@@ -1377,7 +1366,7 @@ const PersonInputs = memo(function PersonInputs({
     step: 100,
     prefix: "£",
     accent: accent,
-    tooltip: "Full new State Pension is £12,548/year (2026/27). Needs ~35 qualifying NI years."
+    tooltip: `Full new State Pension is ${formatCurrency(UK_REFERENCE.statePension.fullNewAnnual)}/year (${UK_REFERENCE.taxYear}). Needs ~35 qualifying NI years.`
   })), /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Expected Inheritance",
     field: "inheritanceAmount",
@@ -1957,7 +1946,7 @@ function projectJoint({
   person2
 }) {
   const inflM = y => Math.pow(1 + inflationRate / 100, Math.max(0, y));
-  const cap = 60000;
+  const cap = UK_REFERENCE.pensionAnnualAllowance.amount;
   const init = p => ({
     cfg: p,
     cashIsa: p.cashIsaBalance,
@@ -2048,7 +2037,7 @@ function projectJoint({
 
     const lisaInstances = pp.map((x, pi) => ({
       pi,
-      balance: x.retired && x.age >= 60 ? x.p.lisa : 0
+      balance: x.retired && x.age >= UK_REFERENCE.lisa.accessAge ? x.p.lisa : 0
     }));
     const lisaResult = drawFromTier(lisaInstances, gap);
     gap = Math.max(0, gap - lisaResult.drawn);
@@ -2098,7 +2087,7 @@ function projectJoint({
       if (!x.retired) {
         for (let m = 0; m < 12; m++) x.p.cashIsa = x.p.cashIsa * (1 + x.p.mCashIsaG) + x.p.cfg.cashIsaContribution;
         for (let m = 0; m < 12; m++) x.p.ssIsa = x.p.ssIsa * (1 + x.p.mSsIsaG) + x.p.cfg.ssIsaContribution;
-        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + x.p.cfg.lisaContribution * 1.25;
+        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + x.p.cfg.lisaContribution * (1 + UK_REFERENCE.lisa.bonusRate);
         x.p.other.forEach(acc => {
           const mG = Math.pow(1 + acc.growth / 100, 1 / 12) - 1;
           for (let m = 0; m < 12; m++) acc.balance = acc.balance * (1 + mG) + acc.contribution;
@@ -2177,7 +2166,7 @@ function findSupportableDelta(engineArgs, currentlySucceeds) {
 // A separate function from deflate() — no today's-money treatment here
 // (intent/015 decision 6). people is [person1] or [person1, person2].
 function computePotBreakdown(people, projections, bothYear) {
-  const cap = 60000; // pension annual allowance, same cap projectJoint() applies
+  const cap = UK_REFERENCE.pensionAnnualAllowance.amount; // pension annual allowance, same cap projectJoint() applies
   let startingBalance = 0;
   let contributions = 0;
   people.forEach(p => {
@@ -2191,7 +2180,7 @@ function computePotBreakdown(people, projections, bothYear) {
     contributions += pensionMonthly * 12 * years;
     contributions += p.cashIsaContribution * 12 * years;
     contributions += p.ssIsaContribution * 12 * years;
-    contributions += p.lisaContribution * 1.25 * 12 * years; // 25% government bonus, same as projectJoint()
+    contributions += p.lisaContribution * (1 + UK_REFERENCE.lisa.bonusRate) * 12 * years; // 25% government bonus, same as projectJoint()
     contributions += (p.otherSavings || []).reduce((s, a) => s + a.contribution * 12 * years, 0);
   });
   let withdrawals = 0;
@@ -2697,11 +2686,11 @@ function RetirementCalculator() {
   const warnings = useMemo(() => {
     const w = [];
     const check = (p, label) => {
-      if ((p.pensionContribution + p.employerContribution) * 12 > 60000) w.push(`${label}: pension contributions exceed £60,000 annual allowance`);
+      if ((p.pensionContribution + p.employerContribution) * 12 > UK_REFERENCE.pensionAnnualAllowance.amount) w.push(`${label}: pension contributions exceed ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} annual allowance`);
       if (p.retirementAge < p.statePensionAge) w.push(`${label}: ${p.statePensionAge - p.retirementAge}-year gap before State Pension starts`);
       const isaAnnual = (p.cashIsaContribution + p.ssIsaContribution + p.lisaContribution) * 12;
-      if (isaAnnual > 20000) w.push(`${label}: ISA contributions exceed £20,000 annual allowance`);
-      if (p.lisaContribution * 12 > 4000) w.push(`${label}: LISA contributions exceed £4,000 annual allowance`);
+      if (isaAnnual > UK_REFERENCE.isa.allowance) w.push(`${label}: ISA contributions exceed ${formatCurrency(UK_REFERENCE.isa.allowance)} annual allowance`);
+      if (p.lisaContribution * 12 > UK_REFERENCE.lisa.annualLimit) w.push(`${label}: LISA contributions exceed ${formatCurrency(UK_REFERENCE.lisa.annualLimit)} annual allowance`);
     };
     check(d.p1, isCouple ? d.p1.name : 'You');
     if (isCouple) check(d.p2, d.p2.name);
