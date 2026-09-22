@@ -1209,3 +1209,48 @@ Open questions for the user:
 - **Q6.** Every URL was confirmed from the search index, not loaded
   directly, because the egress proxy blocked gov.uk. The PR checklist
   requires a manual click-through before the PR is marked ready.
+
+## User decisions on the open questions (2026-09-22)
+
+These supersede anything above that conflicts with them.
+
+- **Q1 — accepted.** The docs may cite the House of Commons Library
+  briefing (CBP-10250) for the State-Pension-only easement. The in-app note
+  keeps the gov.uk "How your State Pension is taxed" link.
+- **Q2 — refresh the PLSA figures now, in this PR.** Replace the 2025/26
+  figures with the **2026 Retirement Living Standards** (published by
+  Pensions UK, May 2026; calculated by the Centre for Research in Social
+  Policy, Loughborough University). Annual, after tax, excluding housing:
+
+  | | Minimum | Moderate | Comfortable |
+  |---|---|---|---|
+  | One-person | £13,900 | £32,700 | £45,400 |
+  | Two-person | £22,500 | £45,400 | £62,700 |
+
+  Put them in `UK_REFERENCE`. The label becomes "Retirement Living
+  Standards 2026 (Pensions UK, formerly the PLSA)", and wherever the UI
+  names the source, say "Pensions UK". The `PLSA` alias and the
+  `livingStandardFor()` logic are unchanged. The source URL is
+  `https://www.retirementlivingstandards.org.uk/news/2026-rls-update`.
+  It was confirmed via search across several independent sources (Pensions
+  UK, Loughborough University, others), not loaded directly, because this
+  environment's egress proxy blocks the site. It joins the manual
+  click-through list. Check that the gauge range (`gMin`/`gMax`) still
+  contains every band: the new two-person Comfortable figure is £62,700,
+  inside the current £70,000 maximum. Every user-facing string, doc
+  (§4.7) and test fixture that hard-codes the old figures or "PLSA
+  2025/26" is updated. The `CHANGELOG.md`/`USER_CHANGELOG` entries note
+  the refresh.
+- **Q3 — add to the roadmap (done separately, not in this PR).** The
+  April 2027 Cash ISA limit for under-65s, and LISA contributions ending at
+  age 50.
+- **Q4 — update `CLAUDE.md` in this PR.** Its "Retirement income tax is not
+  modelled" line is replaced with an accurate one-line summary (rest-of-UK
+  income tax on pension drawdown and State Pension is modelled; see
+  `docs/TOOL_DOCUMENTATION.md` §4 and §7 for scope and limits). The
+  "Reference figures" convention line is updated to point at
+  `UK_REFERENCE` and to name the 2026 Retirement Living Standards.
+- **Q5 — not now.** No styling or Tailwind-class fixes in this PR or as an
+  immediate follow-up. Keep avoiding those classes in new markup.
+- **Q6 — unchanged.** The user clicks through every source link by hand
+  before the PR is marked ready.
