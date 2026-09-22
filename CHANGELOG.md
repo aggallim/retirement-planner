@@ -7,6 +7,105 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-22 — UK income tax in retirement, Lump Sum Allowance, reference figures, methodology (018)
+
+Implements `intent/018-uk-income-tax.md` / `spec/018-uk-income-tax.md`,
+covering Notion roadmap #3, #12, #26 and #19 as one requirement (intent
+decision 22: the four items depend on each other), with `sw.js` going
+`v12` → `v13`.
+
+**Why:** this closes the tool's headline caveat, known limitation #1
+("Income tax in retirement is not modelled"). Spending and the Retirement
+Living Standards are after-tax figures, but State Pension and pension
+drawdown were counted at full gross value.
+
+**What:**
+
+- **`UK_REFERENCE`** — one tax-year-tagged object (`taxYear: '2026/27'`,
+  `lastUpdated: '6 April 2026'`) inside the first `ENGINE-EXTRACT` span,
+  holding every UK reference figure with its source URL: income tax bands,
+  allowance, taper and freeze year; State Pension; Lump Sum Allowance;
+  pension annual allowance; MPAA; ISA/LISA limits and bonus; the Retirement
+  Living Standards; and the not-modelled references. `PLSA` is now an alias
+  of `UK_REFERENCE.plsa`. Rewired to read from it: `makePerson`'s State
+  Pension default; the ISA/LISA/annual-allowance/State Pension tooltips and
+  subtitles; `projectJoint()`'s pension cap, LISA bonus and LISA access age;
+  `computePotBreakdown()`'s cap and bonus; the three allowance warnings; the
+  lump-sum checkbox label; the methodology section; and the footer. The
+  rewire was checked to be behaviour-neutral (unchanged baseline, identical
+  rendered text) before any calculation changed.
+- **Income tax in `projectJoint()`** — new `taxThresholdsFor()` (frozen
+  through row year 2030 = tax year 2030/31, then uprated by the inflation
+  input) and `incomeTaxFor()` (rest-of-UK bands with the £100k taper). Each
+  person's pension draw + State Pension is taxed against their own
+  allowance. Tax reduces net income and the larger gap is funded from the
+  existing tax-free savings tiers in the existing order — no gross-up; the
+  4%-rule draw stays gross. ISA/LISA/other-savings draws and the lump sum
+  are untaxed.
+- **Lump Sum Allowance** — tax-free cash = min(25%, £268,275) per person;
+  the excess stays in the pension and is taxed as income when drawn.
+- **New row fields** — `p1/p2StatePension`, `p1/p2TaxableIncome`,
+  `p1/p2Tax`, `p1/p2LumpSum`, `p1/p2LumpSumExcess`, household `incomeTax`
+  and `netIncome`. `deflate()` moved into the engine span beside the new
+  `lifetimeTaxTotals()` and `computeTaxNotes()` so all three are tested.
+- **UI** — income figures (Income card, sticky bar, gauge, Living Standard)
+  are after tax, with a "Pension · State · Tax" sub-line; the Retirement
+  Income chart gains a negative grey "Income Tax" bar and a "Total after
+  tax (today's money)" tooltip row; a lifetime-tax line with its
+  today's-money equivalent and a "2026/27 tax year" label; a neutral,
+  fact-only "Tax notes" panel (five note types, each linked to GOV.UK); the
+  Safe Withdrawal Rate tooltip notes the rate applies before tax; the
+  `VerdictHero` caveat mentions estimated Income Tax instead of "no tax";
+  and "Assumptions & Disclaimers" becomes "How we calculate this" with a
+  "Figures last updated" line, new tax blocks and a source link beside each
+  figure.
+- **Retirement Living Standards refreshed** (user decision Q2) from the
+  PLSA 2025/26 figures to the 2026 Retirement Living Standards published by
+  Pensions UK (formerly the PLSA): one-person £13,900 / £32,700 / £45,400,
+  two-person £22,500 / £45,400 / £62,700 (after tax, excluding housing
+  costs, outside London). The UI names Pensions UK wherever it names the
+  source. The gauge range still contains every band.
+- **Annual allowance / MPAA** — explained in the docs only (§4.3); the £60k
+  cap was already in the engine and the MPAA can't trigger here.
+- `docs/TOOL_DOCUMENTATION.md` (header, §1, §3.4, §3.5, new §3.10, §4.2,
+  §4.3, §4.7 with a Source column, §5.2–§5.4, §7 #1 replaced in place) and
+  `CLAUDE.md`'s scope line updated in the same PR.
+
+**Individual-mode baseline regenerated deliberately.** Tax is always on
+(intent decision 11) and the Lump Sum Allowance binds on the default plan,
+so `tests/fixtures/individual-baseline.json` was regenerated. Before
+regenerating, the only failing check was the byte-for-byte baseline; every
+other original check passed unchanged. Confirmed before → after (default
+plan):
+
+- every row gains the 12 new fields; existing fields differ only from 2056
+  (the retirement year) onward;
+- the lump sum is capped: 25% would be £285,410, so the lump is £268,275
+  and £17,135 stays in the pension;
+- 2056: pension draw £34,249 → £34,935, ISA draw £55,560 → £56,439, tax
+  £1,565;
+- 2058 (State Pension starts): tax £8,123, ISA draw £26,631 → £34,027;
+- 2091 (final row): `totalIsa` £525,244 → £0 (ISAs empty from 2086),
+  `totalPension` £684,991 → £698,699;
+- no depletion before or after — the verdict stays "On track";
+- lifetime tax 2056–2086: £370,489 (≈ £92,800 in today's money).
+
+Tests: 21 → 32 (band boundaries, taper, freeze-then-uprate, per-person
+allowances, LSA cap, untaxed savings, wider savings draw, withdrawal rate,
+State Pension and the freeze, `lifetimeTaxTotals`, `computeTaxNotes`).
+
+**Resolutions** (spec/018): R1 row year Y = tax year Y/Y+1, frozen through
+2030; R2 lump-sum label shows "(up to £268,275)"; R3 all four thresholds
+freeze and uprate together; R4 no rounding inside the calculation; R5 the
+LSA is never uprated; R6 lifetime window is first retirement → plan end,
+today's money = Σ each year's deflated tax; R7 strict ">" note boundaries,
+first year only, rows to plan end, sorted by year/person/type; R8 `deflate`
+moved into the engine span; R9 the household card's tax uses the same
+helpers on its own components; R10 sticky bar "Income after tax"; R11
+"Tax −£Z" only when tax > 0; R12 negative axis ticks "−£Xk"; R13 tax
+netted into the Income chart tooltip total; R14 Tax notes hidden when
+empty; R15 "See how we calculate this ↓".
+
 ## 2026-09-21 — Wave 1 bundle: today's-money, confidence language, "Explain this", plain language, privacy (013–017)
 
 Five roadmap items (9, 20, 17, 18, 10) delivered as one shared spec, branch,

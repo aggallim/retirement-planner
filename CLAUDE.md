@@ -9,8 +9,10 @@ runoff and inheritance projected year-by-year, benchmarked against the PLSA
 Retirement Living Standards. Supports individual or joint (couple) planning.
 Packaged as an installable, offline-capable PWA.
 
-Not financial advice — illustrative planning only. Retirement income tax is
-not modelled. See `docs/TOOL_DOCUMENTATION.md` for the full spec: input
+Not financial advice — illustrative planning only. Rest-of-UK income tax on
+pension drawdown and State Pension is modelled, per person; see
+`docs/TOOL_DOCUMENTATION.md` §4 and §7 for its scope and limits. See
+`docs/TOOL_DOCUMENTATION.md` for the full spec: input
 definitions, the financial model/formulas, architecture, verification
 checklist and known limitations. Read that file before changing any
 calculation logic.
@@ -211,8 +213,11 @@ to be flipped manually once before the workflow will succeed.
 - Keep the whole app as a single-file PWA unless there's a strong reason to
   add a build pipeline — that's a deliberate design choice (see §5.5 of the
   tool docs), not an oversight.
-- Reference figures (State Pension, allowances, PLSA bands) are UK-specific
-  and dated (currently 2026/27 tax year, PLSA 2025/26). Check
-  `docs/TOOL_DOCUMENTATION.md` §4.7 before assuming a figure is current.
+- Reference figures (income tax bands, State Pension, allowances, Retirement
+  Living Standards bands) are UK-specific and dated (currently 2026/27 tax
+  year, and the 2026 Retirement Living Standards from Pensions UK). They all
+  live in one object, `UK_REFERENCE`, in `index.html`, each with its source
+  URL. Check it and `docs/TOOL_DOCUMENTATION.md` §4.7 before assuming a
+  figure is current.
 - This file intentionally contains no personal financial figures, tokens,
   or credentials — none exist in this project. Keep it that way.

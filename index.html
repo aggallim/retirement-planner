@@ -933,6 +933,17 @@ const importPlanFields = parsed => {
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v13',
+  date: '2026-09-22', // set to the actual merge date
+  title: 'Income Tax is now included in your projection',
+  items: [
+    'Your projection now works out Income Tax on each person\'s pension withdrawals and State Pension every year, using England, Wales and Northern Ireland rates. Your income figures, Living Standard and "Can I retire?" verdict are now after tax, so savings may run down sooner than before.',
+    'The Retirement Income chart shows each year\'s tax as a bar below the line, with an estimate of the total tax over your retirement underneath. A short "Tax notes" list points out facts that apply to your plan — for example, reaching the higher-rate threshold — each with a link to the official GOV.UK page.',
+    'The tax-free lump sum is now limited to £268,275 per person (the Lump Sum Allowance). Anything above that stays in your pension.',
+    '"Assumptions & Disclaimers" is now called "How we calculate this", with a new Income Tax section, the date the figures were last updated, and GOV.UK links beside each figure.',
+    'The Living Standard bands now use the 2026 Retirement Living Standards from Pensions UK (the new name for the PLSA).'
+  ]
+}, {
   version: 'v12',
   date: '2026-09-21', // set to the actual merge date
   title: "Today's-money figures, an \"Explain this\" breakdown, and a privacy note added",
