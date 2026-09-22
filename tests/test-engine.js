@@ -8,6 +8,11 @@
 // pulled straight out of index.html by searching for two pairs of
 // `// ENGINE-EXTRACT-START` / `// ENGINE-EXTRACT-END` marker comments and
 // evaluating the extracted text in a Node vm sandbox exposing only `Math`.
+// The same spans also carry the UK_REFERENCE figures object and the
+// income-tax helpers from spec/018-uk-income-tax.md: taxThresholdsFor(),
+// incomeTaxFor(), deflate(), lifetimeTaxTotals() and computeTaxNotes().
+// Top-level `const`s (CURRENT_YEAR, UK_REFERENCE, deflate) don't become
+// sandbox properties, so loadEngine() re-exports them via `var __X = X;`.
 // If projectJoint or CURRENT_YEAR ever move, the markers must move with them —
 // this script fails loudly (not silently) if the markers go missing, get
 // mismatched, or stop bounding a runnable projectJoint().
@@ -53,7 +58,8 @@ function extractEngineSource(html) {
 }
 
 function loadEngine(html) {
-  const src = extractEngineSource(html) + '\nvar __CURRENT_YEAR = CURRENT_YEAR;\n';
+  const src = extractEngineSource(html) +
+    '\nvar __CURRENT_YEAR = CURRENT_YEAR;\nvar __UK_REFERENCE = UK_REFERENCE;\nvar __deflate = deflate;\n';
   const sandbox = { Math };
   const context = vm.createContext(sandbox);
   new vm.Script(src, { filename: 'index.html (extracted engine)' }).runInContext(context);
@@ -63,6 +69,12 @@ function loadEngine(html) {
   const rawFindSupportableDelta = sandbox.findSupportableDelta;
   const rawComputePotBreakdown = sandbox.computePotBreakdown;
   const CURRENT_YEAR = sandbox.__CURRENT_YEAR;
+  const rawTaxThresholdsFor = sandbox.taxThresholdsFor;
+  const rawIncomeTaxFor = sandbox.incomeTaxFor;
+  const rawLifetimeTaxTotals = sandbox.lifetimeTaxTotals;
+  const rawComputeTaxNotes = sandbox.computeTaxNotes;
+  const rawDeflate = sandbox.__deflate;
+  const rawUkReference = sandbox.__UK_REFERENCE;
 
   if (typeof rawProjectJoint !== 'function') {
     throw new Error('Extraction sanity check failed: projectJoint is not a function after eval');
@@ -79,6 +91,20 @@ function loadEngine(html) {
   if (typeof CURRENT_YEAR !== 'number') {
     throw new Error('Extraction sanity check failed: CURRENT_YEAR is not a number after eval');
   }
+  for (const [name, fn] of [
+    ['taxThresholdsFor', rawTaxThresholdsFor],
+    ['incomeTaxFor', rawIncomeTaxFor],
+    ['lifetimeTaxTotals', rawLifetimeTaxTotals],
+    ['computeTaxNotes', rawComputeTaxNotes],
+    ['deflate', rawDeflate]
+  ]) {
+    if (typeof fn !== 'function') {
+      throw new Error(`Extraction sanity check failed: ${name} is not a function after eval`);
+    }
+  }
+  if (!rawUkReference || typeof rawUkReference !== 'object') {
+    throw new Error('Extraction sanity check failed: UK_REFERENCE is not an object after eval');
+  }
   // The vm context is a separate JS realm, so objects projectJoint builds
   // there have a different Object.prototype than this script's — round-trip
   // through JSON so callers get plain objects that compare equal to fixtures
@@ -94,13 +120,30 @@ function loadEngine(html) {
   const findSupportableDelta = (engineArgs, currentlySucceeds) => rawFindSupportableDelta(engineArgs, currentlySucceeds);
   // computePotBreakdown returns a plain object of numbers — same no-identity-issue reasoning.
   const computePotBreakdown = (people, projections, bothYear) => rawComputePotBreakdown(people, projections, bothYear);
-  return { projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR };
+  // spec/018: object-returning helpers get the same cross-realm JSON round
+  // trip; incomeTaxFor and deflate return plain numbers.
+  const taxThresholdsFor = (year, inflationRate) => JSON.parse(JSON.stringify(rawTaxThresholdsFor(year, inflationRate)));
+  const incomeTaxFor = (taxableIncome, th) => rawIncomeTaxFor(taxableIncome, th);
+  const lifetimeTaxTotals = (projections, firstRet, planEnd, inflationRate) =>
+    JSON.parse(JSON.stringify(rawLifetimeTaxTotals(projections, firstRet, planEnd, inflationRate)));
+  const computeTaxNotes = (projections, people, inflationRate, planEnd) =>
+    JSON.parse(JSON.stringify(rawComputeTaxNotes(projections, people, inflationRate, planEnd)));
+  const deflate = (nominalValue, targetYear, inflationRate) => rawDeflate(nominalValue, targetYear, inflationRate);
+  const UK_REFERENCE = JSON.parse(JSON.stringify(rawUkReference));
+  return {
+    projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
+    taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE
+  };
 }
 
 let projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR;
+let taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE;
 try {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
-  ({ projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR } = loadEngine(html));
+  ({
+    projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
+    taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE
+  } = loadEngine(html));
 } catch (err) {
   console.error('FATAL: could not extract a runnable projectJoint() from index.html');
   console.error(err.message);
@@ -949,6 +992,69 @@ check('computePotBreakdown() caps pension contributions at £60,000/year, and st
     pensionMonthly2 * 12 * years2 + p2.cashIsaContribution * 12 * years2 + p2.ssIsaContribution * 12 * years2 +
       p2.lisaContribution * 1.25 * 12 * years2 + p2.otherSavings.reduce((s, a) => s + a.contribution * 12 * years2, 0);
   assert.notStrictEqual(breakdown.contributions, wrongYears, 'expected p1\'s contribution years to stop at retirementAge, not bothYear');
+});
+
+// ---- spec/018-uk-income-tax.md §14: income tax helpers ----
+
+// Pure-helper cases (no projectJoint() run). Expected tax at 2026 thresholds
+// from spec/018 §2's prototype table, exact to the penny.
+// Covers: band boundaries at, £1 below and £1 above the Personal Allowance,
+// the higher-rate threshold and the additional-rate threshold.
+const SCENARIO_TAX_BAND_TABLE = [
+  [0, 0],
+  [12570, 0],
+  [12571, 0.20],
+  [50269, 7539.80],
+  [50270, 7540.00],
+  [50271, 7540.40],
+  [100000, 27432.00],
+  [100002, 27433.20],
+  [110000, 33432.00],
+  [125139, 42515.40],
+  [125140, 42516.00],
+  [125141, 42516.45],
+  [150000, 53703.00]
+];
+const closeTo = (actual, expected, msg) =>
+  assert.ok(Math.abs(actual - expected) < 1e-6, `${msg || ''} expected ${expected}, got ${actual}`);
+
+check('Income tax is correct at, just below and just above every band boundary (2026/27 thresholds)', () => {
+  const th = taxThresholdsFor(2026, 3);
+  for (const [income, expected] of SCENARIO_TAX_BAND_TABLE) {
+    closeTo(incomeTaxFor(income, th), expected, `income ${income}:`);
+  }
+});
+
+// Covers: the £100k Personal Allowance taper — a 60% effective marginal
+// rate between £100,000 and £125,140, with the allowance reaching zero
+// exactly at £125,140.
+check('The £100k taper gives a 60% effective marginal rate and removes the allowance at £125,140', () => {
+  const th = taxThresholdsFor(2026, 3);
+  closeTo(incomeTaxFor(100002, th) - incomeTaxFor(100000, th), 1.20, '+£2 above £100k:');
+  // At £125,140 the allowance is zero, so the whole income is taxable:
+  // 37,700 x 20% + (125,140 - 37,700) x 40% = 7,540 + 34,976 = 42,516.
+  closeTo(incomeTaxFor(125140, th), 37700 * 0.20 + (125140 - 37700) * 0.40, 'allowance fully tapered:');
+  closeTo(incomeTaxFor(150000, th), 53703, '£150,000:');
+});
+
+// Covers: the freeze-then-uprate threshold path (spec/018 R1, R3) —
+// frozen through row year 2030 (tax year 2030/31), uprated by the
+// inflation input from 2031, never moving at 0% inflation, and the four
+// thresholds moving together so taper + 2 x PA === ART in every year.
+check('Tax thresholds are frozen through 2030, then uprated by inflation from 2031', () => {
+  for (let year = 2026; year <= 2030; year++) {
+    assert.strictEqual(taxThresholdsFor(year, 3).personalAllowance, 12570, `year ${year}`);
+  }
+  closeTo(taxThresholdsFor(2031, 3).personalAllowance, 12570 * 1.03, '2031 at 3%:');
+  closeTo(taxThresholdsFor(2035, 2).personalAllowance, 12570 * Math.pow(1.02, 5), '2035 at 2%:');
+  const flat = taxThresholdsFor(2060, 0);
+  assert.strictEqual(flat.personalAllowance, 12570);
+  assert.strictEqual(flat.higherRateThreshold, 50270);
+  assert.strictEqual(flat.additionalRateThreshold, 125140);
+  assert.strictEqual(flat.taperThreshold, 100000);
+  const th2040 = taxThresholdsFor(2040, 3);
+  closeTo(th2040.taperThreshold + 2 * th2040.personalAllowance, th2040.additionalRateThreshold, 'taper/ART identity in 2040:');
+  assert.strictEqual(UK_REFERENCE.incomeTax.freezeLastYear, 2030);
 });
 
 check('Individual-mode results are byte-for-byte identical to a known-good baseline', () => {
