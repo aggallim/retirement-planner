@@ -7,6 +7,18 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-23 — Relicense from GPLv3 to all-rights-reserved (021)
+
+- Replaced the GPLv3 `LICENSE` text with an explicit "all rights
+  reserved" notice (copyright held by the repository owner, `aggallim`)
+  — the repo stays public (for GitHub Pages hosting) but the source is
+  no longer open source. No external contributors or forks existed to
+  consider (sole copyright holder throughout the repo's history).
+  `README.md` gains a matching `## License` section stating the same.
+  Process/repo change only — no code, calculation, or app-behaviour
+  change, so no `USER_CHANGELOG` entry and no `sw.js` cache bump.
+- Implements `intent/done/021-relicense-all-rights-reserved.md`.
+
 ## 2026-09-22 — Intent files are committed on the requirement branch (020)
 
 - Lifecycle step 1 in `CLAUDE.md` and `CONTRIBUTING.md` said to commit the

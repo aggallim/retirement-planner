@@ -56,3 +56,7 @@ Your figures save automatically to that browser's `localStorage` on that device 
 ## Updating the app
 
 The service worker caches aggressively. If a deployed change doesn't show up, close the installed app fully, or bump `CACHE = 'retirement-planner-v1'` in `sw.js` to `v2` before pushing.
+
+## License
+
+All rights reserved — see [`LICENSE`](LICENSE). The source is public on GitHub for reference, but isn't licensed for reuse, modification, or redistribution.
