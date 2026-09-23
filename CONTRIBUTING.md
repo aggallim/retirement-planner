@@ -58,7 +58,10 @@ few lines. The only difference for a bug is the branch name (step 2).
    says what stage the work is at. See "Opening the PR" below for the exact
    command. This is still the step people skip and the step that matters
    most for cross-device continuity — do it the moment it's possible, not
-   once the code is ready.
+   once the code is ready. Subscribe to the PR's activity immediately once
+   it's open — don't wait to be asked. This repo's standing preference is
+   that an agent session watches every PR it opens here through to merge
+   or close, per the PR-babysitting rules in the system prompt.
 4. **Spec** — write `spec/NNN-slug.md` resolving the intent's open
    questions into a concrete spec. Commit and push to the branch; the open
    PR updates with it.
