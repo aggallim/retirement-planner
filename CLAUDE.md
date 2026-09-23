@@ -161,6 +161,12 @@ whoever started it.
 7. **PR** — the draft PR opened in step 3 is marked ready for review once
    implementation, tests and docs are all pushed. Its description references
    the intent file path (e.g. "Implements `intent/003-inheritance-tax.md`").
+   **Subscribe to the PR's activity as soon as it's opened** (the
+   `subscribe_pr_activity` tool, or equivalent), without waiting to be
+   asked — the user wants every PR opened in this repo watched through to
+   merge or close by default, following the PR-babysitting rules already
+   in the system prompt (autofix CI failures, respond to review comments,
+   ask when a fix is ambiguous).
 8. **Merge, then sync `main` and hand off branch cleanup.** Once the PR is
    merged: check out `main`, fetch, and fast-forward-merge (`git checkout
    main && git fetch origin main && git merge --ff-only origin/main`) so

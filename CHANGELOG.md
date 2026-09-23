@@ -7,6 +7,17 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-23 — Auto-subscribe to activity on PRs an agent session opens (022)
+
+- `CLAUDE.md` step 7 and `CONTRIBUTING.md` step 3 now say to subscribe to
+  a PR's activity immediately once it's opened, without waiting to be
+  asked — the repo owner's standing preference, recorded so future agent
+  sessions in this repo don't need to ask each time. Only affects PRs an
+  agent session itself opens here; doesn't change anything about PRs a
+  human contributor opens.
+- Process only — no user-facing change, no `USER_CHANGELOG` entry.
+- Implements `intent/done/022-auto-watch-own-prs.md`.
+
 ## 2026-09-22 — Intent files are committed on the requirement branch (020)
 
 - Lifecycle step 1 in `CLAUDE.md` and `CONTRIBUTING.md` said to commit the
