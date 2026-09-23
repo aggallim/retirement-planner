@@ -74,6 +74,8 @@ function loadEngine(html) {
   const rawLifetimeTaxTotals = sandbox.lifetimeTaxTotals;
   const rawComputeTaxNotes = sandbox.computeTaxNotes;
   const rawDeflate = sandbox.__deflate;
+  const rawDbPensionOf = sandbox.dbPensionOf;
+  const rawDbPensionGapYears = sandbox.dbPensionGapYears;
   const rawUkReference = sandbox.__UK_REFERENCE;
 
   if (typeof rawProjectJoint !== 'function') {
@@ -96,7 +98,9 @@ function loadEngine(html) {
     ['incomeTaxFor', rawIncomeTaxFor],
     ['lifetimeTaxTotals', rawLifetimeTaxTotals],
     ['computeTaxNotes', rawComputeTaxNotes],
-    ['deflate', rawDeflate]
+    ['deflate', rawDeflate],
+    ['dbPensionOf', rawDbPensionOf],
+    ['dbPensionGapYears', rawDbPensionGapYears]
   ]) {
     if (typeof fn !== 'function') {
       throw new Error(`Extraction sanity check failed: ${name} is not a function after eval`);
@@ -130,19 +134,26 @@ function loadEngine(html) {
     JSON.parse(JSON.stringify(rawComputeTaxNotes(projections, people, inflationRate, planEnd)));
   const deflate = (nominalValue, targetYear, inflationRate) => rawDeflate(nominalValue, targetYear, inflationRate);
   const UK_REFERENCE = JSON.parse(JSON.stringify(rawUkReference));
+  // intent/025: dbPensionOf returns an object (JSON round trip);
+  // dbPensionGapYears returns a plain number.
+  const dbPensionOf = (p) => JSON.parse(JSON.stringify(rawDbPensionOf(p)));
+  const dbPensionGapYears = (p) => rawDbPensionGapYears(p);
   return {
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
-    taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE
+    taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
+    dbPensionOf, dbPensionGapYears
   };
 }
 
 let projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR;
 let taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE;
+let dbPensionOf, dbPensionGapYears;
 try {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
   ({
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
-    taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE
+    taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
+    dbPensionOf, dbPensionGapYears
   } = loadEngine(html));
 } catch (err) {
   console.error('FATAL: could not extract a runnable projectJoint() from index.html');
@@ -1279,8 +1290,112 @@ check('computeTaxNotes() reports each fact once, in its first year, with strict 
   assert.deepStrictEqual(typesOf(couple, 1), ['higherRate', 'additionalRate']);
 });
 
+// ---- Defined Benefit (DB) pension — intent/025 ----
+// All on the TAX_PERSON fixture: already retired at 66, zero inflation and
+// growth unless overridden, so every figure is exact by hand.
+
+check('DB pension is taxed per person alongside State Pension and drawdown, sharing that person\'s own allowance and bands', () => {
+  // £20,000 draw (4% of £500k) + £10,000 State Pension + £15,000 DB = £45,000
+  // → (45,000 − 12,570) × 20% = £6,486.
+  const basic = projectJoint(taxScenario({}, {
+    pensionPot: 500000, statePensionAge: 66, statePensionAmount: 10000,
+    dbPensionAmount: 15000, dbPensionStartAge: 66
+  }));
+  assert.strictEqual(basic[0].pensionWithdrawal, 20000);
+  assert.strictEqual(basic[0].p1DbPension, 15000);
+  assert.strictEqual(basic[0].dbPension, 15000);
+  assert.strictEqual(basic[0].p1TaxableIncome, 45000);
+  assert.strictEqual(basic[0].p1Tax, 6486);
+  assert.strictEqual(basic[0].netIncome, 20000 + 10000 + 15000 - 6486);
+  // £40,000 DB + £20,000 draw = £60,000 → crosses the higher-rate threshold:
+  // 37,700 × 20% + (60,000 − 50,270) × 40% = 7,540 + 3,892 = £11,432.
+  const higher = projectJoint(taxScenario({}, {
+    pensionPot: 500000, dbPensionAmount: 40000, dbPensionStartAge: 66
+  }));
+  assert.strictEqual(higher[0].p1Tax, 11432);
+  // Joint mode: a DB pension is taxed against its owner's allowance only —
+  // p1's £20,000 DB costs £1,486, p2 (no taxable income) pays nothing.
+  const couple = projectJoint(taxScenario({}, { dbPensionAmount: 20000, dbPensionStartAge: 66 }, {}));
+  assert.strictEqual(couple[0].p1DbPension, 20000);
+  assert.strictEqual(couple[0].p2DbPension, 0);
+  assert.strictEqual(couple[0].p1Tax, 1486);
+  assert.strictEqual(couple[0].p2Tax, 0);
+  assert.strictEqual(couple[0].incomeTax, 1486);
+});
+
+check('DB pension starts at its own start age and is uprated from today by the household inflation rate, like State Pension', () => {
+  const data = projectJoint(taxScenario({ inflationRate: 3 }, {
+    statePensionAge: 68, statePensionAmount: 10000,
+    dbPensionAmount: 10000, dbPensionStartAge: 68
+  }));
+  assert.strictEqual(data[0].p1DbPension, 0);
+  assert.strictEqual(data[1].p1DbPension, 0);
+  assert.strictEqual(data[2].p1DbPension, Math.round(10000 * 1.03 * 1.03));
+  data.forEach((r) => assert.strictEqual(r.p1DbPension, r.p1StatePension, `${r.year}`));
+});
+
+check('DB and State Pension are pooled as guaranteed income that funds spending ahead of the savings tiers', () => {
+  // £30,000 spending, £10,000 State Pension + £20,000 DB, no pension pot:
+  // tax = (30,000 − 12,570) × 20% = £3,486, so only £3,486 comes from savings.
+  const base = { annualExpenses: 30000 };
+  const p = (sp, db) => ({
+    statePensionAge: 66, statePensionAmount: sp, dbPensionAmount: db, dbPensionStartAge: 66,
+    cashIsaBalance: 50000, ssIsaBalance: 100000
+  });
+  const withDb = projectJoint(taxScenario(base, p(10000, 20000)));
+  assert.strictEqual(withDb[0].incomeTax, 3486);
+  assert.strictEqual(withDb[0].isaWithdrawal, 3486);
+  // Without the DB pension the whole £20,000 shortfall hits savings.
+  const noDb = projectJoint(taxScenario(base, p(10000, 0)));
+  assert.strictEqual(noDb[0].isaWithdrawal, 20000);
+  // Pooled: swapping the amounts between State Pension and DB changes nothing
+  // about funding or tax — there's no ordering preference between them.
+  const swapped = projectJoint(taxScenario(base, p(20000, 10000)));
+  for (const k of ['incomeTax', 'isaWithdrawal', 'otherSavingsWithdrawal', 'netIncome', 'p1CashIsa', 'p1SsIsa']) {
+    assert.strictEqual(swapped[0][k], withDb[0][k], k);
+    assert.strictEqual(swapped[3][k], withDb[3][k], `${k} (year 3)`);
+  }
+  // Guaranteed income covering all spending: no savings draw at all, and the
+  // 4%-rule pension drawdown is unchanged by the DB pension (still fixed).
+  const covered = projectJoint(taxScenario({ annualExpenses: 20000 }, {
+    pensionPot: 100000, dbPensionAmount: 40000, dbPensionStartAge: 66, ssIsaBalance: 100000
+  }));
+  assert.strictEqual(covered[0].isaWithdrawal, 0);
+  assert.strictEqual(covered[0].otherSavingsWithdrawal, 0);
+  assert.strictEqual(covered[0].pensionWithdrawal, 4000);
+});
+
+check('A plan with no DB fields at all (saved before DB support) projects identically to one with a £0 DB pension', () => {
+  const absent = projectJoint(SCENARIO_A);
+  const zero = projectJoint({ ...SCENARIO_A, person1: { ...SCENARIO_A.person1, dbPensionName: 'Old job', dbPensionAmount: 0, dbPensionStartAge: 60 } });
+  assert.deepStrictEqual(zero, absent);
+  assert.deepStrictEqual(dbPensionOf({}), { name: '', amount: 0, startAge: 65 });
+});
+
+check('DB pension gap warning triggers only when retirement comes before a non-zero DB pension starts', () => {
+  const p = (o) => ({ retirementAge: 60, dbPensionAmount: 8000, dbPensionStartAge: 65, ...o });
+  assert.strictEqual(dbPensionGapYears(p({})), 5);
+  assert.strictEqual(dbPensionGapYears(p({ dbPensionStartAge: 61 })), 1);
+  assert.strictEqual(dbPensionGapYears(p({ dbPensionStartAge: 60 })), 0);   // starts at retirement
+  assert.strictEqual(dbPensionGapYears(p({ dbPensionStartAge: 55 })), 0);   // starts before retirement
+  assert.strictEqual(dbPensionGapYears(p({ dbPensionAmount: 0 })), 0);      // no DB pension
+  assert.strictEqual(dbPensionGapYears({ retirementAge: 60 }), 0);          // fields absent (old save)
+});
+
+// Row keys added by intent/025 (DB pension). BASELINE_INPUT has no DB
+// pension (and, like a plan saved before 025, no DB fields at all), so these
+// must be zero in every row; everything else must match the pre-025 fixture
+// exactly, which is left untouched rather than regenerated.
+const DB_ROW_KEYS = ['dbPension', 'p1DbPension', 'p2DbPension'];
+
 check('Individual-mode results are byte-for-byte identical to a known-good baseline', () => {
-  const result = projectJoint(BASELINE_INPUT);
+  const withDbKeys = projectJoint(BASELINE_INPUT);
+  withDbKeys.forEach((r) => DB_ROW_KEYS.forEach((k) => assert.strictEqual(r[k], 0, `${r.year} ${k}`)));
+  const result = withDbKeys.map((r) => {
+    const copy = { ...r };
+    DB_ROW_KEYS.forEach((k) => delete copy[k]);
+    return copy;
+  });
   if (UPDATE_BASELINE) {
     fs.mkdirSync(path.dirname(BASELINE_PATH), { recursive: true });
     fs.writeFileSync(BASELINE_PATH, JSON.stringify(result, null, 2) + '\n');

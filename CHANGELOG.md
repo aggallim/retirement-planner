@@ -8,6 +8,40 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-23 — Defined Benefit (DB) pension support (025)
+
+- Each person can now enter one DB pension (scheme name, annual amount in
+  today's money, start age) in its own "Defined Benefit (DB) Pension"
+  input section. Absent fields — every plan saved before this change —
+  read as "no DB pension" via `dbPensionOf()`; no migration function.
+- Engine (`projectJoint()`): DB income is modelled exactly like State
+  Pension — paid from its own start age, uprated from today by the single
+  household inflation rate, and added to that person's own taxable income
+  (sharing their Personal Allowance and bands with State Pension and
+  drawdown). State Pension + DB form one pooled "guaranteed income" that
+  funds target expenses before the savings tiers; the 4%-rule drawdown is
+  unchanged. Why the household inflation rate rather than a per-scheme
+  indexation input: that's the free-tier simplification the intent chose
+  (per-scheme indexation is paid-tier roadmap #32), disclosed in both the
+  amount field's tooltip and "How we calculate this".
+- New row fields `dbPension`, `p1DbPension`, `p2DbPension`; `netIncome`
+  now includes DB. The Living Standard household figure includes DB (and
+  its tax), with a "DB £X" entry in its sub-line.
+- Display: a separate "DB Pension" series in the Retirement Income vs
+  Expenses chart (shown only when someone has one), a conditional seventh
+  "DB pension" line in the assumptions panel, and a new warning for a gap
+  between retirement and DB start age (`dbPensionGapYears()`).
+- Not modelled (documented in §7): DB commutation/tax-free lump sum,
+  Annual Allowance/Lump Sum Allowance interaction, survivor's pension,
+  multiple DB pensions per person (roadmap #31).
+- Regression: the individual-mode baseline fixture is **not** regenerated.
+  The baseline check now asserts the three new DB row keys are zero in
+  every row, then compares every other field against the unchanged
+  pre-025 fixture — so default output is identical to before. Five new
+  `tests/test-engine.js` cases cover DB tax, start age/uprating, pooled
+  funding, absent-field defaults and the gap warning.
+- Implements `intent/done/025-db-pension-support.md`.
+
 ## 2026-09-23 — Simplify the requirement lifecycle: no post-intent approval gate, spec removed (024)
 
 - Grilling already ends with the user confirming a shared understanding

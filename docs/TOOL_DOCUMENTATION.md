@@ -92,6 +92,7 @@ Both names are editable — tap the name to rename.
 | Ages and retirement timing | Per person | Shows the calendar year they retire |
 | Savings | Per person | Cash ISA, Stocks & Shares ISA, LISA, and any number of free-form "other savings" accounts |
 | Pension | Per person | Includes employer contributions and lump sum choice |
+| Defined Benefit (DB) Pension | Per person | Optional — one DB pension each (§3.11) |
 | State Pension and inheritance | Per person | Each person can have a different State Pension age |
 | Living costs | Shared | Entered once for the household |
 | Mortgage | Shared | Single joint liability |
@@ -103,12 +104,12 @@ Both names are editable — tap the name to rename.
 
 - **"Can I retire?" headline** — the first thing shown below any warnings. A status badge gives a direct read: **On track** (green) or **Needs attention** (amber/red, split by whether the shortfall is within ten years of the plan horizon or earlier). Beneath it, a sentence names a specific age, deliberately hedged ("Under these assumptions, your plan currently supports retiring at age 60") rather than a flat yes/no, since the figure depends entirely on the assumptions in your inputs. A couple of insight lines follow (e.g. how many years your pot is projected to last past — or short of — your plan horizon), each opening with the same "Under these assumptions" hedge as the headline sentence, then a caveat noting the model's key simplifications (a fixed average return, estimated Income Tax at England, Wales and Northern Ireland rates rather than no tax, no allowance for a bad run of returns early in retirement — hover the info icon next to that phrase for what it means and why it matters) — "the Assumptions panel" in that caveat is a clickable link down to the panel described below, not plain prose. The same progress bar previously shown under "Longevity Analysis" (see below) is carried over into this headline.
 - **Supportable retirement age.** Alongside the current-age sentence, the app searches for a different retirement age your plan would support — holding every other input fixed. If your plan already succeeds, it looks for the *earliest* age it could still work; if it currently fails, it looks for the smallest delay that fixes it. In joint mode this is a single shared adjustment applied equally to both people (e.g. "retire 3 years later than currently planned"), not solved independently per person. The search only considers ages within the same range the Retirement Age slider itself allows (roughly 50 to 75, per person); if nothing in that range changes the outcome, the headline says so explicitly rather than showing a number.
-- **"Your projection assumes..." panel** — sits directly below the headline and lists the six assumptions behind it, in a fixed order: return (shown as each person's pension growth rate, not the full per-account breakdown), inflation, retirement age, life expectancy, spending, and State Pension (amount and start age combined into one line). Each figure is a clickable link that smooth-scrolls to the input that sets it and briefly highlights it, so the assumption behind the headline is never more than one click from where it's controlled. A footer link, "See how we calculate this ↓", expands (if needed) and scrolls to the full "How we calculate this" section (§3.10) for the complete detail this compact panel doesn't repeat.
-- **Summary cards** — combined pot, household income **after tax**, and the Retirement Living Standards level, now sitting just below the headline as supporting detail. The income figure — on the Income card ("Household/Annual Income after tax"), in the sticky banner ("Income after tax") and on the gauge — is net of the estimated Income Tax on each person's pension withdrawal and State Pension (§4.3), which makes the comparison with the after-tax Retirement Living Standards bands fair. The Pot and Income cards each show a smaller "≈ £X in today's money" line beneath the main nominal figure, and their captions are hedged ("under these assumptions") rather than stated as plain fact. These repeat in a sticky banner once you scroll, which stays nominal-only (no today's-money line, unhedged captions) to keep it compact.
+- **"Your projection assumes..." panel** — sits directly below the headline and lists the six assumptions behind it, in a fixed order: return (shown as each person's pension growth rate, not the full per-account breakdown), inflation, retirement age, life expectancy, spending, and State Pension (amount and start age combined into one line). A seventh **DB pension** line is added only when at least one person has entered a DB pension (§3.11), listing just the people who have one; otherwise the panel stays at its fixed six lines. Each figure is a clickable link that smooth-scrolls to the input that sets it and briefly highlights it, so the assumption behind the headline is never more than one click from where it's controlled. A footer link, "See how we calculate this ↓", expands (if needed) and scrolls to the full "How we calculate this" section (§3.10) for the complete detail this compact panel doesn't repeat.
+- **Summary cards** — combined pot, household income **after tax**, and the Retirement Living Standards level, now sitting just below the headline as supporting detail. The income figure — on the Income card ("Household/Annual Income after tax"), in the sticky banner ("Income after tax") and on the gauge — is net of the estimated Income Tax on each person's pension withdrawal, State Pension and any DB pension (§4.3), which makes the comparison with the after-tax Retirement Living Standards bands fair. The Pot and Income cards each show a smaller "≈ £X in today's money" line beneath the main nominal figure, and their captions are hedged ("under these assumptions") rather than stated as plain fact. These repeat in a sticky banner once you scroll, which stays nominal-only (no today's-money line, unhedged captions) to keep it compact.
 - **"Explain this" (Pot card)** — a small expandable control under the Pot card's caption. Expands to show how the headline Pot figure is made up: Starting balance, Contributions, Growth, and Withdrawals, all in nominal terms and always showing all four lines even when one is £0. This reconstruction is read from the same inputs and per-year projection data as the rest of the app, not a separate calculation of the pot itself — the four figures always sum exactly to the Pot card's headline number.
 - **Wealth Projection** — stacked pension and ISA balances by calendar year, with mortgage debt shown below the zero line. Dashed reference lines mark each retirement and the mortgage-free year. Hovering any point also shows a "Total (today's money)" row, netting in mortgage debt as-is alongside the per-series nominal figures.
-- **Retirement Income vs Expenses** — income split by source (pension drawdown, ISA, State Pension) against the dashed target-expenses line, with each year's estimated **Income Tax** shown as a grey bar below the zero line so the bars visibly net down. Where the bars above the line, less the tax below it, fall short of the target line, the plan is under-funded in that year. Hovering any point also shows a "Total after tax (today's money)" row: the income sources minus the tax, excluding the target-expenses reference line (it's a spending target, not income). Under the chart, one line gives the **estimated Income Tax over retirement** (first retirement to the plan horizon), its "≈ £X in today's money" equivalent — each year's tax deflated from its own year and summed, not the total deflated once — and a "2026/27 tax year" label. A neutral blue **Tax notes** panel under that line lists plain facts about the plan's tax (§3.10); it is hidden when there are none.
-- **Living Standard gauge** — positions household income after tax against the Retirement Living Standards bands (Pensions UK). The big income figure above the gauge carries the same today's-money line as the summary cards, and the sub-line beneath it now reads "Pension £X · State £Y · Tax −£Z" (the Tax entry appears only when tax is due), which adds up to the big figure. A permanent caveat line under the gauge notes that the income figure is shown in future £ while the bands themselves are today's-money figures, so the two aren't directly comparable (see limitation #6 below).
+- **Retirement Income vs Expenses** — income split by source (pension drawdown, ISA, State Pension, and — only when someone has one — DB pension as its own pink series, never merged into the State Pension bar) against the dashed target-expenses line, with each year's estimated **Income Tax** shown as a grey bar below the zero line so the bars visibly net down. Where the bars above the line, less the tax below it, fall short of the target line, the plan is under-funded in that year. Hovering any point also shows a "Total after tax (today's money)" row: the income sources minus the tax, excluding the target-expenses reference line (it's a spending target, not income). Under the chart, one line gives the **estimated Income Tax over retirement** (first retirement to the plan horizon), its "≈ £X in today's money" equivalent — each year's tax deflated from its own year and summed, not the total deflated once — and a "2026/27 tax year" label. A neutral blue **Tax notes** panel under that line lists plain facts about the plan's tax (§3.10); it is hidden when there are none.
+- **Living Standard gauge** — positions household income after tax against the Retirement Living Standards bands (Pensions UK). The big income figure above the gauge carries the same today's-money line as the summary cards, and the sub-line beneath it now reads "Pension £X · State £Y · DB £W · Tax −£Z" (the DB entry appears only when a DB pension is being paid in that year, the Tax entry only when tax is due), which adds up to the big figure. A permanent caveat line under the gauge notes that the income figure is shown in future £ while the bands themselves are today's-money figures, so the two aren't directly comparable (see limitation #6 below).
 
 ### 3.5 Warnings
 
@@ -117,6 +118,7 @@ The red banner appears when any of these trigger:
 - Combined Cash ISA + Stocks & Shares ISA + LISA contributions exceed the £20,000 annual allowance
 - LISA contributions exceed the £4,000 annual allowance
 - A gap exists between retirement and State Pension age
+- A gap exists between retirement and a person's DB pension start age (only when that person has a DB pension)
 - Household income (after tax) falls below the Retirement Living Standards minimum
 - Funds are projected to run out before the plan horizon
 
@@ -145,7 +147,7 @@ The same **⚙ Data** panel has a **System / Light / Dark** toggle below Import.
 
 ### 3.10 Income tax and "How we calculate this"
 
-**What is taxed.** Every year, each person's pension withdrawal plus their State Pension is their taxable income, taxed against their **own** Personal Allowance and bands at England, Wales and Northern Ireland rates. Money taken from ISAs, the LISA and other savings is **not** taxed, and neither is the tax-free lump sum. Tax is taken off income, and any resulting shortfall against spending is covered from savings in the usual order (§4.3). The Safe Withdrawal Rate applies to the amount taken out of the pension **before** tax, so moving that slider changes the tax too. Tax is always on — there is no switch to turn it off.
+**What is taxed.** Every year, each person's pension withdrawal plus their State Pension plus any DB pension is their taxable income, taxed against their **own** Personal Allowance and bands at England, Wales and Northern Ireland rates. Money taken from ISAs, the LISA and other savings is **not** taxed, and neither is the tax-free lump sum. Tax is taken off income, and any resulting shortfall against spending is covered from savings in the usual order (§4.3). The Safe Withdrawal Rate applies to the amount taken out of the pension **before** tax, so moving that slider changes the tax too. Tax is always on — there is no switch to turn it off.
 
 **Tax notes.** A neutral blue panel under the lifetime-tax line states plain facts about the plan — never advice. Per person, each note appears once, for the first year it applies:
 
@@ -157,7 +159,19 @@ The same **⚙ Data** panel has a **System / Light / Dark** toggle below Import.
 
 Each note links to the GOV.UK page that sets the rule. The wording is fact-only: it states what happens, when, and the threshold, and never recommends an action. The existing red warning banner (§3.5) is reserved for genuine problems.
 
-**"How we calculate this."** The collapsible section at the bottom of the page (renamed from "Assumptions & Disclaimers") opens with "Figures last updated: 6 April 2026 (2026/27 tax year)" and explains the joint model, growth, the withdrawal rate, Income Tax, future tax thresholds, the tax-free lump sum, the Retirement Living Standards, the State Pension, allowances (including why the annual allowance and MPAA need no tax code here) and what is not included. Each reference figure has its source link beside it (opens in a new tab). Every figure is read from one reference object in the app, so a new tax year's update is a single edit. The footer's "Based on 2026/27 UK tax year figures and Pensions UK Retirement Living Standards (2026)" line reads from the same object.
+**"How we calculate this."** The collapsible section at the bottom of the page (renamed from "Assumptions & Disclaimers") opens with "Figures last updated: 6 April 2026 (2026/27 tax year)" and explains the joint model, growth, the withdrawal rate, Income Tax, future tax thresholds, the tax-free lump sum, the Retirement Living Standards, the State Pension, the Defined Benefit (DB) pension (including that it is uprated by the household inflation rate rather than the scheme's own rules), allowances (including why the annual allowance and MPAA need no tax code here) and what is not included. Each reference figure has its source link beside it (opens in a new tab). Every figure is read from one reference object in the app, so a new tax year's update is a single edit. The footer's "Based on 2026/27 UK tax year figures and Pensions UK Retirement Living Standards (2026)" line reads from the same object.
+
+### 3.11 Defined Benefit (DB) pension
+
+Each person has an optional **Defined Benefit (DB) Pension** section, separate from "State Pension & Inheritance" (State Pension is universal; a DB pension isn't, so it stays out of the way for people without one). It holds one DB pension per person:
+
+- **DB Pension (Annual)** — the yearly amount in today's money. Leave at £0 if you have none; the other two fields only appear once this is above £0.
+- **Scheme Name** — free text, shown in the assumptions panel.
+- **DB Pension Start Age** — 55–75, default 65.
+
+The amount's info tooltip states the key simplification at the point of entry: the tool raises the pension each year by the single household inflation assumption, like the State Pension, whereas real schemes differ (capped, CPI- or RPI-linked, fixed, or no increases). The same point is in "How we calculate this" (§3.10) as the permanent record.
+
+A plan saved or exported before DB support existed has none of these fields; it loads as "no DB pension" with no migration step.
 
 ---
 
@@ -195,9 +209,9 @@ yearWithdrawal = initialWithdrawal × (1 + inflation) ^ yearsRetired
 
 Spending is funded in this order each year:
 
-1. **State Pension** — begins at each person's State Pension age, inflation-uprated from today
+1. **Guaranteed income: State Pension + DB pension** — State Pension begins at each person's State Pension age; a DB pension begins at that person's DB start age. Both are inflation-uprated from today by the household rate and pooled into one figure; there is no ordering between them (both are non-depletable, already-promised income)
 2. **Pension drawdown** — the sustainable amount above, capped at the remaining pot
-3. **Income tax** — each person's pension draw + State Pension, taxed against their own allowance; tax reduces net income, and the gap is funded from savings
+3. **Income tax** — each person's pension draw + State Pension + DB pension, taxed against their own allowance; tax reduces net income, and the gap is funded from savings
 4. **Savings** — top up whatever gap remains, drawn in a **fixed priority order**: other savings first, then Cash ISA, then Stocks & Shares ISA, then the **LISA** — and the LISA is only drawable once the person turns **60** (no first-home exception is modelled; before 60 it is excluded from funding the gap entirely, though it keeps accruing contributions, bonus and growth). This order is shown in the app's Assumptions panel so it's never left implicit.
 
 In joint mode, each tier is drawn **proportionally** across every retired person's balance of that account type before moving to the next tier — the same proportional mechanic the tool has always used for ISA withdrawals, now applied tier-by-tier instead of once. Balances that remain after withdrawals continue to grow at the person's chosen rate.
@@ -212,7 +226,7 @@ Rest-of-UK (England, Wales and Northern Ireland) income tax, per person, per yea
 k = (1 + inflation) ^ max(0, year - 2030)
 PA = 12,570 × k;  taper = 100,000 × k;  HRT = 50,270 × k;  ART = 125,140 × k
 
-// one person's tax on taxableIncome = own pension draw + own State Pension
+// one person's tax on taxableIncome = own pension draw + own State Pension + own DB pension
 allowance  = max(0, PA - max(0, taxableIncome - taper) / 2)
 taxable    = max(0, taxableIncome - allowance)
 basicBand  = HRT - PA                        // £37,700 today
@@ -221,15 +235,20 @@ higher     = min(max(0, taxable - basicBand), ART - basicBand)
 additional = max(0, taxable - ART)
 tax        = basic × 20% + higher × 40% + additional × 45%
 
-gap = max(0, targetExpenses - (statePension + pensionDraw - tax))  // funded from savings tiers
+dbPension = age >= dbStartAge ? dbAmount × (1 + inflation) ^ years : 0   // exactly like State Pension
+gap = max(0, targetExpenses - (statePension + dbPension + pensionDraw - tax))  // funded from savings tiers
 ```
 
 - **Freeze, then inflation.** Thresholds are kept at today's amounts through 2030/31 (to 5 April 2031, as announced), then rise each year with the household inflation input. All four thresholds move together — including the £100,000 taper threshold and £125,140, which in law aren't indexed — so the Personal Allowance still reaches zero exactly at the additional-rate threshold every year. Thresholds and tax are not rounded inside the calculation; rows round per field.
 - **No gross-up.** The pension drawdown stays at the gross 4%-rule amount (the rule is defined on the gross withdrawal). Tax reduces net income, and the larger gap is funded from the existing tax-free savings tiers in the existing order.
 - **Untaxed.** ISA, LISA and other-savings withdrawals and the tax-free lump sum are not taxable income.
 - **Per person.** Each person has their own Personal Allowance and bands; in joint mode two £20,000 incomes pay £1,486 each, not the £5,486 one £40,000 income would.
-- Each row carries `p1StatePension`/`p2StatePension`, `p1TaxableIncome`/`p2TaxableIncome`, `p1Tax`/`p2Tax`, `p1LumpSum`/`p2LumpSum`, `p1LumpSumExcess`/`p2LumpSumExcess`, plus household `incomeTax` (= `p1Tax + p2Tax`) and `netIncome` (State Pension + pension withdrawal − tax; excludes savings draws).
-- The Living Standard card's household figure applies the same helpers to the components it shows (each person's first-year pension draw plus their State Pension input, at `bothYear`'s thresholds), so its "Pension · State · Tax" sub-line adds up to the big figure.
+- Each row carries `p1StatePension`/`p2StatePension`, `p1DbPension`/`p2DbPension` plus household `dbPension`, `p1TaxableIncome`/`p2TaxableIncome`, `p1Tax`/`p2Tax`, `p1LumpSum`/`p2LumpSum`, `p1LumpSumExcess`/`p2LumpSumExcess`, plus household `incomeTax` (= `p1Tax + p2Tax`) and `netIncome` (State Pension + DB pension + pension withdrawal − tax; excludes savings draws).
+- The Living Standard card's household figure applies the same helpers to the components it shows (each person's first-year pension draw plus their State Pension input plus their DB pension input if it has started by then, at `bothYear`'s thresholds), so its "Pension · State · DB · Tax" sub-line adds up to the big figure.
+
+#### Defined Benefit (DB) pension
+
+One DB pension per person (`dbPensionName`, `dbPensionAmount`, `dbPensionStartAge` on the person object; all optional — `dbPensionOf()` reads absent fields as amount 0, start age 65). The user enters an already-promised annual income, so the engine models it exactly like the State Pension: paid from its start age, uprated from today by the household inflation input (not the scheme's own indexation — limitation #5/#8), taxed as that person's income, and pooled with State Pension as guaranteed income ahead of the savings tiers. Deliberately **not** modelled, because there is no factual basis in the inputs to model them: commutation / a tax-free lump sum from the DB scheme (scheme-specific factors — approximate with Expected Inheritance if needed); DB accrual against the Annual Allowance (16× test) or crystallisation against the Lump Sum Allowance (20× valuation); and survivor's pensions (the tool has no death-triggered mechanic anywhere).
 
 #### Annual allowance and MPAA
 
@@ -280,6 +299,8 @@ Every figure below lives in one object, `UK_REFERENCE`, in `index.html` (tagged 
 | Retirement Living Standards, one-person | Min £13,900 / Mod £32,700 / Comf £45,400 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
 | Retirement Living Standards, two-person | Min £22,500 / Mod £45,400 / Comf £62,700 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
 
+No new reference figures are needed for DB pensions: the amount is a user input, and its yearly increase reuses the household inflation input rather than any published index (a deliberate simplification — see §4.3 and limitation #8).
+
 The Retirement Living Standards are the cost of each lifestyle; meeting them needs enough **after-tax** income, which is why the app compares them with after-tax household income. State Pension age is rising from 66 to 67, phased from April 2026.
 
 ---
@@ -304,16 +325,19 @@ projectJoint()          pure function — the entire financial engine
   └─ returns one row per calendar year
 lifetimeTaxTotals()     nominal + today's-money tax over retirement (uses deflate())
 computeTaxNotes()       first-year tax facts per person (data only)
+dbPensionOf()           one person's DB pension with defaults for absent fields
+dbPensionGapYears()     retirement-to-DB-start gap for the warning banner
 
 RetirementCalculator()  state, derived memos, layout
   ├─ SliderWithInput    memoised, module-level
   ├─ PersonInputs       memoised, module-level
+  │   └─ DbPensionInputs memoised, module-level
   ├─ WealthChart        memoised
   ├─ IncomeChart        memoised
   └─ TaxNotesPanel      memoised, module-level (wording from taxNoteText())
 ```
 
-`UK_REFERENCE`, `taxThresholdsFor`, `incomeTaxFor`, `deflate`, `lifetimeTaxTotals` and `computeTaxNotes` all sit inside the `ENGINE-EXTRACT` spans, so `tests/test-engine.js` exercises them directly. `taxNoteText`, `sourceLink` and `formatToday` are plain module-level display helpers outside the spans (they use `formatCurrency`/React).
+`UK_REFERENCE`, `taxThresholdsFor`, `incomeTaxFor`, `deflate`, `lifetimeTaxTotals`, `computeTaxNotes`, `dbPensionOf` and `dbPensionGapYears` all sit inside the `ENGINE-EXTRACT` spans, so `tests/test-engine.js` exercises them directly. `taxNoteText`, `sourceLink` and `formatToday` are plain module-level display helpers outside the spans (they use `formatCurrency`/React).
 
 The engine is a pure function with no React dependency, which is what made it straightforward to unit-test the maths independently of the UI.
 
@@ -348,7 +372,7 @@ The engine was tested as a standalone module. Checks that pass:
 - The LISA is never drawn before age 60, and becomes drawable from age 60 onward
 - Fixed drawdown order is respected: other savings, then Cash ISA, then Stocks & Shares ISA, then LISA
 - `migratePerson()` correctly maps an old single-ISA save onto the new sub-account shape, and is a no-op on an already-migrated save
-- **Individual-mode results are identical before and after the joint-planning rewrite** — the regression guard that mattered most. The byte-for-byte baseline fixture was later regenerated deliberately for income tax (018), with the before/after figures recorded in `CHANGELOG.md`
+- **Individual-mode results are identical before and after the joint-planning rewrite** — the regression guard that mattered most. The byte-for-byte baseline fixture was later regenerated deliberately for income tax (018), with the before/after figures recorded in `CHANGELOG.md`. DB pension support (025) did **not** regenerate it: the check asserts the new `dbPension`/`p1DbPension`/`p2DbPension` row keys are zero in every row, then compares every other field against the unchanged fixture
 - `findSupportableDelta()` (the "Can I retire?" supportable-age search, §3.4) finds the earliest workable retirement when a plan already succeeds; finds the *smallest* delay that fixes a plan that currently fails (verified against a manual scan of every smaller delta); applies one shared delta to both people in couple mode rather than solving each independently; and returns `null` — never a delta outside the existing per-person age bounds — when nothing in range fixes a failing plan
 - `computePotBreakdown()` (the Pot card's "Explain this" reconstruction, §3.4) reconciles exactly against `household.totalPot` for a range of individual- and couple-mode fixtures, including a staggered-retirement couple fixture where `withdrawals` is nonzero before `bothYear`; its `contributions` figure reflects the £60,000/year pension-contribution cap rather than the uncapped input rate; and each person's contribution-years stop at their own `retirementAge`, not at the later `bothYear`
 - Band boundaries: income tax is correct at, £1 below and £1 above the Personal Allowance, the higher-rate threshold and the additional-rate threshold
@@ -360,6 +384,11 @@ The engine was tested as a standalone module. Checks that pass:
 - The extra savings draw equals the tax when spending equals the gross pension draw
 - Changing the withdrawal rate changes the tax
 - `lifetimeTaxTotals` today's-money figure equals the sum of each year's deflated tax (not the nominal total deflated once)
+- DB pension is added to its owner's taxable income alongside drawdown and State Pension, sharing that person's own allowance and bands (basic-rate and higher-rate cases), and is never attributed to the other person in joint mode
+- DB pension starts in the year its owner reaches the start age and is uprated from today by the household inflation rate, matching State Pension year for year
+- State Pension and DB pension are pooled: they fund spending before the savings tiers, swapping amounts between them changes nothing, and the 4%-rule drawdown is unaffected by DB income
+- A person with no DB fields at all (a pre-025 save) projects identically to one with a £0 DB pension
+- `dbPensionGapYears` is non-zero only when a non-zero DB pension starts strictly after retirement
 - `computeTaxNotes` reports each fact in its first year, uses strict ">" boundaries (income exactly at a threshold produces no note), only fires the taper note strictly inside the taper range, attributes notes to the right person, and ignores rows after the plan horizon
 
 The built PWA was additionally rendered in a headless browser to confirm it boots, calculates, toggles into couple mode and persists state.
@@ -400,14 +429,14 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 
 > These are deliberate simplifications, not defects. Worth knowing before relying on the output.
 
-1. **Income tax is estimated, not exhaustive.** Modelled: rest-of-UK income tax on pension drawdown and State Pension, per person, with the £100k taper, thresholds frozen to 2030/31 and then inflation-uprated. Not modelled: (a) Scottish rates (roadmap #27; [GOV.UK: Scottish Income Tax](https://www.gov.uk/scottish-income-tax)); (b) tax on non-ISA savings interest ([Personal Savings Allowance](https://www.gov.uk/apply-tax-free-interest-on-savings)); (c) [Marriage Allowance](https://www.gov.uk/marriage-allowance), [Blind Person's Allowance](https://www.gov.uk/blind-persons-allowance) and other reliefs; (d) the announced 2027/28 easement for pensioners whose only income is the State Pension ([House of Commons Library, "Taxation of state pension"](https://commonslibrary.parliament.uk/research-briefings/cbp-10250/); see also [GOV.UK: how your State Pension is taxed](https://www.gov.uk/guidance/how-your-state-pension-is-taxed)); (e) threshold paths other than freeze-then-inflation ([GOV.UK: thresholds maintained until 5 April 2031](https://www.gov.uk/government/publications/maintaining-income-tax-and-equivalent-national-insurance-contributions-thresholds-until-5-april-2031)); (f) no gross-up, so drawdown stays at the 4%-rule gross amount and tax is covered from savings ([GOV.UK: Income Tax rates](https://www.gov.uk/income-tax-rates)).
+1. **Income tax is estimated, not exhaustive.** Modelled: rest-of-UK income tax on pension drawdown, State Pension and DB pension, per person, with the £100k taper, thresholds frozen to 2030/31 and then inflation-uprated. Not modelled: (a) Scottish rates (roadmap #27; [GOV.UK: Scottish Income Tax](https://www.gov.uk/scottish-income-tax)); (b) tax on non-ISA savings interest ([Personal Savings Allowance](https://www.gov.uk/apply-tax-free-interest-on-savings)); (c) [Marriage Allowance](https://www.gov.uk/marriage-allowance), [Blind Person's Allowance](https://www.gov.uk/blind-persons-allowance) and other reliefs; (d) the announced 2027/28 easement for pensioners whose only income is the State Pension ([House of Commons Library, "Taxation of state pension"](https://commonslibrary.parliament.uk/research-briefings/cbp-10250/); see also [GOV.UK: how your State Pension is taxed](https://www.gov.uk/guidance/how-your-state-pension-is-taxed)); (e) threshold paths other than freeze-then-inflation ([GOV.UK: thresholds maintained until 5 April 2031](https://www.gov.uk/government/publications/maintaining-income-tax-and-equivalent-national-insurance-contributions-thresholds-until-5-april-2031)); (f) no gross-up, so drawdown stays at the 4%-rule gross amount and tax is covered from savings ([GOV.UK: Income Tax rates](https://www.gov.uk/income-tax-rates)).
 2. **Salary is not modelled at all.** Where retirement dates differ, the working partner's earnings do not offset household costs, so longevity is understated.
 3. **Mortgage is a straight-line runoff** — monthly payment × 12 × years, reduced annually. There is no interest amortisation, so the outstanding balance shown is an approximation of a real redemption figure.
 4. **Growth is a fixed annual rate** with no sequence-of-returns risk or volatility modelling. A poor first decade of retirement is far more damaging than the same average return implies.
-5. **One inflation rate** applies to all spending categories; healthcare in particular tends to inflate faster.
+5. **One inflation rate** applies to all spending categories; healthcare in particular tends to inflate faster. The same single rate also uprates State Pension and any DB pension (see #8).
 6. **Retirement Living Standards bands are not inflated forward** — they are compared against nominal future income, which flatters later years.
 7. **ISA/LISA contributions are not hard-capped** in the engine; the £20,000 combined and £4,000 LISA limits are warned about (§3.5), not enforced — unlike the pension allowance, which is a hard cap.
-8. **Defined benefit pensions are not supported** — only defined contribution pots.
+8. **Single DB pension per person, simplified.** One Defined Benefit pension per person is supported (§3.11, §4.3), uprated by the household inflation rate (#5) rather than the scheme's own indexation (capped CPI, RPI, fixed, none). Not modelled: more than one DB pension per person (roadmap #31 — combine them by hand), per-scheme indexation (roadmap #32), commutation / a tax-free lump sum from the DB scheme, interaction with the Annual Allowance or Lump Sum Allowance, and survivor's pensions.
 9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan. Manual export/import (§3.7) can move a plan between devices or back it up, but there's no automatic sync.
 10. **No LISA first-home exception.** Real LISAs allow penalty-free access before 60 for a first home purchase; this tool has no house-purchase concept to hang that on, so the age-60 restriction is unconditional.
 11. **Unlimited free-form "other savings" accounts.** A person can add any number of named non-ISA savings accounts — this is intentional, not a bug.
