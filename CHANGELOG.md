@@ -7,6 +7,27 @@ entry names the requirement it implements (`intent/NNN-slug.md` /
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-23 — Fix mobile horizontal overscroll revealing blank whitespace (023)
+
+- Swiping left on a phone (installed as a PWA or in the browser) could
+  scroll the whole page sideways and show a strip of unstyled blank white
+  space. Root cause: three `tooltip-content` panels (the `SliderWithInput`
+  info tooltip and two others) are `w-56` (224px) boxes hidden via
+  `visibility: hidden` rather than `display: none`, so their layout box
+  still counted towards the page's scrollable width wherever a trigger
+  icon sat close to a narrow viewport's right edge — and nothing on the
+  page stopped that extra width from being horizontally scrollable at all.
+  Fixed with a page-level `overflow-x: clip` on `html`/`body` (plus
+  `overscroll-behavior-x: none` alongside the existing
+  `overscroll-behavior-y: contain`) — a defensive clamp that forecloses
+  this whole class of bug for any element, not just the three current
+  tooltips, chosen over `overflow-x: hidden` because `hidden` was found
+  (by testing) to break the mobile sticky summary bar's `position:
+  sticky` (003), where `clip` does not.
+- `USER_CHANGELOG` entry added (`v14`), `sw.js` `CACHE` bumped `v13` →
+  `v14`.
+- Implements `intent/done/023-mobile-horizontal-overscroll.md`.
+
 ## 2026-09-23 — Auto-subscribe to activity on PRs an agent session opens (022)
 
 - `CLAUDE.md` step 7 and `CONTRIBUTING.md` step 3 now say to subscribe to
