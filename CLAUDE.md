@@ -29,7 +29,7 @@ calculation logic.
 | `sw.js` | Service worker — offline caching. |
 | `icon.svg` | Home screen icon. |
 | `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
-| `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → branch → draft PR → spec → plan → implement → merge lifecycle below, including when to open the PR. |
+| `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → branch → draft PR → implement → merge lifecycle below, including when to open the PR. |
 | `CHANGELOG.md` | Short, chronological "what shipped when," one entry per requirement. |
 | `tests/test-engine.js` | Dependency-free `node` test harness for `projectJoint()`. Run with `node tests/test-engine.js` from the repo root. |
 | `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
@@ -79,14 +79,14 @@ does that automatically.
 - **Add a `CHANGELOG.md` entry in the same PR too.** `CHANGELOG.md` is the
   complete change-history record — both "what shipped when" and, for a
   non-trivial calculation change, why. Every requirement gets one entry
-  under a dated heading (the date the PR merges), naming the intent/spec
-  file it implements — written directly in the PR, the same way intent/spec
-  move to `done/` in the same PR rather than as a follow-up.
+  under a dated heading (the date the PR merges), naming the intent file
+  it implements — written directly in the PR, the same way the intent file
+  moves to `done/` in the same PR rather than as a follow-up.
 - **Add a `USER_CHANGELOG` entry in `index.html`, in the same PR — but
   only if the change is user-facing.** `USER_CHANGELOG` (near
   `PERSISTED_FIELDS` in the Persistence section) backs the "What's new"
   view in the ⚙ Data menu — plain language, no file/function names, no
-  intent/spec references. The test: does this change something a user of
+  intent file references. The test: does this change something a user of
   the running app would experience (a new or changed feature, a
   calculation or behaviour change, a bug fix, a UI change)? If yes, add an
   entry, versioned with the `sw.js` cache value this PR bumps to. If the
@@ -110,17 +110,23 @@ whoever started it.
 
 1. **Intent** — first run the `grilling` skill (or point a human at the
    user-invoked `grill-me` skill; see `.claude/skills/`) to interrogate the
-   requirement's design tree until every branch is resolved. Then write
-   `intent/NNN-slug.md` from those resolved decisions — describing what's
-   wanted and why — as the **first commit on the requirement's branch**
-   (step 3; create it first). Never commit it to `main`: `main` only
-   changes via PR (see "Branch protection"), so the intent reaches `main`
-   through the requirement's own PR. For a bug, this is the problem report:
-   what's broken, how it was observed (e.g. a screenshot or repro steps),
-   and any root cause already known.
-2. **Spec** — `spec/NNN-slug.md`, committed on the branch, turns that
-   intent into a concrete spec.
-3. **Branch** — create `<type>/NNN-slug` off `main` (e.g.
+   requirement's design tree until every branch is resolved. Grilling itself
+   ends with the user confirming a shared understanding — that's the only
+   approval checkpoint in the lifecycle; nothing after the intent is written
+   waits for a further nod. Then write `intent/NNN-slug.md` from those
+   resolved decisions — describing what's wanted and why — as the **first
+   commit on the requirement's branch** (step 2; create it first). Never
+   commit it to `main`: `main` only changes via PR (see "Branch
+   protection"), so the intent reaches `main` through the requirement's own
+   PR. For a bug, this is the problem report: what's broken, how it was
+   observed (e.g. a screenshot or repro steps), and any root cause already
+   known. If a question comes up mid-implementation that grilling didn't
+   cover, ask the user directly — don't write a spec document to capture
+   it. When the answer materially changes scope or behaviour, append it to
+   `intent/NNN-slug.md` as a dated addendum (a new commit, never rewriting
+   the original); skip logging trivial clarifications (wording, a variable
+   name).
+2. **Branch** — create `<type>/NNN-slug` off `main` (e.g.
    `feature/003-inheritance-tax`, `bugfix/006-mobile-data-menu-overflow`),
    following the [Conventional Branch](https://conventionalbranch.org) spec
    (see `.claude/skills/conventional-branch/`): `<type>` is `feature`,
@@ -128,8 +134,8 @@ whoever started it.
    requirement — a bug fix is `bugfix/`, not the repo's earlier ad-hoc
    `bug/` prefix, so branch names stay within the published spec; most
    other requirements here are `feature/`. `NNN-slug` matches the intent's
-   slug either way — only the branch gets the type prefix, the intent/spec
-   *files* keep the plain `NNN-slug` naming. One branch per requirement.
+   slug either way — only the branch gets the type prefix, the intent
+   *file* keeps the plain `NNN-slug` naming. One branch per requirement.
    **Agent sessions too:** if the harness assigned a branch (e.g.
    `claude/pensive-newton-rymumn`), don't use it for requirement work —
    create `<type>/NNN-slug` off `main` yourself and push there. This line
@@ -140,25 +146,27 @@ whoever started it.
    harness-assigned branch". Create the branch once grilling has settled
    the slug, before writing the intent. Push it with the intent commit,
    then open a **draft PR** into `main` straight away — the intent commit
-   gives it a diff, so don't wait for the spec, plan or implementation.
-   See `CONTRIBUTING.md` for why (cross-device/cross-session continuity)
-   and the exact command.
-4. **Plan** — `plan.md`, written in the branch, breaks the spec into an
-   implementation plan. It's a working file for the branch only — it never
-   lands on `main`. Delete it (`git rm plan.md`) as part of the same PR that
+   gives it a diff, so don't wait for plan or implementation. See
+   `CONTRIBUTING.md` for why (cross-device/cross-session continuity) and
+   the exact command.
+3. **Plan** — optional. Write `plan.md` on the branch if breaking the
+   requirement into an implementation sequence is actually useful; for a
+   small or self-contained change, skip straight to implementing. When
+   written, it's a working file for the branch only — it never lands on
+   `main`. Delete it (`git rm plan.md`) as part of the same PR that
    implements the requirement; it already did its job by the time the PR
    opens, and the branch's commit history keeps it if anyone needs to see it
    later.
-5. **Implement** — make the change (see "Working in this repo" above for
+4. **Implement** — make the change (see "Working in this repo" above for
    `index.html`/`sw.js` conventions).
-6. **Test** — run `node tests/test-engine.js` and validate against
+5. **Test** — run `node tests/test-engine.js` and validate against
    `docs/TOOL_DOCUMENTATION.md` §5.4 for any calculation change; otherwise
    exercise the change manually per "No build step" above. Update
    `docs/TOOL_DOCUMENTATION.md` itself, add a `CHANGELOG.md` entry, and
    add a `USER_CHANGELOG` entry if
    (and only if) the change is user-facing — all three per "Working in
    this repo" above — this happens alongside implementation, not after it.
-7. **PR** — the draft PR opened in step 3 is marked ready for review once
+6. **PR** — the draft PR opened in step 2 is marked ready for review once
    implementation, tests and docs are all pushed. Its description references
    the intent file path (e.g. "Implements `intent/003-inheritance-tax.md`").
    **Subscribe to the PR's activity as soon as it's opened** (the
@@ -167,7 +175,7 @@ whoever started it.
    merge or close by default, following the PR-babysitting rules already
    in the system prompt (autofix CI failures, respond to review comments,
    ask when a fix is ambiguous).
-8. **Merge, then sync `main` and hand off branch cleanup.** Once the PR is
+7. **Merge, then sync `main` and hand off branch cleanup.** Once the PR is
    merged: check out `main`, fetch, and fast-forward-merge (`git checkout
    main && git fetch origin main && git merge --ff-only origin/main`) so
    the local checkout matches what's actually live — don't leave it
@@ -183,11 +191,11 @@ whoever started it.
    place either way — fully merged, no data at risk — this is a
    convenience hand-off, not a blocker on anything.
 
-The PR that implements a requirement also moves that requirement's intent and
-spec files into `intent/done/` and `spec/done/` **in the same PR** — this is
-not a separate cleanup step. A merged PR should leave no requirement's
-intent/spec files, nor `plan.md`, behind in the live `intent/`/`spec/`
-directories or repo root.
+The PR that implements a requirement also moves that requirement's intent
+file into `intent/done/` **in the same PR** — this is not a separate
+cleanup step. A merged PR should leave no requirement's intent file, nor
+`plan.md` (if one was written), behind in the live `intent/` directory or
+repo root.
 
 ## Branch protection
 

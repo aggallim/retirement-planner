@@ -213,7 +213,7 @@ Align the branch type with commit types where possible (e.g., `feature/*` branch
 ## Use in this repo
 
 Requirement branches here are named `<type>/NNN-slug`, where `NNN-slug`
-matches the corresponding `intent/`/`spec/` file slug (see `CLAUDE.md`).
+matches the corresponding `intent/` file slug (see `CLAUDE.md`).
 `<type>` is chosen per the table above — most requirements are `feature/`.
 Agent sessions follow this too. If the harness assigned a branch (e.g.
 `claude/pensive-newton-rymumn`), don't use it for requirement work: create
