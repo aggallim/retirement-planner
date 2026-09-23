@@ -1,11 +1,35 @@
 # Changelog
 
 All notable changes to the UK Retirement Planner, most recent first. Each
-entry names the requirement it implements (`intent/NNN-slug.md` /
-`spec/NNN-slug.md`, both moved to their `done/` directories once shipped).
+entry names the requirement it implements (`intent/NNN-slug.md`, moved to
+`intent/done/` once shipped — plus `spec/NNN-slug.md` for requirements
+before 024, when the lifecycle still used a spec step).
 
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
+
+## 2026-09-23 — Simplify the requirement lifecycle: no post-intent approval gate, spec removed (024)
+
+- Grilling already ends with the user confirming a shared understanding
+  before the intent file is written; that confirmation is now the
+  lifecycle's only approval checkpoint — nothing after the intent is
+  committed pauses for a further nod. `spec/NNN-slug.md` is removed from
+  the lifecycle entirely (not merely optional) for every future
+  requirement, including calculation-engine changes; correctness there
+  still comes from the §5.4 verification checklist and
+  `tests/test-engine.js`, not from a spec document. `plan.md` becomes a
+  judgment call rather than mandatory. A question that comes up
+  mid-implementation now goes straight to the user instead of being
+  routed through a spec; if the answer materially changes scope or
+  behaviour, it's appended to `intent/NNN-slug.md` as a dated addendum.
+  `spec/` and its existing `done/` entries are untouched as historical
+  record.
+- `CLAUDE.md` and `CONTRIBUTING.md` (including the lifecycle diagram)
+  updated to match; the `conventional-branch` skill's repo notes no
+  longer mention a spec file.
+- Process only — no user-facing change, no `USER_CHANGELOG` entry, no
+  `sw.js` cache bump.
+- Implements `intent/done/024-simplify-sdlc-skip-spec.md`.
 
 ## 2026-09-23 — Fix mobile horizontal overscroll revealing blank whitespace (023)
 
