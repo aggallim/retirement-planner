@@ -174,3 +174,123 @@ response sheet.
   posts the triage comment, replaces `needs-triage` with `triaged`, and
   sends the digest. A run with nothing new is silent.
 - `node tests/test-engine.js` still passes (there are no engine changes).
+
+## Addendum — 2026-09-24: switch to an in-app form and a Cloudflare Worker
+
+The owner decided they don't want to set up or maintain a Google Form by
+hand. They asked for feedback to be collected on the site itself and
+posted straight to GitHub issues, with Claude doing as much of the setup
+as possible. This was resolved in grilling rounds 4–5 (Q17–Q27). It
+**replaces** sections 1–3 and 6 above. Sections 4 (daily triage) and 5
+(replies) still apply, amended as described below.
+
+### Why a relay is needed
+
+The site is a public static page, so any token written into it is public.
+Anyone could pull it out, read every feedback issue and flood the repo.
+GitHub's secret scanning would also revoke it automatically. The token
+therefore lives in a small server-side relay, a **Cloudflare Worker**, and
+never in the app.
+
+Rejected: an in-app form posting to an email relay (Web3Forms), with the
+routine reading the emails through the owner's Gmail connector. That
+routine would read text written by strangers while having access to the
+owner's whole mailbox (a prompt-injection risk), and issues would arrive up
+to a day late.
+
+### Pipeline
+
+`feedback.html` (same site) → `POST` to the Worker → the Worker creates an
+issue labelled `needs-triage` in the private
+`aggallim/retirement-planner-feedback` repo → the daily triage routine
+(unchanged).
+
+### Decisions
+
+- **Q18: form page.** A separate plain page, `feedback.html`, rather than
+  a popup built into `index.html` (which is precompiled and easy to
+  break). The ⚙ Data menu item and the footer link go to it and pass the
+  app version in the link. It has a "← Back to the planner" link and is
+  added to the service worker's offline cache. Fields are the same as
+  before: type, description, optional steps or figures, optional email,
+  and the app version (from the link, not shown to the user).
+- **Q19 / Q26: email.** Optional. Label: *"Email (optional): if you'd like
+  to hear when this is fixed"*. If given, it goes **in the private issue
+  body**. `TRIAGE.md` must forbid the routine from copying an email
+  address anywhere (comments, digest, other issues). The triage comment
+  and the digest say *whether* an email is attached. For now, the owner
+  replies by hand. **Future requirement (not this one):** once the owner
+  has a domain, send an automatic email when an issue is closed as fixed
+  or shipped. Sending mail automatically needs a verified sending domain,
+  which doesn't exist yet. Rejected: routine-written Gmail drafts (same
+  mailbox-access risk as above), and holding back email collection until
+  a domain exists.
+- **Q20: spam protection, enforced by the Worker.**
+  - Accept submissions only from origins listed in `ALLOWED_ORIGINS`.
+  - A hidden decoy field: submissions that fill it are silently dropped.
+  - Length limits on every field.
+  - At most **5 submissions per hour per IP**.
+  - At most **20 issues per day** in total.
+
+  Counters are kept in Cloudflare KV. Cloudflare Turnstile (a CAPTCHA) is
+  deferred until spam actually gets through.
+- **Q21: after pressing Send.**
+  - Success: *"Thanks, your feedback has been sent."* The form clears and
+    shows a link back to the planner.
+  - Any failure (network, offline, limit reached, server error):
+    *"Sorry, that didn't send. Please try again later."* The user's text
+    stays in the form.
+
+  There's still no up-front offline check (per the original Q8). The
+  message only appears after a send actually fails.
+- **Q22: privacy wording.** Under the Data menu item and at the top of
+  `feedback.html`: *"Sends only what you type here to the developer. Your
+  plan figures aren't included."* The privacy section of
+  `docs/TOOL_DOCUMENTATION.md` is updated to match.
+- **Q23 / Q27: addresses.** The Worker uses Cloudflare's free
+  `*.workers.dev` address for now. The owner plans to put a domain in
+  front of the app later, so:
+  - `ALLOWED_ORIGINS` lives in the Worker's config, not its code. It
+    starts as `https://aggallim.github.io` only.
+  - `feedback.html` reads the Worker's URL from one constant.
+
+  Adding a domain is then a one-line change to each.
+- **Q17 / Q25: deployment and secrets.** A GitHub Actions workflow in this
+  repo deploys the Worker (via wrangler) whenever its code changes on
+  `main`. It also passes `FEEDBACK_GITHUB_TOKEN` into the Worker's secret
+  settings. It's done this way because this Claude environment's network
+  policy blocks `api.cloudflare.com`, while GitHub's runners don't.
+
+  Nobody pastes a secret into a chat or into GitHub's settings screen. The
+  owner puts these into the Claude environment's variables:
+  - `CLOUDFLARE_API_TOKEN` ("Edit Cloudflare Workers" template)
+  - `CLOUDFLARE_ACCOUNT_ID`
+  - `FEEDBACK_GITHUB_TOKEN` (fine-grained; Issues read and write on the
+    feedback repo only; 1-year expiry)
+  - `SETUP_GITHUB_TOKEN` (fine-grained; Secrets read and write on
+    `retirement-planner` only; 7-day expiry)
+
+  Claude then copies the first three into the repo's Actions secrets
+  through the GitHub API, using `SETUP_GITHUB_TOKEN`. That token expires
+  on its own. The only recurring manual task is renewing
+  `FEEDBACK_GITHUB_TOKEN` once a year.
+- **Q24: cleaning up the Google Form work on this branch.**
+  - Delete `tools/feedback/Code.gs`.
+  - Rewrite `tools/feedback/README.md` for the Worker pipeline.
+  - Add the Worker source under `tools/feedback/worker/`.
+  - Replace `FEEDBACK_FORM_URL` / `FEEDBACK_VERSION_FIELD` in `index.html`
+    with a link to `feedback.html`, shown only once the Worker URL is
+    configured.
+  - Update `TRIAGE.md` only for the email rule above.
+  - Adjust the docs and changelog entries already written to match.
+
+### Superseded
+
+Sections 2 (Google Form), 3 (Apps Script), the Google-hosted wording in 1,
+the "no automatic replies" framing in 5 (still true for now; see Q26), and
+steps 2–3 of section 6 (owner builds the form; Claude fills in the form
+URL). Verification now means: a real submission from `feedback.html`
+creates a `needs-triage` issue (with the email if one was given);
+submissions from a disallowed origin, with the decoy field filled, or over
+either limit create no issue; and a triage run behaves as before, with no
+email address copied into its output.
