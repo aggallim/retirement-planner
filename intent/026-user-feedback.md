@@ -311,8 +311,9 @@ hand instead (option B).
   themselves are unchanged (same scopes and expiry). `SETUP_GITHUB_TOKEN`
   and `tools/feedback/set_actions_secrets.py` are dropped, and the Claude
   environment no longer needs any of these variables.
-- **Labels:** the owner creates the ten labels in the feedback repo by
-  hand, since Claude sessions can't reach that private repo.
+- **Labels:** already created in the feedback repo. If it's ever rebuilt,
+  the owner re-creates them by hand, since Claude sessions can't reach
+  that private repo.
 - **Rollout is now two PRs.**
   1. This PR merges with `FEEDBACK_ENDPOINT` still empty, so both
      entry points stay hidden. Merging it runs the deploy workflow for

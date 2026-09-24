@@ -33,13 +33,14 @@ in a public static site is readable by anyone.
 ## One-time setup
 
 Claude sessions can't set Actions secrets or reach Cloudflare (the
-session's proxy blocks both), so the owner does steps 1–3 by hand. See the
+session's proxy blocks both), so the owner does steps 2–3 by hand. See the
 intent's second 2026-09-24 addendum.
 
 1. **Private feedback repo.** `aggallim/retirement-planner-feedback`,
-   private, holding issues only. In its **Issues → Labels** page, create:
+   private, holding issues only. It has these labels (already created):
    `needs-triage`, `triaged`, `bug`, `idea`, `confusing`, `other`, `p1`,
-   `p2`, `p3` and `spam`. Re-create them if the repo is ever rebuilt.
+   `p2`, `p3` and `spam`. Re-create them in its **Issues → Labels** page if
+   the repo is ever rebuilt.
 2. **Create the tokens.**
 
    | Secret | What it is |
