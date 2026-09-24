@@ -944,12 +944,36 @@ const importPlanFields = parsed => {
   return fields;
 };
 
+/* ---------------- Feedback link (intent 026) ---------------- */
+// APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
+// checks this) — bump both together. It's pre-filled into the feedback form.
+const APP_VERSION = 'v16';
+// Google Form base URL (".../viewform") and the pre-fill entry ID of its
+// hidden app-version question ("entry.NNN"). Setup: tools/feedback/README.md.
+// While FEEDBACK_FORM_URL is empty, both "Send feedback" entry points stay
+// hidden. The app never sends plan data: the form only gets what users type.
+const FEEDBACK_FORM_URL = '';
+const FEEDBACK_VERSION_FIELD = '';
+const FEEDBACK_HREF = FEEDBACK_FORM_URL ? (() => {
+  const params = new URLSearchParams({ usp: 'pp_url' });
+  if (FEEDBACK_VERSION_FIELD) params.set(FEEDBACK_VERSION_FIELD, APP_VERSION);
+  return `${FEEDBACK_FORM_URL}?${params.toString()}`;
+})() : '';
+
 /* ---------------- User-facing changelog ("What's new") ---------------- */
 // Newest first. Only entries for changes a user of the app would notice —
 // see intent 005's inclusion rule. version reuses the sw.js CACHE value at
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v16',
+  date: '2026-09-24', // set to the actual merge date
+  title: 'Send us feedback',
+  items: [
+    'A new "Send feedback" link in the Data menu and at the bottom of the page opens a short Google form where you can report a problem, share an idea or tell us what was confusing.',
+    'Your plan figures are never sent. The form only receives what you type into it.'
+  ]
+}, {
   version: 'v15',
   date: '2026-09-23', // set to the actual merge date
   title: 'Defined Benefit (DB) pensions are now supported',
@@ -2666,7 +2690,16 @@ const SettingsMenu = memo(function SettingsMenu({
   }, React.createElement("button", {
     onClick: () => setView('whatsnew'),
     className: "text-sm text-blue-600 font-medium"
-  }, `What's new (${USER_CHANGELOG[0].version})`))) : React.createElement(React.Fragment, null, React.createElement("button", {
+  }, `What's new (${USER_CHANGELOG[0].version})`)), FEEDBACK_HREF && React.createElement("div", {
+    className: "pt-2 border-t border-slate-100 space-y-1.5"
+  }, React.createElement("a", {
+    href: FEEDBACK_HREF,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "text-sm text-blue-600 font-medium"
+  }, "Send feedback"), React.createElement("p", {
+    className: "text-xs text-slate-500"
+  }, "Opens a short Google form. Your plan figures aren't sent. Only what you type in the form."))) : React.createElement(React.Fragment, null, React.createElement("button", {
     onClick: () => setView('menu'),
     className: "text-sm text-blue-600 font-medium"
   }, "← Back"), React.createElement("div", {
@@ -3714,7 +3747,15 @@ function RetirementCalculator() {
     className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Lock, {
     className: "h-3.5 w-3.5 flex-shrink-0"
-  }), "Your data stays on this device — no account, no upload, no bank connection, no analytics.")));
+  }), "Your data stays on this device — no account, no upload, no bank connection, no analytics."), FEEDBACK_HREF && /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mt-2"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: FEEDBACK_HREF,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "text-slate-400",
+    style: { textDecoration: 'underline' }
+  }, "Send feedback"))));
 }</script>
 <script>
   (function () {
