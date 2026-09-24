@@ -323,3 +323,18 @@ hand instead (option B).
      this PR so users aren't told about a link they can't see yet). The
      end-to-end test and creating the triage routine happen once that's
      live. That PR moves this intent to `intent/done/`.
+
+## Addendum — 2026-09-24: first deploy, and turning the links on
+
+The first deploy (after PR #26 merged) needed two fixes on the owner's
+side before it went green: a valid `CLOUDFLARE_API_TOKEN` (the first value
+was rejected with a 401), and registering the account's `workers.dev`
+subdomain (`aggallim`). The Worker now answers at
+`https://retirement-planner-feedback.aggallim.workers.dev`.
+
+The failed first run also showed a bug in the deploy workflow: the KV step
+carried on after Cloudflare rejected the token (a failing `curl` inside a
+pipe, and a `test … && test …` list that `bash -e` doesn't stop on). It
+reported "Created KV namespace" and only failed later with a confusing
+wrangler config error. The follow-up PR makes that step stop with a clear
+message, and adds the subdomain step to `tools/feedback/README.md`.
