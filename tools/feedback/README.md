@@ -33,7 +33,7 @@ in a public static site is readable by anyone.
 ## One-time setup
 
 Claude sessions can't set Actions secrets or reach Cloudflare (the
-session's proxy blocks both), so the owner does steps 2–3 by hand. See the
+session's proxy blocks both), so the owner does steps 2–4 by hand. See the
 intent's second 2026-09-24 addendum.
 
 1. **Private feedback repo.** `aggallim/retirement-planner-feedback`,
@@ -53,7 +53,14 @@ intent's second 2026-09-24 addendum.
    Secrets and variables → Actions → New repository secret, one per row
    above, with exactly those names. Don't paste them anywhere else (not
    into a chat, not into a file in either repo).
-4. **The first deploy** runs when the PR that adds the Worker merges to
+4. **Register a `workers.dev` subdomain** (once per Cloudflare account):
+   Cloudflare dashboard → Workers & Pages → Subdomain → Set up. If there's
+   no such setting, creating any Worker in the dashboard asks for one; the
+   Worker can be deleted afterwards. This account's is `aggallim`, so the
+   Worker is at `https://retirement-planner-feedback.aggallim.workers.dev`.
+   Without it, `wrangler deploy` fails with "You need to register a
+   workers.dev subdomain".
+5. **The first deploy** runs when the PR that adds the Worker merges to
    `main` (or later from the Actions tab → "Deploy feedback Worker" → Run
    workflow). It:
    1. runs the Worker tests
@@ -61,10 +68,10 @@ intent's second 2026-09-24 addendum.
    3. deploys the Worker with wrangler
    4. sets the Worker's `GITHUB_TOKEN` secret from `FEEDBACK_GITHUB_TOKEN`
    5. prints the Worker URL (in the run's summary) and checks its `/health`
-5. **Claude sets `window.FEEDBACK_ENDPOINT`** in `feedback-config.js` to
+6. **Claude sets `window.FEEDBACK_ENDPOINT`** in `feedback-config.js` to
    that URL, in a follow-up PR that also bumps the `sw.js` cache version.
    This makes the links appear in the app.
-6. **Claude creates the daily triage routine** (a Claude Code scheduled
+7. **Claude creates the daily triage routine** (a Claude Code scheduled
    trigger on the owner's subscription; no API key):
    - Schedule: daily at 07:00 UK time. Routines use UTC cron, so
      `0 6 * * *` is 07:00 in summer (BST) and 06:00 in winter (GMT).
@@ -75,7 +82,7 @@ intent's second 2026-09-24 addendum.
      > Follow the instructions in `tools/feedback/TRIAGE.md` in the
      > `aggallim/retirement-planner` repository (on `main`) to triage new
      > issues in `aggallim/retirement-planner-feedback`.
-7. **End-to-end test** (see below).
+8. **End-to-end test** (see below).
 
 ## End-to-end test
 
@@ -120,5 +127,8 @@ until it's renewed. Nothing is filed in the meantime.
   feedback Worker" run. If it's fine, check the Worker's logs in the
   Cloudflare dashboard. A `GitHub issue create failed: 401` means the
   token is expired or wrong; `404` means the token can't see the repo.
+- **Deploy run fails at "Find or create the KV namespace":** Cloudflare
+  rejected `CLOUDFLARE_API_TOKEN` or `CLOUDFLARE_ACCOUNT_ID`. Replace the
+  token with the value shown once when it's created, then re-run.
 - **403 from the Worker:** the page's origin isn't in `ALLOWED_ORIGINS`.
 - **429:** a limit was reached (5 an hour from one IP, or 20 a day).

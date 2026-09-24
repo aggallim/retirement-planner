@@ -8,6 +8,19 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-24 — Feedback links go live (026)
+
+- `feedback-config.js` now points at the deployed Worker,
+  `https://retirement-planner-feedback.aggallim.workers.dev`, so the "Send
+  feedback" item in the ⚙ Data panel and the footer link appear. Cache
+  and `APP_VERSION` bumped to v17, with the "What's new" entry.
+- The deploy workflow's KV step now stops with a clear error when
+  Cloudflare rejects the token. Before, it carried on and failed later
+  with a confusing wrangler config error.
+- `tools/feedback/README.md` adds the one-time `workers.dev` subdomain step
+  that the first deploy needed.
+- Completes `intent/026-user-feedback.md` (moved to `intent/done/`).
+
 ## 2026-09-24 — User feedback pipeline (026)
 
 - New "Send feedback" item in the ⚙ Data panel, with the line "Sends only
