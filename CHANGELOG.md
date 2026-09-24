@@ -8,6 +8,17 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-24 — Service worker precaches fresh files (027)
+
+- Fixes `intent/027-sw-stale-precache.md` (moved to `intent/done/`). The
+  install step now fetches each precached asset with `cache: 'reload'`.
+  Before, `cache.addAll` could be answered from the browser's HTTP cache
+  (GitHub Pages sends `max-age=600`). v17 was installed on a desktop
+  browser with the v16 `feedback-config.js`, so the page ran v17 with no
+  feedback endpoint and hid the "Send feedback" links.
+- Cache and `APP_VERSION` bumped to v18. Its install fetches fresh, which
+  repairs browsers already stuck like that. A "What's new" entry is added.
+
 ## 2026-09-24 — Feedback links go live (026)
 
 - `feedback-config.js` now points at the deployed Worker,

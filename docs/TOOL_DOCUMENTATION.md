@@ -438,7 +438,7 @@ Everything is inlined into one `index.html` (~825 KB, ~222 KB zipped):
 - React, ReactDOM, `react-is` and Recharts embedded as **UMD builds**
 - Tailwind run through the CLI against the source to emit only the ~34 KB of CSS actually used
 - Lucide icons replaced with **inline SVG components**, removing the dependency entirely
-- Service worker for offline use; web manifest and SVG icon for home-screen install
+- Service worker for offline use; web manifest and SVG icon for home-screen install. On install it precaches every asset with `cache: 'reload'`, bypassing the browser's HTTP cache (GitHub Pages allows 10 minutes), so a new cache version never stores a file left over from the previous one (intent 027). After that, requests are served stale-while-revalidate: cached copy first, refreshed in the background
 - Mobile touches: larger slider thumbs on coarse pointers, 16px inputs to stop iOS zooming, safe-area padding for the notch
 
 > `react-is` must be loaded **before** Recharts. Its UMD build expects a `ReactIs` global and fails with a `ForwardRef` error otherwise — which then cascades into confusing downstream errors, because function declarations still hoist even though the script aborted.

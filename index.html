@@ -949,7 +949,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v17';
+const APP_VERSION = 'v18';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -961,6 +961,13 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v18',
+  date: '2026-09-24', // set to the actual merge date
+  title: 'Updates now arrive complete',
+  items: [
+    'Fixed a problem where, after an update, some browsers kept an old copy of part of the app. The main effect was that the new "Send feedback" link didn\'t appear for some people.'
+  ]
+}, {
   version: 'v17',
   date: '2026-09-24', // set to the actual merge date
   title: 'Send us feedback',
