@@ -34,8 +34,9 @@ non-trivial calculation change, why — in one place.
     `aggallim/retirement-planner-feedback` repo, including the optional
     email
 - `.github/workflows/deploy-feedback-worker.yml` deploys the Worker on
-  changes to `main`, using three repo secrets that Claude copied in from
-  the Claude environment. `tests/test-feedback-worker.mjs` (12
+  changes to `main`, using three repo secrets the owner set by hand (this
+  environment's proxy blocks Claude from setting Actions secrets or
+  reaching Cloudflare). `tests/test-feedback-worker.mjs` (12
   dependency-free checks) runs in CI alongside the engine tests.
 - `tools/feedback/TRIAGE.md` sets the rules for the daily Claude Code
   triage routine (Haiku 4.5): type and priority labels, duplicates, spam,
@@ -49,6 +50,9 @@ non-trivial calculation change, why — in one place.
   was replaced before merge because the owner didn't want to maintain a
   form by hand. An email relay read through Gmail was rejected because it
   would expose the owner's mailbox to text written by strangers.
+- Ships with `FEEDBACK_ENDPOINT` empty, so the links stay hidden. Merging
+  runs the first Worker deploy; a follow-up PR sets the Worker URL, which
+  turns the links on and adds the "What's new" entry.
 - New `APP_VERSION` constant. `tests/test-engine.js` now fails if it
   differs from the `sw.js` cache version.
 - No engine changes.

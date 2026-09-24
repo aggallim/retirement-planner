@@ -294,3 +294,31 @@ creates a `needs-triage` issue (with the email if one was given);
 submissions from a disallowed origin, with the decoy field filled, or over
 either limit create no issue; and a triage run behaves as before, with no
 email address copied into its output.
+
+## Addendum — 2026-09-24: owner sets the Actions secrets by hand
+
+The route agreed in Q17/Q25 (Claude copies the secrets into the repo's
+Actions secrets with `SETUP_GITHUB_TOKEN`) doesn't work. This environment's
+GitHub proxy refuses the Actions-secrets API path outright, whatever token
+is used, and its network policy blocks `api.cloudflare.com`, so Claude
+can't deploy from a session either. The owner chose to set the secrets by
+hand instead (option B).
+
+- **Secrets:** the owner adds `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID` and `FEEDBACK_GITHUB_TOKEN` directly in GitHub →
+  Settings → Secrets and variables → Actions. This reverses the "nobody
+  types a secret into GitHub's settings screen" part of Q25. The tokens
+  themselves are unchanged (same scopes and expiry). `SETUP_GITHUB_TOKEN`
+  and `tools/feedback/set_actions_secrets.py` are dropped, and the Claude
+  environment no longer needs any of these variables.
+- **Labels:** the owner creates the ten labels in the feedback repo by
+  hand, since Claude sessions can't reach that private repo.
+- **Rollout is now two PRs.**
+  1. This PR merges with `FEEDBACK_ENDPOINT` still empty, so both
+     entry points stay hidden. Merging it runs the deploy workflow for
+     the first time, which prints the Worker URL.
+  2. A small follow-up PR sets `FEEDBACK_ENDPOINT` to that URL, bumps
+     the cache version, and adds the "What's new" entry (moved out of
+     this PR so users aren't told about a link they can't see yet). The
+     end-to-end test and creating the triage routine happen once that's
+     live. That PR moves this intent to `intent/done/`.
