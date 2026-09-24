@@ -13,3 +13,6 @@ jobs:
 
       - name: Run engine tests
         run: node tests/test-engine.js
+
+      - name: Run feedback Worker tests
+        run: node tests/test-feedback-worker.mjs

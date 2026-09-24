@@ -27,7 +27,7 @@ It answers three questions:
 | Projection span | Current age through to age 100, anchored on calendar years |
 | Tax year basis | 2026/27 allowances; Retirement Living Standards 2026 (Pensions UK) |
 | Income tax | Rest-of-UK bands, thresholds frozen to 2030/31 then inflation-uprated |
-| Data storage | Browser localStorage on-device only. Nothing leaves the device. The optional feedback form (§3.12) is a separate Google Form that receives only what the user types. |
+| Data storage | Browser localStorage on-device only. Nothing leaves the device. The optional feedback page (§3.12) sends only what the user types into it, and only when they press Send. |
 
 ---
 
@@ -64,7 +64,7 @@ A sophisticated, production-grade UK retirement calculator with exceptional desi
 - [x] Shared mortgage and joint living costs
 - [x] Smooth, non-jerky sliders
 - [x] Package as an installable phone app
-- [x] "Send feedback" link to a Google Form, with private triage of responses (intent 026)
+- [x] "Send feedback" page that files private GitHub issues, with daily triage (intent 026)
 
 ---
 
@@ -176,15 +176,15 @@ A plan saved or exported before DB support existed has none of these fields; it 
 
 ### 3.12 Send feedback
 
-A **Send feedback** item in the **⚙ Data** panel, below What's new, and a small **Send feedback** link in the page footer both open a short Google Form in a new tab. The Data panel item carries the line *"Opens a short Google form. Your plan figures aren't sent. Only what you type in the form."*
+A **Send feedback** item in the **⚙ Data** panel, below What's new, and a small **Send feedback** link in the page footer both open the feedback page (`feedback.html`) in the same tab. It has a "← Back to the planner" link. The Data panel item, and the top of the page, carry the line *"Sends only what you type here to the developer. Your plan figures aren't included."* The Data panel's privacy note now reads "…nothing is sent anywhere unless you choose to export a file or send feedback yourself."
 
-- The form asks for a type (Bug / Idea / Something confusing / Other), what happened or what you'd like, optional steps or example figures ("only share what you're comfortable with"), and an optional email for a reply. It needs no sign-in.
-- The link pre-fills the app's version into a field the user doesn't see, so a report can be matched to the build it came from. Nothing else is added: **the app never sends plan figures or anything else automatically.** The form is hosted by Google and receives only what the user types, plus that version.
-- The link is always shown. There is no offline check. Offline, the new tab simply fails to load.
-- There is no in-app prompt asking for feedback, and no automatic reply. The owner may reply by hand if an email was given. "What's new" (§3.8) is where fixes show up.
-- Both entry points are hidden while the app has no form URL configured (`FEEDBACK_FORM_URL` empty; see §5.2).
+- The form asks for a type (Bug / Idea / Something confusing / Other), what happened or what you'd like, optional steps or example figures ("only share what you're comfortable with"), and an optional email ("if you'd like to hear when this is fixed"). No account or sign-in is needed.
+- The app passes its version in the link (`feedback.html#v=v16`), so a report can be matched to the build it came from. Nothing else is added: **the app never sends plan figures or anything else automatically.** Only what the user types is sent, and only when they press **Send**.
+- After sending: *"Thanks, your feedback has been sent."* If sending fails for any reason (offline, a limit reached, a server error): *"Sorry, that didn't send. Please try again later."* The user's text stays in the form. There's no up-front offline check.
+- There is no in-app prompt asking for feedback. Nobody is emailed automatically: if an email was given, the owner may reply by hand. Automatic "this is fixed" emails are a possible later requirement, once the app has its own domain. "What's new" (§3.8) is where fixes show up.
+- Both entry points are hidden, and the page says feedback isn't available, while no feedback address is configured (`window.FEEDBACK_ENDPOINT` empty in `feedback-config.js`; see §5.2).
 
-Behind the form, responses become issues in a private GitHub repo, not this public one, and the reply email is never copied into the issue. A daily Claude Code routine labels and comments on them (triage only). Setup, the daily cap and the triage rules: `tools/feedback/README.md` and `tools/feedback/TRIAGE.md`.
+Behind the page, a small Cloudflare Worker files each submission as an issue in a **private** GitHub repo, not this public one. The optional email goes into that private issue. A daily Claude Code routine labels and comments on new issues (triage only) and never copies an email address anywhere. Setup, spam limits and triage rules: `tools/feedback/README.md` and `tools/feedback/TRIAGE.md`.
 
 ---
 
@@ -350,7 +350,15 @@ RetirementCalculator()  state, derived memos, layout
   └─ TaxNotesPanel      memoised, module-level (wording from taxNoteText())
 ```
 
-**Feedback link (intent 026).** `APP_VERSION`, `FEEDBACK_FORM_URL`, `FEEDBACK_VERSION_FIELD` and the derived `FEEDBACK_HREF` are module-level constants just above `USER_CHANGELOG`. `FEEDBACK_HREF` is the form's pre-fill URL with `APP_VERSION` in the version field, or `''` when `FEEDBACK_FORM_URL` is empty, and both entry points render only when it is non-empty. `APP_VERSION` must equal the `sw.js` `CACHE` suffix. `tests/test-engine.js` fails if they differ.
+**Feedback (intent 026).** `feedback-config.js` sets `window.FEEDBACK_ENDPOINT`, the feedback Worker's URL. It's loaded by both `index.html` and `feedback.html`, and listed in the `sw.js` cache. In `index.html`, `APP_VERSION` and the derived `FEEDBACK_HREF` (`feedback.html#v=<APP_VERSION>`, or `''` when the endpoint is empty) are module-level constants just above `USER_CHANGELOG`, and both entry points render only when `FEEDBACK_HREF` is non-empty. `APP_VERSION` must equal the `sw.js` `CACHE` suffix; `tests/test-engine.js` fails if they differ. The version travels in the URL hash rather than a query string so the service worker's cache key stays `feedback.html`.
+
+`feedback.html` is a standalone plain page (no React, no build), styled to match and honouring the same theme preference. It POSTs JSON `{type, description, steps, email, version, website}` to the endpoint. `website` is a decoy field hidden from people: bots that fill it get a fake success and nothing is filed. The Worker (`tools/feedback/worker/`) does the following:
+- accepts only origins listed in its `ALLOWED_ORIGINS` config
+- validates types and lengths
+- rate-limits to 5 submissions per hour per IP and 20 issues per UK day, with counters in Cloudflare KV; IPs are stored only as hashes and feedback text is never stored
+- creates the issue (labelled `needs-triage`) with a fine-grained token held only in its own secrets
+
+`.github/workflows/deploy-feedback-worker.yml` deploys it whenever its code changes on `main`. `tests/test-feedback-worker.mjs` tests it without dependencies.
 
 `UK_REFERENCE`, `taxThresholdsFor`, `incomeTaxFor`, `deflate`, `lifetimeTaxTotals`, `computeTaxNotes`, `dbPensionOf` and `dbPensionGapYears` all sit inside the `ENGINE-EXTRACT` spans, so `tests/test-engine.js` exercises them directly. `taxNoteText`, `sourceLink` and `formatToday` are plain module-level display helpers outside the spans (they use `formatCurrency`/React).
 
@@ -406,9 +414,21 @@ The engine was tested as a standalone module. Checks that pass:
 - `dbPensionGapYears` is non-zero only when a non-zero DB pension starts strictly after retirement
 - `computeTaxNotes` reports each fact in its first year, uses strict ">" boundaries (income exactly at a threshold produces no note), only fires the taper note strictly inside the taper range, attributes notes to the right person, and ignores rows after the plan horizon
 
-- `APP_VERSION` in `index.html` equals the `sw.js` `CACHE` suffix, so the feedback form is pre-filled with the build actually running (intent 026)
+- `APP_VERSION` in `index.html` equals the `sw.js` `CACHE` suffix, so feedback reports the build actually running (intent 026)
+- The feedback Worker (`tests/test-feedback-worker.mjs`, 12 checks):
+  - a valid submission files one `needs-triage` issue, with `@mentions` and `#refs` neutralised
+  - wrong origin, invalid or oversized input, and a filled decoy field file nothing
+  - the 6th submission in an hour from one IP, and the 21st of the day overall, are refused
+  - KV holds only hashed IPs and counts
+  - a GitHub failure returns 502
 
-The built PWA was additionally rendered in a headless browser to confirm it boots, calculates, toggles into couple mode and persists state. For the feedback link (§3.12), a headless check confirmed neither entry point renders while `FEEDBACK_FORM_URL` is empty, and that with it set both open the pre-fill URL (`usp=pp_url` plus the version field) in a new tab, at desktop and phone widths, in light and dark mode.
+The built PWA was additionally rendered in a headless browser to confirm it boots, calculates, toggles into couple mode and persists state. For feedback (§3.12), a headless check confirmed:
+- with the endpoint empty, neither entry point renders and `feedback.html` says feedback isn't available
+- with it set, the footer and Data-menu links open `feedback.html#v=v16` in the same tab
+- the form requires a type and a description
+- a send posts exactly the typed fields plus the version, then shows the thanks message
+- a failed send shows the error and keeps the text
+- all at desktop and phone widths, in light and dark mode, with no horizontal scroll
 
 ### 5.5 PWA packaging
 
@@ -440,6 +460,8 @@ No personal data sits in the repo — figures live only in device storage.
 
 Push changes to `main`. The service worker caches aggressively, so if you don't see an update, bump `CACHE = 'retirement-planner-v1'` in `sw.js` to `v2`, or fully close and reopen the installed app. Bump `APP_VERSION` in `index.html` to the same value at the same time (the test harness checks they match).
 
+The feedback Worker (§3.12) is hosted separately, on Cloudflare. It redeploys automatically when anything under `tools/feedback/worker/` changes on `main`, via `.github/workflows/deploy-feedback-worker.yml`. That workflow needs three repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `FEEDBACK_GITHUB_TOKEN`), described in `tools/feedback/README.md`. The fine-grained `FEEDBACK_GITHUB_TOKEN` expires yearly and must be renewed.
+
 ---
 
 ## 7. Known limitations
@@ -457,4 +479,4 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan. Manual export/import (§3.7) can move a plan between devices or back it up, but there's no automatic sync.
 10. **No LISA first-home exception.** Real LISAs allow penalty-free access before 60 for a first home purchase; this tool has no house-purchase concept to hang that on, so the age-60 restriction is unconditional.
 11. **Unlimited free-form "other savings" accounts.** A person can add any number of named non-ISA savings accounts — this is intentional, not a bug.
-12. **The feedback link needs a connection and a Google-hosted form.** "Send feedback" (§3.12) is always shown, with no offline check or message. Offline, the new tab just fails to load. The form is run by Google, not the app, and at most 20 responses a day become triage issues (the rest stay in the form's responses).
+12. **Feedback relies on an outside service and has daily limits.** Sending feedback (§3.12) goes through a Cloudflare Worker to a private GitHub repo. It needs a connection, and there's no offline check before sending. At most 5 submissions per hour per IP and 20 issues per day are filed; anything over that is refused with the "didn't send" message, not queued. Nobody who leaves an email is contacted automatically yet.

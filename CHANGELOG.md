@@ -10,27 +10,47 @@ non-trivial calculation change, why — in one place.
 
 ## 2026-09-24 — User feedback pipeline (026)
 
-- New "Send feedback" item in the ⚙ Data panel (with the line "Opens a
-  short Google form. Your plan figures aren't sent. Only what you type in
-  the form.") and a plain "Send feedback" footer link. Both open a Google
-  Form in a new tab, with the app version pre-filled into a hidden field.
-  They're driven by `FEEDBACK_FORM_URL` / `FEEDBACK_VERSION_FIELD` in
-  `index.html` and render nothing while the URL is empty.
-- Why a Google Form and not an in-app form posting to a service: the app
-  itself never sends data, which keeps the "nothing leaves the device"
-  promise (017) intact. Why a private repo: the app repo is public, and
-  users may type real figures.
-- New `APP_VERSION` constant (the version the form is pre-filled with).
-  `tests/test-engine.js` now fails if it differs from the `sw.js` cache
-  version.
-- `tools/feedback/`: `Code.gs` (Apps Script: form response → issue in the
-  private `aggallim/retirement-planner-feedback` repo, labelled
-  `needs-triage`, reply email never copied, 20-issues-a-day cap,
-  fine-grained token held in script properties), `README.md` (full setup
-  guide) and `TRIAGE.md` (rules for the daily Claude Code triage routine:
-  type and priority labels, duplicates, spam, a triage comment,
-  `needs-triage` → `triaged`, one push digest, and a silent run when
-  there's nothing new).
+- New "Send feedback" item in the ⚙ Data panel, with the line "Sends only
+  what you type here to the developer. Your plan figures aren't included."
+  There's also a plain "Send feedback" footer link. Both open the new
+  `feedback.html` page in the same tab and pass the app version in the URL
+  hash. The page asks for:
+  - a type
+  - a description
+  - optional steps or figures
+  - an optional email "if you'd like to hear when this is fixed"
+- On success, the page shows a thanks message. On any failure, it shows a
+  "didn't send" message and keeps the user's text. Both links are hidden
+  while `window.FEEDBACK_ENDPOINT` in the new `feedback-config.js` is
+  empty. The Data panel's privacy note now mentions sending feedback.
+- `feedback.html` posts to a Cloudflare Worker (`tools/feedback/worker/`).
+  The Worker:
+  - accepts only `ALLOWED_ORIGINS`
+  - drops submissions that fill a hidden decoy field
+  - validates lengths
+  - limits to 5 an hour per IP and 20 a day in total (counters in KV,
+    IPs hashed)
+  - files a `needs-triage` issue in the private
+    `aggallim/retirement-planner-feedback` repo, including the optional
+    email
+- `.github/workflows/deploy-feedback-worker.yml` deploys the Worker on
+  changes to `main`, using three repo secrets that Claude copied in from
+  the Claude environment. `tests/test-feedback-worker.mjs` (12
+  dependency-free checks) runs in CI alongside the engine tests.
+- `tools/feedback/TRIAGE.md` sets the rules for the daily Claude Code
+  triage routine (Haiku 4.5): type and priority labels, duplicates, spam,
+  a triage comment saying whether the submitter wants updates, swapping
+  `needs-triage` for `triaged`, and one push digest (nothing when there's
+  nothing new). The routine never copies an email address anywhere and
+  never builds anything.
+- Why a Worker and not a token in the page: the site is public, so any
+  token in it is public too. Why a private repo: users may type real
+  figures, and emails. The first design, a Google Form with Apps Script,
+  was replaced before merge because the owner didn't want to maintain a
+  form by hand. An email relay read through Gmail was rejected because it
+  would expose the owner's mailbox to text written by strangers.
+- New `APP_VERSION` constant. `tests/test-engine.js` now fails if it
+  differs from the `sw.js` cache version.
 - No engine changes.
 
 ## 2026-09-23 — Defined Benefit (DB) pension support (025)

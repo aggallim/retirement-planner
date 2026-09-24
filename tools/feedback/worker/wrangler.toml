@@ -1,0 +1,20 @@
+# Cloudflare Worker config for the feedback relay (intent/026).
+# Deployed by .github/workflows/deploy-feedback-worker.yml. Setup: ../README.md.
+name = "retirement-planner-feedback"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+# Sites allowed to submit feedback, comma-separated, no trailing slash.
+# Add a custom domain here when the app gets one.
+ALLOWED_ORIGINS = "https://aggallim.github.io"
+FEEDBACK_REPO = "aggallim/retirement-planner-feedback"
+DAILY_ISSUE_CAP = "20"
+HOURLY_PER_IP = "5"
+
+# Rate-limit counters only. The deploy workflow finds or creates the
+# namespace by title and fills in the id before deploying.
+[[kv_namespaces]]
+binding = "FEEDBACK_KV"
+id = "__FEEDBACK_KV_ID__"

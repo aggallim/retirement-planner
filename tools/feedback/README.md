@@ -1,191 +1,125 @@
-# Feedback pipeline: setup guide
+# Feedback pipeline: how it works and how to set it up
 
-How the "Send feedback" link in the app reaches a triaged GitHub issue
-(`intent/026-user-feedback.md`):
+How the app's "Send feedback" link becomes a triaged GitHub issue
+(`intent/026-user-feedback.md`, including its 2026-09-24 addendum):
 
 ```
-App "Send feedback" link ──► Google Form (new tab, app version pre-filled)
-                                  │ on submit
+App "Send feedback" link ──► feedback.html (same site; app version in the URL hash)
+                                  │ POST JSON (only what the user typed)
                                   ▼
-                       Apps Script (Code.gs) ──► issue in private repo
-                                                  aggallim/retirement-planner-feedback
-                                                  label: needs-triage
+                   Cloudflare Worker (worker/) ──► issue in private repo
+                     origin check, decoy field,     aggallim/retirement-planner-feedback
+                     length limits, 5/h per IP,     label: needs-triage
+                     20/day; holds the GitHub token
                                   ▲
        Daily Claude Code routine ─┘ follows TRIAGE.md: labels, comment,
                                     needs-triage → triaged, one push digest
 ```
 
-The app never sends anything itself. It only opens a link. The form
-receives only what the user types, plus the app version from the link.
-
-Files here:
+The app never sends plan data. `feedback.html` sends only what the user
+types, and only when they press Send. The GitHub token lives only in the
+Worker's secrets. It's never in the site or either repo, because anything
+in a public static site is readable by anyone.
 
 | File | What it is |
 |---|---|
-| `Code.gs` | The Apps Script that turns a form response into an issue. No secrets. |
-| `TRIAGE.md` | The triage rules the daily routine follows. |
-| `README.md` | This guide. Enough to rebuild the whole pipeline. |
+| `worker/src/index.js` | The Worker: validation, spam limits, issue creation. |
+| `worker/wrangler.toml` | Worker config: `ALLOWED_ORIGINS`, repo, caps, KV binding. |
+| `../../.github/workflows/deploy-feedback-worker.yml` | Deploys the Worker whenever its code changes on `main`. |
+| `../../tests/test-feedback-worker.mjs` | Dependency-free Worker tests (run in CI). |
+| `../../feedback.html`, `../../feedback-config.js` | The page, and the one place the Worker URL is set. |
+| `TRIAGE.md` | Rules the daily triage routine follows. |
+| `set_actions_secrets.py` | Copies the three secrets from the Claude environment into the repo's Actions secrets. |
 
-Steps 1–5 are done by the owner (they need your Google and GitHub
-accounts). Steps 6–7 are done by Claude, or by you by hand.
+## One-time setup
 
-## 1. Create the private feedback repo
+Everything except creating accounts and tokens is done by Claude. No
+secret is ever pasted into a chat or typed into GitHub's settings screen.
 
-1. GitHub → **New repository** → owner `aggallim`, name
-   **`retirement-planner-feedback`**, **Private**. Tick "Add a README" so
-   it isn't empty.
-2. In the repo, **Issues → Labels**, create these labels (colours are up
-   to you): `needs-triage`, `triaged`, `bug`, `idea`, `confusing`,
-   `other`, `p1`, `p2`, `p3`, `spam`. Creating them up front means neither
-   the script nor the routine depends on labels being created
-   automatically.
-3. Give Claude access to it: if the Claude GitHub App is installed on
-   "Only select repositories", go to
-   <https://github.com/apps/claude/installations/select_target> and add
-   `retirement-planner-feedback`.
+1. **Private feedback repo.** `aggallim/retirement-planner-feedback`,
+   private, holding issues only. It has these labels: `needs-triage`,
+   `triaged`, `bug`, `idea`, `confusing`, `other`, `p1`, `p2`, `p3` and
+   `spam`. Claude created them with `FEEDBACK_GITHUB_TOKEN`; re-create
+   them if the repo is ever rebuilt.
+2. **The owner adds four variables to the Claude environment** (the cloud
+   environment menu in a session's title bar → Edit → environment
+   variables). They reach new sessions, not ones already running.
 
-## 2. Create the Google Form
+   | Variable | What it is |
+   |---|---|
+   | `CLOUDFLARE_API_TOKEN` | Cloudflare → My Profile → API Tokens → Create Token → **"Edit Cloudflare Workers"** template. |
+   | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard → Workers & Pages → Account ID. |
+   | `FEEDBACK_GITHUB_TOKEN` | GitHub fine-grained token: only `retirement-planner-feedback`, **Issues: Read and write**, **1-year** expiry. |
+   | `SETUP_GITHUB_TOKEN` | GitHub fine-grained token: only `retirement-planner`, **Secrets: Read and write**, **7-day** expiry. Used once, for step 3. |
 
-1. <https://forms.google.com> → blank form. Title: e.g. *"UK Retirement
-   Planner: feedback"*. Description (suggested): *"Tell us about a
-   problem, an idea or something confusing. Only share figures you're
-   comfortable with."*
-2. **Settings → Responses:** "Collect email addresses" = **Do not
-   collect**. Leave "Limit to 1 response" **off** (turning it on forces
-   sign-in).
-3. Add the questions. The titles must match the constants at the top of
-   `Code.gs` **exactly**:
+3. **Claude copies the first three into this repo's Actions secrets**
+   with `pip install pynacl && python3 tools/feedback/set_actions_secrets.py`.
+   The script authenticates with `SETUP_GITHUB_TOKEN`, encrypts each value
+   with the repo's public key as GitHub requires, and never prints a
+   value. That token then simply expires.
+4. **The first deploy** runs the workflow. It:
+   1. runs the Worker tests
+   2. finds or creates the KV namespace `retirement-planner-feedback-counters`
+   3. deploys the Worker with wrangler
+   4. sets the Worker's `GITHUB_TOKEN` secret from `FEEDBACK_GITHUB_TOKEN`
+   5. prints the Worker URL (in the run's summary) and checks its `/health`
+5. **Claude sets `window.FEEDBACK_ENDPOINT`** in `feedback-config.js` to
+   that URL. This makes the links appear in the app.
+6. **Claude creates the daily triage routine** (a Claude Code scheduled
+   trigger on the owner's subscription; no API key):
+   - Schedule: daily at 07:00 UK time. Routines use UTC cron, so
+     `0 6 * * *` is 07:00 in summer (BST) and 06:00 in winter (GMT).
+   - Model: Claude Haiku 4.5 (`claude-haiku-4-5-20251001`).
+   - A fresh session each run, in an environment that includes both repos.
+   - Prompt:
 
-   | # | Title | Type | Required |
-   |---|---|---|---|
-   | 1 | `Type` | Multiple choice: Bug / Idea / Something confusing / Other | Yes |
-   | 2 | `What happened, or what would you like?` | Paragraph | Yes |
-   | 3 | `Steps or example figures (optional)` | Paragraph, description: *"only share what you're comfortable with"* | No |
-   | 4 | `Email if you'd like a reply (optional)` | Short answer | No |
+     > Follow the instructions in `tools/feedback/TRIAGE.md` in the
+     > `aggallim/retirement-planner` repository (on `main`) to triage new
+     > issues in `aggallim/retirement-planner-feedback`.
+7. **End-to-end test** (see below).
 
-4. **The hidden app-version field.** Google Forms has no hidden field
-   type, so use a second section that nobody is sent to:
-   1. Click **Add section** (the "=" icon) below question 4. A
-      "Section 2" appears.
-   2. In Section 2, add a Short answer question titled **`App version`**,
-      not required.
-   3. At the bottom of Section 1, set **"After section 1" → "Submit
-      form"**.
+## End-to-end test
 
-   Users never see Section 2, but a value pre-filled into it through the
-   link is still submitted with the response. The end-to-end test (step
-   7) confirms this.
-5. **Get the pre-fill link:** ⋮ (top right) → **Get pre-filled link**.
-   Go to Section 2, type `v0` in *App version*, click **Get link → Copy
-   link**. It looks like:
-
-   ```
-   https://docs.google.com/forms/d/e/1FAIpQL.../viewform?usp=pp_url&entry.123456789=v0
-   ```
-
-   The part before `?` is the **form URL**. `entry.123456789` is the
-   **version field ID**. Send both to Claude (they aren't secret: anyone
-   using the app sees the link).
-6. Optional but recommended: **Responses → Link to Sheets**, so you can
-   read every response, including reply emails and anything over the
-   daily cap, in a spreadsheet.
-
-## 3. Create the GitHub token
-
-GitHub → **Settings → Developer settings → Personal access tokens →
-Fine-grained tokens → Generate new token**:
-
-- **Name:** `retirement-planner-feedback form`
-- **Expiration:** Custom, **1 year** from today. Put a reminder in your
-  calendar a week before (see "Renewing the token").
-- **Resource owner:** `aggallim`
-- **Repository access:** Only select repositories →
-  **`retirement-planner-feedback`** only.
-- **Permissions → Repository → Issues: Read and write.** Nothing else
-  (Metadata: read-only is added automatically).
-
-Copy the token (`github_pat_...`). It goes only into the script's
-properties in the next step: never into the app, the site, either repo,
-or a chat message.
-
-## 4. Add the Apps Script
-
-1. In the form: ⋮ → **Apps Script**. A project bound to the form opens.
-2. Replace the contents of `Code.gs` with this folder's `Code.gs`. Save.
-3. **Project Settings** (gear icon) → **Script properties → Add script
-   property**: name `GITHUB_TOKEN`, value the token from step 3. Save.
-4. **Triggers** (clock icon) → **Add Trigger**: function
-   `onFormSubmit`, event source **From form**, event type **On form
-   submit**, failure notifications **Notify me immediately**. Save, and
-   approve the permissions Google asks for (it needs to read the form's
-   responses and call an external URL).
-
-## 5. Send the pre-fill link to Claude
-
-Send the form URL and version field ID from step 2.5. Claude sets
-`FEEDBACK_FORM_URL` and `FEEDBACK_VERSION_FIELD` in `index.html`. Until
-then, both "Send feedback" links stay hidden in the app.
-
-## 6. Create the daily triage routine
-
-A Claude Code routine (scheduled trigger) on the owner's Claude
-subscription (no API key):
-
-- **Schedule:** daily at 07:00 UK time. Routines use UTC cron, so
-  `0 6 * * *` is 07:00 in summer (BST) and 06:00 in winter (GMT). Change
-  it to `0 7 * * *` in October and back again in March if the hour
-  matters to you.
-- **Model:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`).
-- **Each run starts a fresh session.**
-- **Environment:** has both `aggallim/retirement-planner` (to read
-  `TRIAGE.md`) and `aggallim/retirement-planner-feedback` available.
-- **Prompt:**
-
-  > Follow the instructions in `tools/feedback/TRIAGE.md` in the
-  > `aggallim/retirement-planner` repository (on `main`) to triage new
-  > issues in `aggallim/retirement-planner-feedback`.
-
-## 7. End-to-end test
-
-1. Open the live app → ⚙ Data → **Send feedback**. Check the form opens
-   in a new tab and Section 2 isn't shown.
-2. Submit a test (Type: Other; description "Pipeline test"; any email).
-3. Within a minute, an issue appears in the feedback repo labelled
-   `needs-triage`. Check it shows the right **App version** and has **no
-   email address** in it.
-4. Run the routine once by hand. The issue should get a type and priority
-   label and a triage comment, `needs-triage` should be replaced by
-   `triaged`, and one push notification should arrive. Run it again: it
+1. On the live site, go to ⚙ Data → **Send feedback**. Check that the page
+   opens with the privacy line.
+2. Send a test (Type: Other; description "Pipeline test"; with an email).
+3. An issue should appear in the feedback repo within seconds. Check that
+   it's labelled `needs-triage`, with the right **App version** and the
+   email under "Email for updates".
+4. Fire the routine by hand. The issue should get a type label, a priority
+   label and a triage comment that says an email is attached, without
+   showing the address. `needs-triage` should be replaced by `triaged`,
+   and one push notification should arrive. Run the routine again: it
    should do nothing and send nothing.
 
-## Daily cap
+## Changing things later
 
-The script creates at most **20 issues per UK calendar day** (a spam
-cap). Once the cap is reached, submissions are still saved in the form's
-responses (and linked Sheet) but no issue is created. Every submission
-that reaches the script uses a slot, including one whose GitHub call
-then fails, so the cap errs on the side of fewer issues. The count is
-stored in the script's properties (`capDate`, `capCount`). Delete those
-two properties to reset it early.
+- **Adding a domain for the app:** add it to `ALLOWED_ORIGINS` in
+  `worker/wrangler.toml`, comma-separated. Merging that to `main`
+  redeploys the Worker.
+- **Moving the Worker onto a domain:** change `window.FEEDBACK_ENDPOINT`
+  in `feedback-config.js` and bump the `sw.js` cache version.
+- **Limits:** `DAILY_ISSUE_CAP` and `HOURLY_PER_IP` in `wrangler.toml`.
+  KV is eventually consistent, so a burst can slightly exceed a cap.
+- **Spam getting through:** add Cloudflare Turnstile (deferred for now; see
+  the intent).
 
-## Renewing the token (yearly)
+## Renewing the GitHub token (yearly)
 
-About a week before it expires, go to GitHub → Settings → Developer
-settings → Fine-grained tokens → the token → **Regenerate token**, keep
-the same settings with a new 1-year expiry, and paste the new value into
-the script's `GITHUB_TOKEN` property. If it does expire first, the script
-fails on each submission and Google emails you a failure notice. The
-responses are safe in the form, but they won't become issues until you
-renew the token.
+About a week before `FEEDBACK_GITHUB_TOKEN` expires:
+1. Regenerate it in GitHub (same settings, new 1-year expiry).
+2. Put the new value in the Claude environment variable of the same name.
+3. Add a fresh short-lived `SETUP_GITHUB_TOKEN`.
+4. Ask Claude to "update the feedback token secret and redeploy".
+
+If the token expires first, sends fail with "Sorry, that didn't send"
+until it's renewed. Nothing is filed in the meantime.
 
 ## Troubleshooting
 
-- **No issue created:** Apps Script → **Executions** shows each run and
-  its error. A 401 means the token is wrong or expired. A 404 means the
-  token can't see the repo. A 422 usually means a label name doesn't
-  exist.
-- **Version shows "unknown":** the `App version` title doesn't match
-  `Q_VERSION` in `Code.gs`, or `FEEDBACK_VERSION_FIELD` in `index.html`
-  isn't that question's `entry.` ID.
-- **You renamed a question:** update the matching `Q_...` constant in
-  `Code.gs` (and in this repo's copy).
+- **The "didn't send" message for everyone:** check the latest "Deploy
+  feedback Worker" run. If it's fine, check the Worker's logs in the
+  Cloudflare dashboard. A `GitHub issue create failed: 401` means the
+  token is expired or wrong; `404` means the token can't see the repo.
+- **403 from the Worker:** the page's origin isn't in `ALLOWED_ORIGINS`.
+- **429:** a limit was reached (5 an hour from one IP, or 20 a day).

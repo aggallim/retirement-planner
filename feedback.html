@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Send feedback · UK Retirement Planner</title>
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<script>
+// Same theme preference as the planner (index.html).
+(function () {
+  try {
+    var t = localStorage.getItem('ukRetirementPlanner.theme') || 'system';
+    var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+</script>
+<script src="feedback-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #2563eb; --accent-text: #ffffff;
+    --ok-bg: #ecfdf5; --ok-text: #065f46; --err-bg: #fef2f2; --err-text: #991b1b;
+    --focus: rgba(37, 99, 235, .35);
+  }
+  .dark {
+    --bg: #020617; --card: #0f172a; --text: #e2e8f0; --muted: #94a3b8;
+    --border: #334155; --accent: #3b82f6; --accent-text: #ffffff;
+    --ok-bg: #022c22; --ok-text: #6ee7b7; --err-bg: #450a0a; --err-text: #fca5a5;
+    --focus: rgba(96, 165, 250, .35);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 'Inter Tight', system-ui, sans-serif;
+    padding: env(safe-area-inset-top) 16px calc(2rem + env(safe-area-inset-bottom));
+  }
+  main { max-width: 36rem; margin: 0 auto; }
+  a { color: var(--accent); }
+  .back { display: inline-block; margin: 1.25rem 0 1rem; font-weight: 500; text-decoration: none; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.01em; font-size: 1.6rem; margin: 0 0 .25rem; }
+  .privacy { color: var(--muted); font-size: .9rem; margin: 0 0 1.25rem; }
+  label, legend { display: block; font-weight: 600; font-size: .95rem; margin-bottom: .35rem; }
+  .hint { font-weight: 400; color: var(--muted); font-size: .85rem; }
+  fieldset { border: 0; padding: 0; margin: 0 0 1.1rem; }
+  .field { margin-bottom: 1.1rem; }
+  .types { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .types label {
+    font-weight: 500; margin: 0; display: flex; align-items: center; gap: .4rem;
+    border: 1px solid var(--border); border-radius: 999px; padding: .4rem .85rem; cursor: pointer;
+  }
+  .types input { accent-color: var(--accent); margin: 0; }
+  textarea, input[type="email"] {
+    width: 100%; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: .6rem; padding: .6rem .75rem;
+  }
+  textarea { min-height: 7rem; resize: vertical; }
+  textarea:focus, input:focus { outline: 3px solid var(--focus); outline-offset: 1px; }
+  .decoy { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  button {
+    font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-text);
+    border: 0; border-radius: .6rem; padding: .7rem 1.4rem; cursor: pointer;
+  }
+  button[disabled] { opacity: .6; cursor: default; }
+  .status { border-radius: .6rem; padding: .75rem 1rem; margin-top: 1rem; }
+  .status.ok { background: var(--ok-bg); color: var(--ok-text); }
+  .status.err { background: var(--err-bg); color: var(--err-text); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← Back to the planner</a>
+  <div class="card">
+    <h1>Send feedback</h1>
+    <p class="privacy">Sends only what you type here to the developer. Your plan figures aren't included.</p>
+
+    <p id="unavailable" class="status err" hidden>Feedback isn't available right now. Please try again later.</p>
+
+    <form id="feedback" novalidate>
+      <fieldset>
+        <legend>What kind of feedback is it?</legend>
+        <div class="types">
+          <label><input type="radio" name="type" value="Bug" required> Bug</label>
+          <label><input type="radio" name="type" value="Idea"> Idea</label>
+          <label><input type="radio" name="type" value="Something confusing"> Something confusing</label>
+          <label><input type="radio" name="type" value="Other"> Other</label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="description">What happened, or what would you like?</label>
+        <textarea id="description" name="description" maxlength="5000" required></textarea>
+      </div>
+
+      <div class="field">
+        <label for="steps">Steps or example figures <span class="hint">(optional, only share what you're comfortable with)</span></label>
+        <textarea id="steps" name="steps" maxlength="5000"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="email">Email <span class="hint">(optional, if you'd like to hear when this is fixed)</span></label>
+        <input id="email" name="email" type="email" maxlength="254" autocomplete="email">
+      </div>
+
+      <!-- Decoy for bots: hidden from people and screen readers. -->
+      <div class="decoy" aria-hidden="true">
+        <label for="website">Leave this empty</label>
+        <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <button type="submit" id="send">Send</button>
+      <p id="error" class="status err" role="alert" hidden></p>
+    </form>
+
+    <div id="sent" hidden>
+      <p class="status ok" role="status">Thanks, your feedback has been sent.</p>
+      <p><a href="./">← Back to the planner</a></p>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  var endpoint = window.FEEDBACK_ENDPOINT || '';
+  var form = document.getElementById('feedback');
+  var send = document.getElementById('send');
+  var error = document.getElementById('error');
+  // index.html links here as feedback.html#v=<APP_VERSION>. A hash rather
+  // than a query string keeps the service worker's cache key stable.
+  var match = /(?:^|[#&])v=([\w.-]{1,20})/.exec(location.hash);
+  var version = match ? match[1] : '';
+
+  if (!endpoint) {
+    form.hidden = true;
+    document.getElementById('unavailable').hidden = false;
+    return;
+  }
+
+  function showError(message) {
+    error.textContent = message;
+    error.hidden = false;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    error.hidden = true;
+    var type = form.querySelector('input[name="type"]:checked');
+    var description = form.description.value.trim();
+    var email = form.email.value.trim();
+    if (!type) return showError('Please choose what kind of feedback it is.');
+    if (!description) return showError('Please tell us what happened, or what you would like.');
+    if (email && !form.email.checkValidity()) return showError('That email address doesn’t look right. You can also leave it empty.');
+
+    send.disabled = true;
+    send.textContent = 'Sending…';
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: type.value,
+        description: description,
+        steps: form.steps.value.trim(),
+        email: email,
+        version: version,
+        website: form.website.value
+      })
+    }).then(function (res) {
+      if (!res.ok) throw new Error(String(res.status));
+      form.reset();
+      form.hidden = true;
+      document.getElementById('sent').hidden = false;
+    }).catch(function () {
+      // Offline, a limit reached, or a server error: keep what they typed.
+      showError('Sorry, that didn’t send. Please try again later.');
+    }).then(function () {
+      send.disabled = false;
+      send.textContent = 'Send';
+    });
+  });
+})();
+</script>
+</body>
+</html>
