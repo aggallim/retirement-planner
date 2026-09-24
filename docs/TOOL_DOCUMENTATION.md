@@ -27,7 +27,7 @@ It answers three questions:
 | Projection span | Current age through to age 100, anchored on calendar years |
 | Tax year basis | 2026/27 allowances; Retirement Living Standards 2026 (Pensions UK) |
 | Income tax | Rest-of-UK bands, thresholds frozen to 2030/31 then inflation-uprated |
-| Data storage | Browser localStorage on-device only. Nothing leaves the device. |
+| Data storage | Browser localStorage on-device only. Nothing leaves the device. The optional feedback form (§3.12) is a separate Google Form that receives only what the user types. |
 
 ---
 
@@ -64,6 +64,7 @@ A sophisticated, production-grade UK retirement calculator with exceptional desi
 - [x] Shared mortgage and joint living costs
 - [x] Smooth, non-jerky sliders
 - [x] Package as an installable phone app
+- [x] "Send feedback" link to a Google Form, with private triage of responses (intent 026)
 
 ---
 
@@ -172,6 +173,18 @@ Each person has an optional **Defined Benefit (DB) Pension** section, separate f
 The amount's info tooltip states the key simplification at the point of entry: the tool raises the pension each year by the single household inflation assumption, like the State Pension, whereas real schemes differ (capped, CPI- or RPI-linked, fixed, or no increases). The same point is in "How we calculate this" (§3.10) as the permanent record.
 
 A plan saved or exported before DB support existed has none of these fields; it loads as "no DB pension" with no migration step.
+
+### 3.12 Send feedback
+
+A **Send feedback** item in the **⚙ Data** panel, below What's new, and a small **Send feedback** link in the page footer both open a short Google Form in a new tab. The Data panel item carries the line *"Opens a short Google form. Your plan figures aren't sent. Only what you type in the form."*
+
+- The form asks for a type (Bug / Idea / Something confusing / Other), what happened or what you'd like, optional steps or example figures ("only share what you're comfortable with"), and an optional email for a reply. It needs no sign-in.
+- The link pre-fills the app's version into a field the user doesn't see, so a report can be matched to the build it came from. Nothing else is added: **the app never sends plan figures or anything else automatically.** The form is hosted by Google and receives only what the user types, plus that version.
+- The link is always shown. There is no offline check. Offline, the new tab simply fails to load.
+- There is no in-app prompt asking for feedback, and no automatic reply. The owner may reply by hand if an email was given. "What's new" (§3.8) is where fixes show up.
+- Both entry points are hidden while the app has no form URL configured (`FEEDBACK_FORM_URL` empty; see §5.2).
+
+Behind the form, responses become issues in a private GitHub repo, not this public one, and the reply email is never copied into the issue. A daily Claude Code routine labels and comments on them (triage only). Setup, the daily cap and the triage rules: `tools/feedback/README.md` and `tools/feedback/TRIAGE.md`.
 
 ---
 
@@ -337,6 +350,8 @@ RetirementCalculator()  state, derived memos, layout
   └─ TaxNotesPanel      memoised, module-level (wording from taxNoteText())
 ```
 
+**Feedback link (intent 026).** `APP_VERSION`, `FEEDBACK_FORM_URL`, `FEEDBACK_VERSION_FIELD` and the derived `FEEDBACK_HREF` are module-level constants just above `USER_CHANGELOG`. `FEEDBACK_HREF` is the form's pre-fill URL with `APP_VERSION` in the version field, or `''` when `FEEDBACK_FORM_URL` is empty, and both entry points render only when it is non-empty. `APP_VERSION` must equal the `sw.js` `CACHE` suffix. `tests/test-engine.js` fails if they differ.
+
 `UK_REFERENCE`, `taxThresholdsFor`, `incomeTaxFor`, `deflate`, `lifetimeTaxTotals`, `computeTaxNotes`, `dbPensionOf` and `dbPensionGapYears` all sit inside the `ENGINE-EXTRACT` spans, so `tests/test-engine.js` exercises them directly. `taxNoteText`, `sourceLink` and `formatToday` are plain module-level display helpers outside the spans (they use `formatCurrency`/React).
 
 The engine is a pure function with no React dependency, which is what made it straightforward to unit-test the maths independently of the UI.
@@ -391,7 +406,9 @@ The engine was tested as a standalone module. Checks that pass:
 - `dbPensionGapYears` is non-zero only when a non-zero DB pension starts strictly after retirement
 - `computeTaxNotes` reports each fact in its first year, uses strict ">" boundaries (income exactly at a threshold produces no note), only fires the taper note strictly inside the taper range, attributes notes to the right person, and ignores rows after the plan horizon
 
-The built PWA was additionally rendered in a headless browser to confirm it boots, calculates, toggles into couple mode and persists state.
+- `APP_VERSION` in `index.html` equals the `sw.js` `CACHE` suffix, so the feedback form is pre-filled with the build actually running (intent 026)
+
+The built PWA was additionally rendered in a headless browser to confirm it boots, calculates, toggles into couple mode and persists state. For the feedback link (§3.12), a headless check confirmed neither entry point renders while `FEEDBACK_FORM_URL` is empty, and that with it set both open the pre-fill URL (`usp=pp_url` plus the version field) in a new tab, at desktop and phone widths, in light and dark mode.
 
 ### 5.5 PWA packaging
 
@@ -421,7 +438,7 @@ No personal data sits in the repo — figures live only in device storage.
 
 ### 6.2 Updating
 
-Push changes to `main`. The service worker caches aggressively, so if you don't see an update, bump `CACHE = 'retirement-planner-v1'` in `sw.js` to `v2`, or fully close and reopen the installed app.
+Push changes to `main`. The service worker caches aggressively, so if you don't see an update, bump `CACHE = 'retirement-planner-v1'` in `sw.js` to `v2`, or fully close and reopen the installed app. Bump `APP_VERSION` in `index.html` to the same value at the same time (the test harness checks they match).
 
 ---
 
@@ -440,3 +457,4 @@ Push changes to `main`. The service worker caches aggressively, so if you don't 
 9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan. Manual export/import (§3.7) can move a plan between devices or back it up, but there's no automatic sync.
 10. **No LISA first-home exception.** Real LISAs allow penalty-free access before 60 for a first home purchase; this tool has no house-purchase concept to hang that on, so the age-60 restriction is unconditional.
 11. **Unlimited free-form "other savings" accounts.** A person can add any number of named non-ISA savings accounts — this is intentional, not a bug.
+12. **The feedback link needs a connection and a Google-hosted form.** "Send feedback" (§3.12) is always shown, with no offline check or message. Offline, the new tab just fails to load. The form is run by Google, not the app, and at most 20 responses a day become triage issues (the rest stay in the form's responses).

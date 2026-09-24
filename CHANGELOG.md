@@ -8,6 +8,31 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-24 — User feedback pipeline (026)
+
+- New "Send feedback" item in the ⚙ Data panel (with the line "Opens a
+  short Google form. Your plan figures aren't sent. Only what you type in
+  the form.") and a plain "Send feedback" footer link. Both open a Google
+  Form in a new tab, with the app version pre-filled into a hidden field.
+  They're driven by `FEEDBACK_FORM_URL` / `FEEDBACK_VERSION_FIELD` in
+  `index.html` and render nothing while the URL is empty.
+- Why a Google Form and not an in-app form posting to a service: the app
+  itself never sends data, which keeps the "nothing leaves the device"
+  promise (017) intact. Why a private repo: the app repo is public, and
+  users may type real figures.
+- New `APP_VERSION` constant (the version the form is pre-filled with).
+  `tests/test-engine.js` now fails if it differs from the `sw.js` cache
+  version.
+- `tools/feedback/`: `Code.gs` (Apps Script: form response → issue in the
+  private `aggallim/retirement-planner-feedback` repo, labelled
+  `needs-triage`, reply email never copied, 20-issues-a-day cap,
+  fine-grained token held in script properties), `README.md` (full setup
+  guide) and `TRIAGE.md` (rules for the daily Claude Code triage routine:
+  type and priority labels, duplicates, spam, a triage comment,
+  `needs-triage` → `triaged`, one push digest, and a silent run when
+  there's nothing new).
+- No engine changes.
+
 ## 2026-09-23 — Defined Benefit (DB) pension support (025)
 
 - Each person can now enter one DB pension (scheme name, annual amount in

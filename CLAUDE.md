@@ -31,6 +31,7 @@ calculation logic.
 | `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
 | `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → branch → draft PR → implement → merge lifecycle below, including when to open the PR. |
 | `CHANGELOG.md` | Short, chronological "what shipped when," one entry per requirement. |
+| `tools/feedback/` | The feedback pipeline behind the in-app "Send feedback" link: the Apps Script source (no secrets), its setup `README.md`, and `TRIAGE.md`, the rules the daily triage routine follows. Feedback issues live in the private `aggallim/retirement-planner-feedback` repo, never this public one. |
 | `tests/test-engine.js` | Dependency-free `node` test harness for `projectJoint()`. Run with `node tests/test-engine.js` from the repo root. |
 | `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
 | `.github/workflows/pages.yml` | Deploys to GitHub Pages on every push to `main`. No build step. |
@@ -57,7 +58,9 @@ does that automatically.
 - **Bump the cache version after any deploy-worthy change.** The service
   worker (`sw.js`) caches aggressively. If `index.html` changes,
   increment `CACHE = 'retirement-planner-v1'` to `v2`, `v3`, etc., or
-  returning users won't see the update.
+  returning users won't see the update. Bump `APP_VERSION` in
+  `index.html` to the same value. `tests/test-engine.js` fails if they
+  differ.
 - **Performance is fragile — read §5.3 of `docs/TOOL_DOCUMENTATION.md`
   before touching component structure.** The sliders were previously
   unusable because subcomponents were declared inside the parent component.
