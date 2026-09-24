@@ -8,6 +8,55 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-24 — User feedback pipeline (026)
+
+- New "Send feedback" item in the ⚙ Data panel, with the line "Sends only
+  what you type here to the developer. Your plan figures aren't included."
+  There's also a plain "Send feedback" footer link. Both open the new
+  `feedback.html` page in the same tab and pass the app version in the URL
+  hash. The page asks for:
+  - a type
+  - a description
+  - optional steps or figures
+  - an optional email "if you'd like to hear when this is fixed"
+- On success, the page shows a thanks message. On any failure, it shows a
+  "didn't send" message and keeps the user's text. Both links are hidden
+  while `window.FEEDBACK_ENDPOINT` in the new `feedback-config.js` is
+  empty. The Data panel's privacy note now mentions sending feedback.
+- `feedback.html` posts to a Cloudflare Worker (`tools/feedback/worker/`).
+  The Worker:
+  - accepts only `ALLOWED_ORIGINS`
+  - drops submissions that fill a hidden decoy field
+  - validates lengths
+  - limits to 5 an hour per IP and 20 a day in total (counters in KV,
+    IPs hashed)
+  - files a `needs-triage` issue in the private
+    `aggallim/retirement-planner-feedback` repo, including the optional
+    email
+- `.github/workflows/deploy-feedback-worker.yml` deploys the Worker on
+  changes to `main`, using three repo secrets the owner set by hand (this
+  environment's proxy blocks Claude from setting Actions secrets or
+  reaching Cloudflare). `tests/test-feedback-worker.mjs` (12
+  dependency-free checks) runs in CI alongside the engine tests.
+- `tools/feedback/TRIAGE.md` sets the rules for the daily Claude Code
+  triage routine (Haiku 4.5): type and priority labels, duplicates, spam,
+  a triage comment saying whether the submitter wants updates, swapping
+  `needs-triage` for `triaged`, and one push digest (nothing when there's
+  nothing new). The routine never copies an email address anywhere and
+  never builds anything.
+- Why a Worker and not a token in the page: the site is public, so any
+  token in it is public too. Why a private repo: users may type real
+  figures, and emails. The first design, a Google Form with Apps Script,
+  was replaced before merge because the owner didn't want to maintain a
+  form by hand. An email relay read through Gmail was rejected because it
+  would expose the owner's mailbox to text written by strangers.
+- Ships with `FEEDBACK_ENDPOINT` empty, so the links stay hidden. Merging
+  runs the first Worker deploy; a follow-up PR sets the Worker URL, which
+  turns the links on and adds the "What's new" entry.
+- New `APP_VERSION` constant. `tests/test-engine.js` now fails if it
+  differs from the `sw.js` cache version.
+- No engine changes.
+
 ## 2026-09-23 — Defined Benefit (DB) pension support (025)
 
 - Each person can now enter one DB pension (scheme name, annual amount in

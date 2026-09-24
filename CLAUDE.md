@@ -31,10 +31,14 @@ calculation logic.
 | `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
 | `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → branch → draft PR → implement → merge lifecycle below, including when to open the PR. |
 | `CHANGELOG.md` | Short, chronological "what shipped when," one entry per requirement. |
+| `feedback.html`, `feedback-config.js` | The "Send feedback" page (plain HTML, no React) and the one place the feedback Worker's URL is set (`window.FEEDBACK_ENDPOINT`; empty hides the app's feedback links). |
+| `tools/feedback/` | The feedback pipeline: the Cloudflare Worker (`worker/`) that turns submissions into issues, its setup `README.md`, and `TRIAGE.md`, the rules the daily triage routine follows. Feedback issues live in the private `aggallim/retirement-planner-feedback` repo, never this public one. |
 | `tests/test-engine.js` | Dependency-free `node` test harness for `projectJoint()`. Run with `node tests/test-engine.js` from the repo root. |
+| `tests/test-feedback-worker.mjs` | Dependency-free tests for the feedback Worker. Run with `node tests/test-feedback-worker.mjs`. |
 | `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
 | `.github/workflows/pages.yml` | Deploys to GitHub Pages on every push to `main`. No build step. |
-| `.github/workflows/test-engine.yml` | Runs `tests/test-engine.js` on push/PR. |
+| `.github/workflows/test-engine.yml` | Runs `tests/test-engine.js` and `tests/test-feedback-worker.mjs` on push/PR. |
+| `.github/workflows/deploy-feedback-worker.yml` | Deploys the feedback Worker to Cloudflare when `tools/feedback/worker/` changes on `main`. Uses the repo secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `FEEDBACK_GITHUB_TOKEN`. |
 | `.claude/skills/` | Skills for the workflow below: `grill-me`/`grilling` (intent gathering) and `conventional-branch` (branch naming). Reproduced from their upstream sources — see each `SKILL.md`'s attribution footer. |
 
 There is no `package.json`, no build tooling, and no separate `.jsx` source
@@ -52,12 +56,18 @@ does that automatically.
   (`python3 -m http.server 8000`) for testing "Add to Home Screen"-adjacent
   behaviour (that specific feature needs real HTTPS, i.e. the deployed site).
 - **Data never leaves the device.** All figures are stored in the browser's
-  `localStorage`. There is no backend, no API, and nothing to configure for
-  secrets — this app has none.
+  `localStorage`. The app itself has no backend and no secrets. The one
+  exception is the optional feedback page: it sends only what the user
+  types, to a small Cloudflare Worker (`tools/feedback/worker/`) whose
+  GitHub token lives in Cloudflare and the repo's Actions secrets, never
+  in the site. Never put a token in `index.html`, `feedback.html` or any
+  file the site serves.
 - **Bump the cache version after any deploy-worthy change.** The service
   worker (`sw.js`) caches aggressively. If `index.html` changes,
   increment `CACHE = 'retirement-planner-v1'` to `v2`, `v3`, etc., or
-  returning users won't see the update.
+  returning users won't see the update. Bump `APP_VERSION` in
+  `index.html` to the same value. `tests/test-engine.js` fails if they
+  differ.
 - **Performance is fragile — read §5.3 of `docs/TOOL_DOCUMENTATION.md`
   before touching component structure.** The sliders were previously
   unusable because subcomponents were declared inside the parent component.
@@ -243,4 +253,4 @@ to be flipped manually once before the workflow will succeed.
   URL. Check it and `docs/TOOL_DOCUMENTATION.md` §4.7 before assuming a
   figure is current.
 - This file intentionally contains no personal financial figures, tokens,
-  or credentials — none exist in this project. Keep it that way.
+  or credentials — none are stored in this repo (the feedback Worker's live in Cloudflare and GitHub Actions secrets). Keep it that way.

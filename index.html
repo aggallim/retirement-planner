@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Retirement">
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzFlM2E4YSIvPjxzdG9wIG9mZnNldD0iNjAlIiBzdG9wLWNvbG9yPSIjMjU2M2ViIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGQ5NDg4Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0idXJsKCNiZykiLz4KICA8cGF0aCBkPSJNOTYgMzQ0IEwxNzYgMjY0IEwyNDggMzEyIEw0MTYgMTUyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMzAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjQxNiIgY3k9IjE1MiIgcj0iMjYiIGZpbGw9IiM1ZWVhZDQiLz4KICA8cGF0aCBkPSJNOTYgNDAwIGgzMjAiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNDUiIHN0cm9rZS13aWR0aD0iMTgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzFlM2E4YSIvPjxzdG9wIG9mZnNldD0iNjAlIiBzdG9wLWNvbG9yPSIjMjU2M2ViIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGQ5NDg4Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0idXJsKCNiZykiLz4KICA8cGF0aCBkPSJNOTYgMzQ0IEwxNzYgMjY0IEwyNDggMzEyIEw0MTYgMTUyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMzAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjQxNiIgY3k9IjE1MiIgcj0iMjYiIGZpbGw9IiM1ZWVhZDQiLz4KICA8cGF0aCBkPSJNOTYgNDAwIGgzMjAiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNDUiIHN0cm9rZS13aWR0aD0iMTgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+<script src="feedback-config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>
@@ -943,6 +944,16 @@ const importPlanFields = parsed => {
   });
   return fields;
 };
+
+/* ---------------- Feedback link (intent 026) ---------------- */
+// APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
+// checks this) — bump both together. It's passed to feedback.html so a
+// report can be matched to the build it came from.
+const APP_VERSION = 'v16';
+// feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
+// URL). While it's empty, both "Send feedback" entry points stay hidden.
+// The app never sends plan data: feedback.html sends only what users type.
+const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT ? `feedback.html#v=${APP_VERSION}` : '';
 
 /* ---------------- User-facing changelog ("What's new") ---------------- */
 // Newest first. Only entries for changes a user of the app would notice —
@@ -2620,7 +2631,7 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5"
   }), React.createElement("p", {
     className: "text-xs text-slate-500"
-  }, "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file yourself.")), React.createElement("div", {
+  }, "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file or send feedback yourself.")), React.createElement("div", {
     className: "space-y-2"
   }, React.createElement("p", {
     className: "text-xs text-slate-500"
@@ -2666,7 +2677,14 @@ const SettingsMenu = memo(function SettingsMenu({
   }, React.createElement("button", {
     onClick: () => setView('whatsnew'),
     className: "text-sm text-blue-600 font-medium"
-  }, `What's new (${USER_CHANGELOG[0].version})`))) : React.createElement(React.Fragment, null, React.createElement("button", {
+  }, `What's new (${USER_CHANGELOG[0].version})`)), FEEDBACK_HREF && React.createElement("div", {
+    className: "pt-2 border-t border-slate-100 space-y-1.5"
+  }, React.createElement("a", {
+    href: FEEDBACK_HREF,
+    className: "text-sm text-blue-600 font-medium"
+  }, "Send feedback"), React.createElement("p", {
+    className: "text-xs text-slate-500"
+  }, "Sends only what you type here to the developer. Your plan figures aren't included."))) : React.createElement(React.Fragment, null, React.createElement("button", {
     onClick: () => setView('menu'),
     className: "text-sm text-blue-600 font-medium"
   }, "← Back"), React.createElement("div", {
@@ -3714,7 +3732,13 @@ function RetirementCalculator() {
     className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Lock, {
     className: "h-3.5 w-3.5 flex-shrink-0"
-  }), "Your data stays on this device — no account, no upload, no bank connection, no analytics.")));
+  }), "Your data stays on this device — no account, no upload, no bank connection, no analytics."), FEEDBACK_HREF && /*#__PURE__*/React.createElement("p", {
+    className: "text-sm mt-2"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: FEEDBACK_HREF,
+    className: "text-slate-400",
+    style: { textDecoration: 'underline' }
+  }, "Send feedback"))));
 }</script>
 <script>
   (function () {

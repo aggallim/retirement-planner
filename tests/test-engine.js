@@ -1406,5 +1406,17 @@ check('Individual-mode results are byte-for-byte identical to a known-good basel
   assert.deepStrictEqual(result, expected);
 });
 
+// intent/026: the feedback form is pre-filled with APP_VERSION, which must
+// track the sw.js cache version. Read both as text — neither is engine code.
+check('APP_VERSION in index.html matches the sw.js CACHE version', () => {
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+  const appVersion = (html.match(/const APP_VERSION = '([^']+)';/) || [])[1];
+  const cacheVersion = (sw.match(/const CACHE = 'retirement-planner-([^']+)';/) || [])[1];
+  assert.ok(appVersion, 'APP_VERSION not found in index.html');
+  assert.ok(cacheVersion, 'CACHE not found in sw.js');
+  assert.strictEqual(appVersion, cacheVersion);
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);
