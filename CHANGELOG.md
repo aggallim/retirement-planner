@@ -8,6 +8,17 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-27 — Grilling uses structured questions (028)
+
+- `.claude/skills/grilling/SKILL.md` now asks each frontier question with
+  the `AskUserQuestion` tool instead of printing a round as one markdown
+  block. Each question restates its context in 1-2 sentences (the person
+  answering may not have originated the idea being grilled), asks exactly
+  one decision, and offers 2-4 options with the recommendation as option
+  1. A round with more than 4 questions splits across multiple
+  back-to-back calls; a short plain-text recap runs between rounds.
+- Process-only: no product/calculation change, no `USER_CHANGELOG` entry.
+
 ## 2026-09-24 — Service worker precaches fresh files (027)
 
 - Fixes `intent/027-sw-stale-precache.md` (moved to `intent/done/`). The
