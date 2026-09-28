@@ -1406,6 +1406,36 @@ check('Individual-mode results are byte-for-byte identical to a known-good basel
   assert.deepStrictEqual(result, expected);
 });
 
+// intent/029: wider Life Expectancy scale (75-110, dynamic floor, UK-average default)
+check('UK_REFERENCE carries a sourced UK-average default life expectancy (ONS mean of 79.1 and 83.0, rounded)', () => {
+  const le = UK_REFERENCE.lifeExpectancy;
+  assert.strictEqual(le.defaultAge, Math.round((le.male + le.female) / 2));
+  assert.strictEqual(le.defaultAge, 81);
+  assert.ok(/^https:\/\/www\.ons\.gov\.uk\//.test(le.source));
+});
+check('Life Expectancy slider is 75-110 with a floor of max(75, retirement age + 1); default from UK_REFERENCE', () => {
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  assert.match(html, /const LIFE_EXPECTANCY_MIN = 75;/);
+  assert.match(html, /const LIFE_EXPECTANCY_MAX = 110;/);
+  assert.match(html, /const lifeExpectancyFloor = p => Math\.max\(LIFE_EXPECTANCY_MIN, p\.retirementAge \+ 1\);/);
+  assert.match(html, /lifeExpectancy: UK_REFERENCE\.lifeExpectancy\.defaultAge,/);
+  assert.match(html, /min: lifeExpectancyFloor\(person\),\s*max: LIFE_EXPECTANCY_MAX,/);
+});
+check('projectJoint runs to life expectancy 110 and ends the plan in the right year', () => {
+  const args = taxScenario({}, { currentAge: 35, retirementAge: 65, lifeExpectancy: 110, pensionPot: 500000 });
+  const rows = projectJoint(args);
+  assert.strictEqual(rows[rows.length - 1].year, planEndOf(args));
+  assert.strictEqual(rows.length, 110 - 35 + 1);
+  assert.strictEqual(projectJoint(taxScenario({}, { currentAge: 35, retirementAge: 65, lifeExpectancy: 100, pensionPot: 500000 })).length, 100 - 35 + 1);
+});
+check('projectJoint handles the minimum life expectancy of 75 with retirement at 74', () => {
+  const args = taxScenario({}, { currentAge: 60, retirementAge: 74, lifeExpectancy: 75, pensionPot: 500000 });
+  const rows = projectJoint(args);
+  // The projection still runs to age 100 (unchanged for life expectancy <= 100).
+  assert.strictEqual(rows.length, 100 - 60 + 1);
+  assert.ok(rows.some((r) => r.year === planEndOf(args)));
+});
+
 // intent/026: the feedback form is pre-filled with APP_VERSION, which must
 // track the sw.js cache version. Read both as text — neither is engine code.
 check('APP_VERSION in index.html matches the sw.js CACHE version', () => {

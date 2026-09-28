@@ -768,6 +768,17 @@ const UK_REFERENCE = {
     source: 'https://www.retirementlivingstandards.org.uk/details',
     sourceLabel: 'Pensions UK: Retirement Living Standards'
   },
+  // Default planning age for new and reset plans: ONS national life tables,
+  // UK period life expectancy at birth 2022-2024 (79.1 male, 83.0 female;
+  // mean 81.05), rounded to a whole age (intent 029).
+  lifeExpectancy: {
+    defaultAge: 81,
+    male: 79.1,
+    female: 83.0,
+    period: '2022 to 2024',
+    source: 'https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/nationallifetablesunitedkingdom/2022to2024',
+    sourceLabel: 'ONS: National life tables, UK 2022 to 2024'
+  },
   // Known-limitation references only — not modelled (intent decisions 5, 6, 10).
   notModelled: {
     scottishIncomeTax: 'https://www.gov.uk/scottish-income-tax',
@@ -812,11 +823,16 @@ const livingStandardFor = (income, isCouple) => {
     border: 'border-red-200'
   };
 };
+// Life Expectancy slider bounds (intent 029). The floor is dynamic: a plan
+// can't end at or before retirement.
+const LIFE_EXPECTANCY_MIN = 75;
+const LIFE_EXPECTANCY_MAX = 110;
+const lifeExpectancyFloor = p => Math.max(LIFE_EXPECTANCY_MIN, p.retirementAge + 1);
 const makePerson = (o = {}) => ({
   name: 'You',
   currentAge: 35,
   retirementAge: 65,
-  lifeExpectancy: 95,
+  lifeExpectancy: UK_REFERENCE.lifeExpectancy.defaultAge,
   statePensionAge: 67,
   statePensionAmount: UK_REFERENCE.statePension.fullNewAnnual,
   cashIsaBalance: 0,
@@ -949,7 +965,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v18';
+const APP_VERSION = 'v19';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -961,6 +977,14 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v19',
+  date: '2026-09-28', // set to the actual merge date
+  title: 'Plan to a wider range of ages',
+  items: [
+    'The Life Expectancy slider now runs from 75 to 110 (it was 85 to 100), so you can plan for a longer life than before, or a shorter one. It can\'t go below one year after your retirement age.',
+    'New plans start at 81, roughly the current UK average life expectancy (ONS, 2022 to 2024). Plans you\'ve already saved keep the age you set.'
+  ]
+}, {
   version: 'v18',
   date: '2026-09-24', // set to the actual merge date
   title: 'Updates now arrive complete',
@@ -1360,8 +1384,8 @@ const PersonInputs = memo(function PersonInputs({
     field: "lifeExpectancy",
     value: person.lifeExpectancy,
     onChange: onChange,
-    min: 85,
-    max: 100,
+    min: lifeExpectancyFloor(person),
+    max: LIFE_EXPECTANCY_MAX,
     accent: accent
   }))), /*#__PURE__*/React.createElement("div", {
     className: "pt-4 border-t border-slate-100"
@@ -2214,7 +2238,7 @@ function projectJoint({
   });
   const people = [init(person1)];
   if (person2) people.push(init(person2));
-  const maxYears = Math.max(...people.map(p => 100 - p.cfg.currentAge));
+  const maxYears = Math.max(...people.map(p => Math.max(100, p.cfg.lifeExpectancy) - p.cfg.currentAge));
   const firstRetYear = Math.min(...people.map(p => CURRENT_YEAR + (p.cfg.retirementAge - p.cfg.currentAge)));
   let mortgage = mortgagePayment * 12 * mortgageYears;
   const data = [];
@@ -2832,14 +2856,28 @@ function RetirementCalculator() {
   }, []);
 
   // Stable callbacks so memoized children don't re-render needlessly
-  const updateP1 = useCallback((field, value) => setPerson1(p => ({
-    ...p,
-    [field]: value
-  })), []);
-  const updateP2 = useCallback((field, value) => setPerson2(p => ({
-    ...p,
-    [field]: value
-  })), []);
+  const updateP1 = useCallback((field, value) => setPerson1(p => {
+    const next = {
+      ...p,
+      [field]: value
+    };
+    // Raising retirement age can push the plan end below the slider floor.
+    return {
+      ...next,
+      lifeExpectancy: Math.max(next.lifeExpectancy, lifeExpectancyFloor(next))
+    };
+  }), []);
+  const updateP2 = useCallback((field, value) => setPerson2(p => {
+    const next = {
+      ...p,
+      [field]: value
+    };
+    // Raising retirement age can push the plan end below the slider floor.
+    return {
+      ...next,
+      lifeExpectancy: Math.max(next.lifeExpectancy, lifeExpectancyFloor(next))
+    };
+  }), []);
   const addOtherP1 = useCallback(() => setPerson1(p => ({
     ...p,
     otherSavings: [...p.otherSavings, makeOtherSavingsAccount()]
