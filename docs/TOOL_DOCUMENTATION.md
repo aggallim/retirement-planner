@@ -24,7 +24,7 @@ It answers three questions:
 |---|---|
 | Form factor | Single-file React app; also packaged as an offline PWA |
 | Planning modes | Individual, or joint with a partner (toggleable) |
-| Projection span | Current age through to age 100, anchored on calendar years |
+| Projection span | Current age through to age 100 (or the life expectancy, if that is higher), anchored on calendar years |
 | Tax year basis | 2026/27 allowances; Retirement Living Standards 2026 (Pensions UK) |
 | Income tax | Rest-of-UK bands, thresholds frozen to 2030/31 then inflation-uprated |
 | Data storage | Browser localStorage on-device only. Nothing leaves the device. The optional feedback page (§3.12) sends only what the user types into it, and only when they press Send. |
@@ -38,7 +38,7 @@ It answers three questions:
 A sophisticated, production-grade UK retirement calculator with exceptional design quality — premium financial services aesthetic, distinctive typography (explicitly not Inter/Roboto), meaningful colour coding, smooth animations, card-based layout.
 
 **Inputs required:**
-- **Personal** — current age (18–80), retirement age (50–75, must exceed current), life expectancy (85–100)
+- **Personal** — current age (18–80), retirement age (50–75, must exceed current), life expectancy (75–110; the minimum is also at least one year after retirement age, and new plans default to the UK average, 81)
 - **ISA** — current balance, monthly contribution, growth profile Poor 2% / Average 5% / Aggressive 8%
 - **Pension** — pot value, employee and employer monthly contributions, growth profile Poor 3% / Average 6% / Aggressive 9%, optional 25% tax-free lump sum
 - **Living costs** — annual expenses, monthly mortgage, years remaining, optional healthcare costs
@@ -286,7 +286,7 @@ The projection is anchored on **calendar years** so that differing ages align co
 
 ### 4.6 Longevity test
 
-Funds are considered depleted the first year that combined pension plus ISA plus other savings falls below £1,000, measured only from the first retirement onward. The plan horizon is the **longer** of the two life expectancies.
+Funds are considered depleted the first year that combined pension plus ISA plus other savings falls below £1,000, measured only from the first retirement onward. The plan horizon is the **longer** of the two life expectancies. The Life Expectancy slider runs 75–110; its minimum is `max(75, retirement age + 1)`, and raising retirement age past it lifts life expectancy to match (intent 029).
 
 ### 4.7 Reference figures used
 
@@ -311,6 +311,7 @@ Every figure below lives in one object, `UK_REFERENCE`, in `index.html` (tagged 
 | LISA minimum access age | 60 (no first-home exception modelled) | — | https://www.gov.uk/lifetime-isa |
 | Retirement Living Standards, one-person | Min £13,900 / Mod £32,700 / Comf £45,400 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
 | Retirement Living Standards, two-person | Min £22,500 / Mod £45,400 / Comf £62,700 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
+| Default life expectancy (new/reset plans) | 81 (mean of UK period life expectancy at birth 79.1 male and 83.0 female, rounded) | ONS national life tables, UK 2022 to 2024 | https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/nationallifetablesunitedkingdom/2022to2024 |
 
 No new reference figures are needed for DB pensions: the amount is a user input, and its yearly increase reuses the household inflation input rather than any published index (a deliberate simplification — see §4.3 and limitation #8).
 
@@ -429,6 +430,12 @@ The built PWA was additionally rendered in a headless browser to confirm it boot
 - a send posts exactly the typed fields plus the version, then shows the thanks message
 - a failed send shows the error and keeps the text
 - all at desktop and phone widths, in light and dark mode, with no horizontal scroll
+
+**Life expectancy scale (intent 029):**
+- the slider runs 75–110; new and reset plans start at the `UK_REFERENCE` default (81)
+- with retirement age 74 the slider minimum is 75; raising retirement age to 75 lifts a life expectancy of 75 to 76
+- a life expectancy of 110 gives a projection and charts running to that year; 100 or less is unchanged (baseline fixture)
+- a saved plan with life expectancy 95 keeps 95
 
 ### 5.5 PWA packaging
 

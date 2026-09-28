@@ -34,3 +34,11 @@ Slider bounds/default in `index.html`; tests (a 110-year projection, the
 dynamic floor, default from `UK_REFERENCE`); `docs/TOOL_DOCUMENTATION.md`
 §3/§4.7; `CHANGELOG.md`; `USER_CHANGELOG` (user-facing); `sw.js` cache and
 `APP_VERSION` bump.
+
+## Addendum 2026-09-28 — engine horizon
+
+The "Engine: unchanged" decision above was wrong. `projectJoint()` projected
+to a fixed age 100, so a life expectancy above 100 would have been cut
+short. It now projects to `max(100, life expectancy)` per person; output for
+life expectancy of 100 or less is identical, so the regression baseline is
+untouched. Found while writing the tests.

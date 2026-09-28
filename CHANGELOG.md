@@ -8,6 +8,23 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-28 — Larger life expectancy scale (029)
+
+- Implements `intent/029-larger-life-expectancy-scale.md` (moved to
+  `intent/done/`). The Life Expectancy slider now runs 75–110 (was 85–100).
+  Its minimum is `max(75, retirement age + 1)`, and raising retirement age
+  lifts life expectancy to stay above it.
+- The default for new and reset plans is 81, the rounded mean of ONS UK
+  period life expectancy at birth 2022 to 2024 (79.1 male, 83.0 female), held
+  in `UK_REFERENCE.lifeExpectancy` with its source. It replaces the
+  hard-coded 95. Saved plans keep their stored value.
+- One engine change: `projectJoint()` ran to a fixed age 100, which would
+  have cut a plan with life expectancy above 100 short. It now runs to
+  `max(100, life expectancy)` per person; results for life expectancy of
+  100 or less are identical (the individual-mode baseline is unchanged).
+- Cache and `APP_VERSION` bumped to v19, with a
+  `USER_CHANGELOG` entry.
+
 ## 2026-09-27 — Grilling uses structured questions (028)
 
 - `.claude/skills/grilling/SKILL.md` now asks each frontier question with
