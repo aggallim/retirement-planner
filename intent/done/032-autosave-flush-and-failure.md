@@ -46,3 +46,8 @@ fire after unmount.
 `tests/test-engine.js` only if `saveState` is testable without a DOM;
 otherwise verify manually by editing then closing the tab within 600ms, and
 by forcing a storage failure (throwing `setItem`).
+
+## Addendum 2026-09-29 — notice action
+
+The failure notice is a button that runs Export directly (a one-click
+backup) rather than a link to the Data menu.

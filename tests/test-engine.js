@@ -134,6 +134,9 @@ function loadEngine(html) {
     JSON.parse(JSON.stringify(rawComputeTaxNotes(projections, people, inflationRate, planEnd)));
   const deflate = (nominalValue, targetYear, inflationRate) => rawDeflate(nominalValue, targetYear, inflationRate);
   const UK_REFERENCE = JSON.parse(JSON.stringify(rawUkReference));
+  // intent/031: number-box helpers return plain numbers/strings.
+  const formatNumber = (n) => sandbox.formatNumber(n);
+  const parseNumberInput = (text, previous, min, max) => sandbox.parseNumberInput(text, previous, min, max);
   // intent/025: dbPensionOf returns an object (JSON round trip);
   // dbPensionGapYears returns a plain number.
   const dbPensionOf = (p) => JSON.parse(JSON.stringify(rawDbPensionOf(p)));
@@ -141,19 +144,19 @@ function loadEngine(html) {
   return {
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
     taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
-    dbPensionOf, dbPensionGapYears
+    dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput
   };
 }
 
 let projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR;
 let taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE;
-let dbPensionOf, dbPensionGapYears;
+let dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput;
 try {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
   ({
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
     taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
-    dbPensionOf, dbPensionGapYears
+    dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput
   } = loadEngine(html));
 } catch (err) {
   console.error('FATAL: could not extract a runnable projectJoint() from index.html');
@@ -1434,6 +1437,38 @@ check('projectJoint handles the minimum life expectancy of 75 with retirement at
   // The projection still runs to age 100 (unchanged for life expectancy <= 100).
   assert.strictEqual(rows.length, 100 - 60 + 1);
   assert.ok(rows.some((r) => r.year === planEndOf(args)));
+});
+
+// intent/031: number-box formatting and parsing. Pure functions, no DOM.
+check('formatNumber groups thousands and leaves small values, decimals and negatives alone', () => {
+  assert.strictEqual(formatNumber(0), '0');
+  assert.strictEqual(formatNumber(999), '999');
+  assert.strictEqual(formatNumber(1000), '1,000');
+  assert.strictEqual(formatNumber(250000), '250,000');
+  assert.strictEqual(formatNumber(1234567), '1,234,567');
+  assert.strictEqual(formatNumber(1234567.89), '1,234,567.89');
+  assert.strictEqual(formatNumber(5.5), '5.5');
+  assert.strictEqual(formatNumber(-12345), '-12,345');
+});
+check('parseNumberInput strips pasted symbols and separators', () => {
+  assert.strictEqual(parseNumberInput('£1,200', 0, 0, 1e9), 1200);
+  assert.strictEqual(parseNumberInput('1,234,567.89', 0, 0, 1e9), 1234567.89);
+  assert.strictEqual(parseNumberInput('6%', 5, 0, 20), 6);
+  assert.strictEqual(parseNumberInput(' 42 ', 0, 0, 100), 42);
+});
+check('parseNumberInput clamps to min and max', () => {
+  assert.strictEqual(parseNumberInput('500', 60, 50, 75), 75);
+  assert.strictEqual(parseNumberInput('10', 60, 50, 75), 50);
+});
+check('parseNumberInput restores the previous value for blank or non-numeric input', () => {
+  assert.strictEqual(parseNumberInput('', 60, 50, 75), 60);
+  assert.strictEqual(parseNumberInput('abc', 60, 50, 75), 60);
+  assert.strictEqual(parseNumberInput('.', 60, 50, 75), 60);
+});
+check('formatNumber and parseNumberInput round-trip', () => {
+  for (const n of [0, 25, 1000, 12548, 250000, 1234567.5]) {
+    assert.strictEqual(parseNumberInput(formatNumber(n), -1, 0, 1e9), n);
+  }
 });
 
 // intent/026: the feedback form is pre-filled with APP_VERSION, which must

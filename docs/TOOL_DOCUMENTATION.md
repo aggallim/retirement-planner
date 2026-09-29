@@ -72,7 +72,7 @@ A sophisticated, production-grade UK retirement calculator with exceptional desi
 
 ### 3.1 Getting started
 
-The app opens in individual mode with illustrative defaults. Overwrite them with real figures — either drag a slider or type directly into the number box beside it. Every change recalculates immediately.
+The app opens in individual mode with illustrative defaults. Overwrite them with real figures — either drag a slider or type directly into the number box beside it. Every change recalculates immediately. Number boxes show thousands separators (250,000) when you aren't typing in them; you can paste values such as `£1,200`, and a blank or non-numeric entry restores the previous figure. Sliders and boxes are named for screen readers (with value and unit), and the (i) help icons open with a tap, Enter or Space and close with Esc.
 
 ### 3.2 Adding a partner
 
@@ -127,7 +127,7 @@ The banner has a **×** close control. Dismissing it hides the whole banner — 
 
 ### 3.6 Saving and resetting
 
-Figures auto-save about half a second after each change — a brief **Saved** appears in the header. Data lives in that browser's storage on that device only, so your phone and laptop keep separate plans. The **↺ Reset** button clears the saved plan and restores defaults, including any dismissed warning banner.
+Figures auto-save about half a second after each change — a brief **Saved** appears in the header. The latest change is also saved immediately when you close the page or switch away from it. If the browser refuses to store data (for example in a private window), the header instead shows a persistent **Not saved on this device — export a backup** button that downloads the plan file, and **Saved** is not shown. Data lives in that browser's storage on that device only, so your phone and laptop keep separate plans. The **↺ Reset** button clears the saved plan and restores defaults, including any dismissed warning banner.
 
 ### 3.7 Export and import
 
@@ -405,6 +405,8 @@ The engine was tested as a standalone module. Checks that pass:
 - The freeze-then-uprate threshold path: frozen through 2030, uprated by the inflation input from 2031, and unchanged forever at 0% inflation
 - The Lump Sum Allowance cap: the lump sum is min(25%, £268,275), the excess stays in the pension, and the initial withdrawal is taken from the larger remaining pot
 - ISA/LISA/other-savings withdrawals are never taxed
+- `formatNumber()` / `parseNumberInput()` (number boxes): thousands grouping, decimals and negatives preserved; pasted `£1,200` and `6%` parse; values clamp to min/max; blank or non-numeric input returns the previous value; format then parse round-trips
+- Manual (no DOM in the harness): every slider and number box has an accessible name, slider `aria-valuetext` includes unit; tooltips open with Enter and close with Esc; a `pagehide` inside the 600ms debounce still writes the latest edit; with `localStorage.setItem` throwing, the header shows the not-saved notice and never "Saved"
 - The extra savings draw equals the tax when spending equals the gross pension draw
 - Changing the withdrawal rate changes the tax
 - `lifetimeTaxTotals` today's-money figure equals the sum of each year's deflated tax (not the nominal total deflated once)

@@ -43,3 +43,10 @@ symbols.
 (user-facing); `sw.js` cache and `APP_VERSION` bump. Verify manually: enter
 `1234567.89`, paste `£1,200`, check 320px width and 200% zoom, and confirm
 no regression in slider drag performance (§5.3).
+
+## Addendum 2026-09-29 — formatter
+
+Grouping is done with a small regex rather than `Intl.NumberFormat('en-GB')`:
+identical output, and the test sandbox has no `Intl`. Pasting `£1,200`
+already worked through the input's character filter; it is now explicit and
+tested.

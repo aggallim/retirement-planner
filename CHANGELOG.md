@@ -8,6 +8,38 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-29 — Input accessibility, number formatting and reliable saving (030, 031, 032)
+
+- Implements `intent/030-slider-accessible-names.md`,
+  `intent/031-thousands-separators.md` and
+  `intent/032-autosave-flush-and-failure.md` (all moved to `intent/done/`),
+  shipped as one release from the UI/UX review of 2026-09-29.
+- 030: `SliderWithInput` names its slider and number box explicitly
+  (`label`/`htmlFor`, `aria-labelledby`), gives the slider an
+  `aria-valuetext` with prefix, value and suffix, and links the subtitle with
+  `aria-describedby`. The three hover-only tooltips now use one shared,
+  memoised `InfoTooltip`: a focusable button that opens on tap, Enter or
+  Space, closes on Esc, blur or a tap elsewhere, and is linked with
+  `aria-describedby`.
+- 031: number boxes show thousands separators when not focused and raw
+  digits while editing, via pure `formatNumber` / `parseNumberInput`
+  (unit-tested). Pasted `£1,200` or `6%` parse correctly. The box grows with
+  its content instead of the fixed `w-20`. A blank or non-numeric entry now
+  restores the previous value rather than resetting to the field's minimum.
+- 032: autosave flushes on `pagehide` and when the tab is hidden, so a close
+  inside the 600ms debounce no longer loses the last edit. `saveState`
+  reports success; on failure the header shows a persistent "Not saved on
+  this device — export a backup" button (which runs Export) and "Saved" no
+  longer appears. The "Saved" timer now has its own effect with working
+  cleanup. Reset clears the pending snapshot so the flush can't re-save over
+  it.
+- Deviations from the intents: separators are grouped by a small regex
+  rather than `Intl.NumberFormat('en-GB')` (identical output, and the test
+  sandbox has no `Intl`); the failure notice runs Export directly instead of
+  linking to the Data menu.
+- Cache and `APP_VERSION` bumped to v20, with a `USER_CHANGELOG` entry. No
+  engine or calculation change; the regression baseline is untouched.
+
 ## 2026-09-28 — Larger life expectancy scale (029)
 
 - Implements `intent/029-larger-life-expectancy-scale.md` (moved to
