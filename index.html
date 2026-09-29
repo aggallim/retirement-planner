@@ -879,7 +879,10 @@ const loadSaved = () => {
 const saveState = state => {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 };
 const clearSaved = () => {
   try {
@@ -965,7 +968,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v19';
+const APP_VERSION = 'v20';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -977,6 +980,18 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v20',
+  date: '2026-09-29', // set to the actual merge date
+  title: 'Easier number entry, and safer saving',
+  items: [
+    'Big numbers now show commas when you\'re not typing in them (250,000 rather than 250000), and the number boxes grow so long figures aren\'t cut off.',
+    'Clearing a number box and clicking away now puts back your previous figure, instead of dropping it to the lowest value the slider allows.',
+    'Screen readers now announce each slider and number box by name, with its value and unit (for example "Current Balance, £25,000").',
+    'The little (i) help icons now work with a keyboard or a tap: press or tap to open, Esc to close.',
+    'Your plan is now saved the moment you close or switch away from the page, so your last change can\'t be lost.',
+    'If your browser won\'t let the app save (for example in a private window), you\'ll now see "Not saved on this device", with a one-click backup download. Before, it could still say "Saved".'
+  ]
+}, {
   version: 'v19',
   date: '2026-09-28', // set to the actual merge date
   title: 'Plan to a wider range of ages',
@@ -1079,6 +1094,68 @@ const USER_CHANGELOG = [{
   items: ['Split the single ISA field into three: Cash ISA, Stocks & Shares ISA, and LISA — each with its own balance and growth rate.', 'Add any number of other savings accounts (like Premium Bonds) alongside your ISAs.', 'LISA contributions get the 25% government bonus automatically, and can’t be used to cover costs before you turn 60.', 'A warning appears if your combined ISA/LISA contributions go over the annual allowance.']
 }];
 
+/* ---------------- Tooltip (module level + memoized) ---------------- */
+// One shared info-icon tooltip (intent 030). Opens on hover (CSS), or on
+// tap / Enter / Space via the button; closes on Esc, blur, or a tap
+// elsewhere. The text is linked with aria-describedby.
+const InfoTooltip = memo(function InfoTooltip({
+  text,
+  iconClass = 'h-3.5 w-3.5',
+  triggerClass = ''
+}) {
+  const [open, setOpen] = React.useState(false);
+  const id = React.useId();
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const onDown = e => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = e => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  return React.createElement("span", {
+    ref,
+    className: `tooltip-trigger relative inline-flex ${triggerClass}`
+  }, React.createElement("button", {
+    type: "button",
+    "aria-label": "More information",
+    "aria-expanded": open,
+    "aria-describedby": id,
+    onClick: () => setOpen(v => !v),
+    onBlur: () => setOpen(false),
+    className: "inline-flex rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+  }, React.createElement(Info, {
+    className: `${iconClass} text-slate-400 cursor-help`
+  })), React.createElement("span", {
+    id,
+    role: "tooltip",
+    className: `tooltip-content absolute left-0 bottom-full mb-2 w-56 bg-slate-900 text-white text-xs p-2.5 rounded-lg shadow-xl z-20 font-normal${open ? ' is-open' : ''}`
+  }, text));
+});
+
+// Number-box helpers (intent 031). Pure, so tests/test-engine.js can run them.
+// ENGINE-EXTRACT-START
+function formatNumber(n) {
+  if (typeof n !== 'number' || !isFinite(n)) return String(n);
+  const [whole, frac] = String(Math.abs(n)).split('.');
+  return (n < 0 ? '-' : '') + whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (frac ? '.' + frac : '');
+}
+function parseNumberInput(text, previous, min, max) {
+  const cleaned = String(text).replace(/[^0-9.]/g, '');
+  const n = parseFloat(cleaned);
+  if (!isFinite(n)) return previous;
+  return Math.max(min, Math.min(max, n));
+}
+// ENGINE-EXTRACT-END
+
 /* ---------------- Slider (module level + memoized) ---------------- */
 const SliderWithInput = memo(function SliderWithInput({
   label,
@@ -1094,48 +1171,61 @@ const SliderWithInput = memo(function SliderWithInput({
   subtitle,
   accent = 'blue'
 }) {
-  const [text, setText] = useState(String(value));
+  const [text, setText] = useState(formatNumber(value));
   const [editing, setEditing] = useState(false);
+  const uid = React.useId();
+  const labelId = `${uid}-label`;
+  const inputId = `${uid}-input`;
+  const subId = `${uid}-sub`;
   useEffect(() => {
-    if (!editing) setText(String(value));
+    if (!editing) setText(formatNumber(value));
   }, [value, editing]);
 
   // Stable-ish handler; onChange/field rarely change.
   const handleSlide = useCallback(e => onChange(field, Number(e.target.value)), [onChange, field]);
   const commit = () => {
-    const n = parseFloat(text);
-    const clamped = isNaN(n) ? min : Math.max(min, Math.min(max, n));
-    onChange(field, clamped);
-    setText(String(clamped));
+    const n = parseNumberInput(text, value, min, max);
+    onChange(field, n);
+    setText(formatNumber(n));
     setEditing(false);
   };
   const pct = (value - min) / (max - min) * 100;
   const accentVar = accent === 'teal' ? '#0d9488' : '#2563eb';
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-2 gap-2"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-semibold text-slate-700 flex items-center gap-1.5"
-  }, label, tooltip && /*#__PURE__*/React.createElement("span", {
-    className: "tooltip-trigger relative inline-flex"
-  }, /*#__PURE__*/React.createElement(Info, {
-    className: "h-3.5 w-3.5 text-slate-400 cursor-help"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "tooltip-content absolute left-0 bottom-full mb-2 w-56 bg-slate-900 text-white text-xs p-2.5 rounded-lg shadow-xl z-20 font-normal"
-  }, tooltip))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500"
+  }, /*#__PURE__*/React.createElement("label", {
+    id: labelId,
+    htmlFor: inputId
+  }, label), tooltip && /*#__PURE__*/React.createElement(InfoTooltip, {
+    text: tooltip
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500",
+    style: {
+      maxWidth: '55vw'
+    }
   }, prefix && /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-bold text-slate-400 pl-2.5"
   }, prefix), /*#__PURE__*/React.createElement("input", {
+    id: inputId,
     type: "text",
     inputMode: "decimal",
     value: text,
+    "aria-describedby": subtitle ? subId : undefined,
     onChange: e => setText(e.target.value.replace(/[^0-9.]/g, '')),
-    onFocus: () => setEditing(true),
+    onFocus: () => {
+      setEditing(true);
+      setText(String(value));
+    },
     onBlur: commit,
     onKeyDown: e => {
       if (e.key === 'Enter') e.target.blur();
     },
-    className: "text-base font-bold text-slate-900 bg-transparent px-2 py-1 w-20 text-right focus:outline-none"
+    className: "text-base font-bold text-slate-900 bg-transparent px-2 py-1 min-w-0 text-right focus:outline-none",
+    style: {
+      width: `calc(${Math.max(4, text.length + 1)}ch + 1rem)`
+    }
   }), suffix && /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-bold text-slate-400 pr-2.5"
   }, suffix))), /*#__PURE__*/React.createElement("input", {
@@ -1145,12 +1235,16 @@ const SliderWithInput = memo(function SliderWithInput({
     step: step,
     value: value,
     onChange: handleSlide,
+    "aria-labelledby": labelId,
+    "aria-valuetext": `${prefix}${formatNumber(value)}${suffix}`,
+    "aria-describedby": subtitle ? subId : undefined,
     className: "w-full",
     style: {
       '--slider-pct': `${pct}%`,
       '--slider-accent': accentVar
     }
   }), subtitle && /*#__PURE__*/React.createElement("p", {
+    id: subId,
     className: "text-xs text-slate-500 mt-1.5"
   }, subtitle));
 });
@@ -1698,7 +1792,7 @@ const WealthChart = memo(function WealthChart({
       fontWeight: 600
     },
     tickFormatter: formatCurrencyK
-  }), /*#__PURE__*/React.createElement(Tooltip, {
+  }), /*#__PURE__*/React.createElement(InfoTooltip, {
     content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate })
   }), /*#__PURE__*/React.createElement(Legend, {
     wrapperStyle: {
@@ -1836,7 +1930,7 @@ const IncomeChart = memo(function IncomeChart({
       fontWeight: 600
     },
     tickFormatter: formatCurrencyK
-  }), /*#__PURE__*/React.createElement(Tooltip, {
+  }), /*#__PURE__*/React.createElement(InfoTooltip, {
     content: /*#__PURE__*/React.createElement(ChartTooltip, { inflationRate, excludeFromTotal: ['Target Expenses'], totalLabel: "Total after tax (today's money)" })
   }), /*#__PURE__*/React.createElement(Legend, {
     wrapperStyle: {
@@ -2036,13 +2130,11 @@ const VerdictHero = memo(function VerdictHero({
     className: "flex justify-between text-xs text-slate-600 mt-2 mb-4"
   }, /*#__PURE__*/React.createElement("span", null, "First retirement (", firstRet, ")"), /*#__PURE__*/React.createElement("span", null, "Plan end (", planEnd, ")")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-500 mt-3"
-  }, "Based on a fixed average return, estimated Income Tax at England, Wales and Northern Ireland rates, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement("span", {
-    className: "tooltip-trigger relative inline-flex align-text-top"
-  }, /*#__PURE__*/React.createElement(Info, {
-    className: "h-3 w-3 text-slate-400 cursor-help"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "tooltip-content absolute left-0 bottom-full mb-2 w-56 bg-slate-900 text-white text-xs p-2.5 rounded-lg shadow-xl z-20 font-normal"
-  }, "Sometimes called \"sequence-of-returns risk\" — a poor run of returns in your first few retirement years does more damage than the same average return spread evenly, because you're drawing down your pot at the same time.")), " — see Known limitations in the ", /*#__PURE__*/React.createElement("button", {
+  }, "Based on a fixed average return, estimated Income Tax at England, Wales and Northern Ireland rates, and no allowance for a bad run of returns early in retirement", " ", /*#__PURE__*/React.createElement(InfoTooltip, {
+    triggerClass: "align-text-top",
+    iconClass: "h-3 w-3",
+    text: "Sometimes called \"sequence-of-returns risk\" — a poor run of returns in your first few retirement years does more damage than the same average return spread evenly, because you're drawing down your pot at the same time."
+  }), " — see Known limitations in the ", /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: () => scrollAndHighlight('assumptions-panel'),
     className: "underline hover:text-slate-700"
@@ -2084,13 +2176,9 @@ const AssumptionsPanel = memo(function AssumptionsPanel({
     className: "flex items-start justify-between gap-3 py-2 border-b border-slate-100 last:border-b-0"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-sm text-slate-600 flex items-center gap-1.5"
-  }, label, tooltip && /*#__PURE__*/React.createElement("span", {
-    className: "tooltip-trigger relative inline-flex"
-  }, /*#__PURE__*/React.createElement(Info, {
-    className: "h-3.5 w-3.5 text-slate-400 cursor-help"
-  }), /*#__PURE__*/React.createElement("span", {
-    className: "tooltip-content absolute left-0 bottom-full mb-2 w-56 bg-slate-900 text-white text-xs p-2.5 rounded-lg shadow-xl z-20 font-normal"
-  }, tooltip))), /*#__PURE__*/React.createElement("span", {
+  }, label, tooltip && /*#__PURE__*/React.createElement(InfoTooltip, {
+    text: tooltip
+  })), /*#__PURE__*/React.createElement("span", {
     className: "text-right"
   }, value));
   const rows = [row('Return', personPair(nameValue(p1Name, `${p1PensionGrowth}%`, isCouple), `assumption-return-p1`, nameValue(p2Name, `${p2PensionGrowth}%`, isCouple), `assumption-return-p2`), "Shown as each person's pension growth rate — the figure most closely tied to retirement outcomes. Cash ISA, Stocks & Shares ISA and LISA growth rates are set separately below."), row('Inflation', valueBtn(`${inflationRate}%`, 'assumption-inflation')), row('Retirement age', personPair(nameAtAge(p1Name, p1RetirementAge, isCouple), `assumption-retirement-age-p1`, nameAtAge(p2Name, p2RetirementAge, isCouple), `assumption-retirement-age-p2`)), row('Life expectancy', personPair(nameAtAge(p1Name, p1LifeExpectancy, isCouple), `assumption-life-expectancy-p1`, nameAtAge(p2Name, p2LifeExpectancy, isCouple), `assumption-life-expectancy-p2`)), row('Spending', valueBtn(`${formatCurrency(annualExpenses)}/yr (excl. mortgage)`, 'assumption-spending')), row('State Pension', personPair(nameValue(p1Name, `${formatCurrency(p1StatePensionAmount)}/yr from age ${p1StatePensionAge}`, isCouple), `assumption-state-pension-p1`, nameValue(p2Name, `${formatCurrency(p2StatePensionAmount)}/yr from age ${p2StatePensionAge}`, isCouple), `assumption-state-pension-p2`))];
@@ -2765,6 +2853,8 @@ function RetirementCalculator() {
   const [inflationRate, setInflationRate] = useState(pick('inflationRate', 3));
   const [withdrawalRate, setWithdrawalRate] = useState(pick('withdrawalRate', 4));
   const [justSaved, setJustSaved] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const pendingSaveRef = useRef(null);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [showPotBreakdown, setShowPotBreakdown] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -2792,32 +2882,56 @@ function RetirementCalculator() {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
-  // Auto-save every change (debounced) so figures persist between sessions
+  // Auto-save every change (debounced) so figures persist between sessions.
+  // The latest snapshot waits in pendingSaveRef; flushSave() writes it and is
+  // also called on pagehide / tab-hidden so a close inside the debounce
+  // window can't lose the last edit (intent 032).
+  const flushSave = useCallback(() => {
+    const snapshot = pendingSaveRef.current;
+    if (!snapshot) return;
+    pendingSaveRef.current = null;
+    const ok = saveState(snapshot);
+    setSaveFailed(!ok);
+    if (ok) setJustSaved(true);
+  }, []);
   useEffect(() => {
-    const t = setTimeout(() => {
-      saveState({
-        hasPartner,
-        person1,
-        person2,
-        annualExpenses,
-        healthcareCosts,
-        mortgagePayment,
-        mortgageYears,
-        inflationRate,
-        withdrawalRate
-      });
-      setJustSaved(true);
-      const h = setTimeout(() => setJustSaved(false), 1400);
-      return () => clearTimeout(h);
-    }, 600);
+    pendingSaveRef.current = {
+      hasPartner,
+      person1,
+      person2,
+      annualExpenses,
+      healthcareCosts,
+      mortgagePayment,
+      mortgageYears,
+      inflationRate,
+      withdrawalRate
+    };
+    const t = setTimeout(flushSave, 600);
     return () => clearTimeout(t);
-  }, [hasPartner, person1, person2, annualExpenses, healthcareCosts, mortgagePayment, mortgageYears, inflationRate, withdrawalRate]);
+  }, [hasPartner, person1, person2, annualExpenses, healthcareCosts, mortgagePayment, mortgageYears, inflationRate, withdrawalRate, flushSave]);
+  useEffect(() => {
+    if (!justSaved) return undefined;
+    const h = setTimeout(() => setJustSaved(false), 1400);
+    return () => clearTimeout(h);
+  }, [justSaved]);
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flushSave();
+    };
+    window.addEventListener('pagehide', flushSave);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', flushSave);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, [flushSave]);
   const jumpToFullAssumptions = useCallback(() => {
     setShowAssumptions(true);
     scrollAndHighlight('assumptions-disclaimers');
   }, []);
   const resetAll = useCallback(() => {
     if (!window.confirm('Reset all figures back to defaults? Your saved plan will be cleared.')) return;
+    pendingSaveRef.current = null; // don't let the pagehide flush re-save over the reset
     clearSaved();
     try {
       localStorage.removeItem(DISMISSED_WARNINGS_KEY);
@@ -3122,7 +3236,7 @@ function RetirementCalculator() {
         input[type="range"]::-moz-range-track { background:#e2e8f0; height:6px; border-radius:999px; }
         input[type="range"]::-moz-range-progress { background:var(--slider-accent,#2563eb); height:6px; border-radius:999px; }
         input[type="range"]::-moz-range-thumb { height:18px; width:18px; border-radius:50%; background:#fff; border:3px solid var(--slider-accent,#2563eb); }
-        .tooltip-trigger:hover .tooltip-content { opacity:1; visibility:visible; }
+        .tooltip-trigger:hover .tooltip-content, .tooltip-content.is-open { opacity:1; visibility:visible; }
         .tooltip-content { opacity:0; visibility:hidden; transition:opacity .15s; }
         .gradient-text { background:linear-gradient(135deg,#1e3a8a,#2563eb 60%,#0d9488); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
         .min-w-0 { min-width:0; }
@@ -3211,8 +3325,15 @@ function RetirementCalculator() {
   }, isCouple ? 'Joint household planning' : 'Individual planning')), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("span", {
-    className: `text-xs font-semibold text-emerald-600 transition-opacity duration-300 ${justSaved ? 'opacity-100' : 'opacity-0'}`
-  }, "Saved"), /*#__PURE__*/React.createElement("button", {
+    role: "status",
+    className: "flex items-center"
+  }, saveFailed && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: handleExport,
+    className: "text-xs font-semibold text-red-600 underline hover:text-red-700"
+  }, "Not saved on this device \u2014 export a backup"), /*#__PURE__*/React.createElement("span", {
+    className: `text-xs font-semibold text-emerald-600 transition-opacity duration-300 ${justSaved && !saveFailed ? 'opacity-100' : 'opacity-0'}`
+  }, saveFailed ? '' : 'Saved')), /*#__PURE__*/React.createElement("button", {
     onClick: resetAll,
     title: "Reset to defaults",
     className: "flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-semibold text-sm bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 transition-colors"
