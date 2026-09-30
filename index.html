@@ -752,6 +752,9 @@ const UK_REFERENCE = {
     annualLimit: 4000,
     bonusRate: 0.25,
     accessAge: 60,
+    // Contributions (and the bonus) stop at the 50th birthday. The projection
+    // steps in whole years, so contributions apply while age < this value.
+    contributionStopAge: 50,
     source: 'https://www.gov.uk/lifetime-isa',
     sourceLabel: 'GOV.UK: Lifetime ISA'
   },
@@ -968,7 +971,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v21';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -980,6 +983,15 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v21',
+  date: '2026-09-30', // set to the actual merge date
+  title: 'ISA and LISA limits now apply',
+  items: [
+    'Each ISA contribution box now stops at what is left of the £20,000 yearly ISA allowance, shared across Cash ISA, Stocks & Shares ISA and LISA. The LISA box also stops at its own £4,000 limit.',
+    'Plans saved earlier that go over the limits are not changed, but the projection now only counts contributions up to the limits, and a notice says so.',
+    'LISA contributions and the 25% bonus now stop at age 50, as they do for a real LISA.'
+  ]
+}, {
   version: 'v20',
   date: '2026-09-29', // set to the actual merge date
   title: 'Easier number entry, and safer saving',
@@ -1189,7 +1201,7 @@ const SliderWithInput = memo(function SliderWithInput({
     setText(formatNumber(n));
     setEditing(false);
   };
-  const pct = (value - min) / (max - min) * 100;
+  const pct = max > min ? (value - min) / (max - min) * 100 : 0;
   const accentVar = accent === 'teal' ? '#0d9488' : '#2563eb';
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-2 gap-2"
@@ -1299,6 +1311,7 @@ const IsaTypeAccount = memo(function IsaTypeAccount({
   onChange,
   accent
 }) {
+  const contribMax = isaContributionMax(person, contributionField);
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-5"
   }, /*#__PURE__*/React.createElement("h5", {
@@ -1320,11 +1333,11 @@ const IsaTypeAccount = memo(function IsaTypeAccount({
     value: person[contributionField],
     onChange: onChange,
     min: 0,
-    max: 1667,
+    max: Math.max(contribMax, person[contributionField]),
     step: 25,
     prefix: "£",
     accent: accent,
-    subtitle: contributionSubtitle
+    subtitle: `${contributionSubtitle} Up to ${formatCurrency(contribMax)}/month left.`
   }), /*#__PURE__*/React.createElement(GrowthProfile, {
     value: person[growthField],
     field: growthField,
@@ -1516,7 +1529,7 @@ const PersonInputs = memo(function PersonInputs({
     tooltip: `${UK_REFERENCE.lisa.bonusRate * 100}% government bonus on contributions, up to ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr. Not accessible before age ${UK_REFERENCE.lisa.accessAge} in this tool (no first-home exception modelled).`,
     balanceField: "lisaBalance",
     contributionField: "lisaContribution",
-    contributionSubtitle: `${UK_REFERENCE.lisa.bonusRate * 100}% government bonus applied automatically. Max ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr.`,
+    contributionSubtitle: `${UK_REFERENCE.lisa.bonusRate * 100}% government bonus applied automatically. Max ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr; contributions stop at age ${UK_REFERENCE.lisa.contributionStopAge}.`,
     growthField: "lisaGrowth",
     person: person,
     onChange: onChange,
@@ -2296,6 +2309,30 @@ function dbPensionGapYears(p) {
   const db = dbPensionOf(p);
   return db.amount > 0 && p.retirementAge < db.startAge ? db.startAge - p.retirementAge : 0;
 }
+// Monthly ISA/LISA contributions actually applied for one person at a given
+// age (intent/033). Typed values are never altered; this is the cap applied to
+// them. LISA: limited to its own annual limit and dropped from the stop age.
+// Cash + S&S + LISA then share the combined allowance; any excess comes off
+// S&S ISA first, then Cash ISA. The 25% bonus is added by the caller, on the
+// returned (capped) LISA figure only.
+function isaContributionsFor(p, age) {
+  const lisaTyped = Math.max(0, p.lisaContribution);
+  const lisa = age < UK_REFERENCE.lisa.contributionStopAge ? Math.min(lisaTyped, UK_REFERENCE.lisa.annualLimit / 12) : 0;
+  const room = Math.max(0, UK_REFERENCE.isa.allowance / 12 - lisa);
+  const cash = Math.min(Math.max(0, p.cashIsaContribution), room);
+  const ss = Math.min(Math.max(0, p.ssIsaContribution), room - cash);
+  return { cash, ss, lisa };
+}
+// Upper limit (monthly) for one ISA contribution box: what is left of the
+// combined allowance after the other two boxes' typed values, and for the LISA
+// also its own limit. Limits the box being edited only; never rewrites others.
+function isaContributionMax(p, field) {
+  const fields = ['cashIsaContribution', 'ssIsaContribution', 'lisaContribution'];
+  const others = fields.filter(f => f !== field).reduce((s, f) => s + Math.max(0, p[f] || 0), 0);
+  let max = UK_REFERENCE.isa.allowance / 12 - others;
+  if (field === 'lisaContribution') max = Math.min(max, UK_REFERENCE.lisa.annualLimit / 12);
+  return Math.max(0, Math.floor(max * 100) / 100);
+}
 function projectJoint({
   inflationRate,
   withdrawalRate,
@@ -2491,9 +2528,10 @@ function projectJoint({
       x.p.ssIsa = Math.max(0, x.p.ssIsa - ssDraw);
       x.p.lisa = Math.max(0, x.p.lisa - lisaDraw);
       if (!x.retired) {
-        for (let m = 0; m < 12; m++) x.p.cashIsa = x.p.cashIsa * (1 + x.p.mCashIsaG) + x.p.cfg.cashIsaContribution;
-        for (let m = 0; m < 12; m++) x.p.ssIsa = x.p.ssIsa * (1 + x.p.mSsIsaG) + x.p.cfg.ssIsaContribution;
-        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + x.p.cfg.lisaContribution * (1 + UK_REFERENCE.lisa.bonusRate);
+        const isaC = isaContributionsFor(x.p.cfg, x.age);
+        for (let m = 0; m < 12; m++) x.p.cashIsa = x.p.cashIsa * (1 + x.p.mCashIsaG) + isaC.cash;
+        for (let m = 0; m < 12; m++) x.p.ssIsa = x.p.ssIsa * (1 + x.p.mSsIsaG) + isaC.ss;
+        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + isaC.lisa * (1 + UK_REFERENCE.lisa.bonusRate);
         x.p.other.forEach(acc => {
           const mG = Math.pow(1 + acc.growth / 100, 1 / 12) - 1;
           for (let m = 0; m < 12; m++) acc.balance = acc.balance * (1 + mG) + acc.contribution;
@@ -2584,9 +2622,10 @@ function computePotBreakdown(people, projections, bothYear) {
     const years = Math.max(0, p.retirementAge - p.currentAge);
     const pensionMonthly = Math.min(p.pensionContribution + p.employerContribution, cap / 12);
     contributions += pensionMonthly * 12 * years;
-    contributions += p.cashIsaContribution * 12 * years;
-    contributions += p.ssIsaContribution * 12 * years;
-    contributions += p.lisaContribution * (1 + UK_REFERENCE.lisa.bonusRate) * 12 * years; // 25% government bonus, same as projectJoint()
+    for (let a = p.currentAge; a < p.retirementAge; a++) {
+      const c = isaContributionsFor(p, a); // capped, same as projectJoint()
+      contributions += (c.cash + c.ss + c.lisa * (1 + UK_REFERENCE.lisa.bonusRate)) * 12; // 25% government bonus on the capped LISA figure
+    }
     contributions += (p.otherSavings || []).reduce((s, a) => s + a.contribution * 12 * years, 0);
   });
   let withdrawals = 0;
@@ -3170,9 +3209,9 @@ function RetirementCalculator() {
       if (p.retirementAge < p.statePensionAge) w.push(`${label}: ${p.statePensionAge - p.retirementAge}-year gap before State Pension starts`);
       const dbGap = dbPensionGapYears(p);
       if (dbGap > 0) w.push(`${label}: ${dbGap}-year gap before Defined Benefit (DB) Pension starts`);
-      const isaAnnual = (p.cashIsaContribution + p.ssIsaContribution + p.lisaContribution) * 12;
-      if (isaAnnual > UK_REFERENCE.isa.allowance) w.push(`${label}: ISA contributions exceed ${formatCurrency(UK_REFERENCE.isa.allowance)} annual allowance`);
-      if (p.lisaContribution * 12 > UK_REFERENCE.lisa.annualLimit) w.push(`${label}: LISA contributions exceed ${formatCurrency(UK_REFERENCE.lisa.annualLimit)} annual allowance`);
+      if (p.lisaContribution * 12 > UK_REFERENCE.lisa.annualLimit) w.push(`${label}: LISA contributions above ${formatCurrency(UK_REFERENCE.lisa.annualLimit)}/yr are not counted (annual limit)`);
+      if (p.cashIsaContribution + p.ssIsaContribution + Math.min(p.lisaContribution, UK_REFERENCE.lisa.annualLimit / 12) > UK_REFERENCE.isa.allowance / 12 + 0.005) w.push(`${label}: ISA contributions above the ${formatCurrency(UK_REFERENCE.isa.allowance)}/yr combined allowance are not counted`);
+      if (p.lisaContribution > 0 && p.retirementAge > UK_REFERENCE.lisa.contributionStopAge) w.push(`${label}: LISA contributions stop at age ${UK_REFERENCE.lisa.contributionStopAge}`);
     };
     check(d.p1, isCouple ? d.p1.name : 'You');
     if (isCouple) check(d.p2, d.p2.name);

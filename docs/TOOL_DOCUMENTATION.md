@@ -116,8 +116,9 @@ Both names are editable — tap the name to rename.
 
 The red banner appears when any of these trigger:
 - Pension contributions exceed the £60,000 annual allowance
-- Combined Cash ISA + Stocks & Shares ISA + LISA contributions exceed the £20,000 annual allowance
-- LISA contributions exceed the £4,000 annual allowance
+- Combined Cash ISA + Stocks & Shares ISA + LISA contributions are above the £20,000 annual allowance (the projection counts only up to it — §4.1)
+- LISA contributions are above the £4,000 annual limit (the projection counts only up to it)
+- A person still contributing to a LISA will reach age 50 before retiring (LISA contributions stop at 50)
 - A gap exists between retirement and State Pension age
 - A gap exists between retirement and a person's DB pension start age (only when that person has a DB pension)
 - Household income (after tax) falls below the Retirement Living Standards minimum
@@ -203,7 +204,7 @@ for each of 12 months:
 
 Combined employee plus employer pension contributions are capped at the **£60,000** annual allowance inside the engine, not merely warned about.
 
-Each person's savings are modelled as up to four independent account types, each with its own balance, monthly contribution and growth rate: **Cash ISA**, **Stocks & Shares ISA**, **LISA**, and any number of free-form **other savings** accounts (e.g. Premium Bonds, general savings). LISA contributions receive an automatic **25% government bonus**, credited monthly alongside the LISA's own growth (`lisaContribution × 1.25` added each month, on top of compounding) — mirroring how the pension lump sum is already special-cased as a fixed, non-configurable top-up. Combined Cash ISA + Stocks & Shares ISA + LISA contributions are **not** hard-capped in the engine (unlike the pension allowance above); exceeding the £20,000 combined allowance or the £4,000 LISA sub-allowance is warned about (§3.5) rather than silently reduced, since unlike the single-figure pension contribution there's no unambiguous way to decide which of the three accounts should absorb an over-the-cap reduction.
+Each person's savings are modelled as up to four independent account types, each with its own balance, monthly contribution and growth rate: **Cash ISA**, **Stocks & Shares ISA**, **LISA**, and any number of free-form **other savings** accounts (e.g. Premium Bonds, general savings). LISA contributions receive an automatic **25% government bonus**, credited monthly alongside the LISA's own growth (`lisaContribution × 1.25` added each month, on top of compounding) — mirroring how the pension lump sum is already special-cased as a fixed, non-configurable top-up. **ISA and LISA caps (intent/033).** The three contribution boxes share the £20,000/yr combined allowance, and the LISA has its own £4,000/yr limit, all fixed in nominal terms like the pension cap. They are enforced twice. (1) At the input: each box's maximum is what is left of the combined allowance after the other two boxes (the LISA box is also limited to £4,000/yr), shown in the box's subtitle; only the box being edited is limited, and other boxes are never rewritten. (2) In the engine, as a backstop for saved plans and imported files that are already over the limit (their values load unchanged): `isaContributionsFor(p, age)` limits the LISA to £4,000/yr, then any excess over £20,000 combined comes off the Stocks & Shares ISA first, then the Cash ISA. The 25% bonus applies to the capped LISA figure only. **LISA contributions and the bonus stop once the person reaches age 50** (contributions apply while age < 50, so the last year is age 49 — slightly conservative, since the real rule runs to the 50th birthday). Allowance freed by the stop is not reassigned to the other ISAs. `computePotBreakdown()` uses the same helper so its contributions total still reconciles.
 
 ### 4.2 At retirement
 
@@ -307,6 +308,7 @@ Every figure below lives in one object, `UK_REFERENCE`, in `index.html` (tagged 
 | Money Purchase Annual Allowance | £10,000 (documentation only — can't trigger in this model, §4.3) | 2023/24 onwards | https://www.gov.uk/hmrc-internal-manuals/pensions-tax-manual/ptm056510 |
 | ISA allowance (Cash + Stocks & Shares + LISA combined) | £20,000 | 2026/27 | https://www.gov.uk/individual-savings-accounts |
 | LISA annual contribution limit | £4,000 (within the £20,000 above) | 2026/27 | https://www.gov.uk/lifetime-isa |
+| LISA last contribution age | 50 (contributions stop at the 50th birthday) | 2026/27 | https://www.gov.uk/lifetime-isa |
 | LISA government bonus | 25% of contributions | 2026/27 | https://www.gov.uk/lifetime-isa |
 | LISA minimum access age | 60 (no first-home exception modelled) | — | https://www.gov.uk/lifetime-isa |
 | Retirement Living Standards, one-person | Min £13,900 / Mod £32,700 / Comf £45,400 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
@@ -393,6 +395,7 @@ The engine was tested as a standalone module. Checks that pass:
 - Joint totals reconcile against the sum of individual pots
 - Depletion is detected correctly in a deliberately under-funded scenario
 - LISA contributions receive exactly a 25% government top-up before compounding
+- ISA/LISA caps: within-limit contributions are unchanged; the LISA is limited to £4,000/yr; over £20,000 combined, the excess comes off S&S ISA first then Cash ISA; the bonus applies to the capped LISA figure only; LISA contributions stop at age 50; per-box input maximum equals the remaining shared allowance
 - The LISA is never drawn before age 60, and becomes drawable from age 60 onward
 - Fixed drawdown order is respected: other savings, then Cash ISA, then Stocks & Shares ISA, then LISA
 - `migratePerson()` correctly maps an old single-ISA save onto the new sub-account shape, and is a no-op on an already-migrated save
@@ -483,7 +486,7 @@ The feedback Worker (§3.12) is hosted separately, on Cloudflare. It redeploys a
 4. **Growth is a fixed annual rate** with no sequence-of-returns risk or volatility modelling. A poor first decade of retirement is far more damaging than the same average return implies.
 5. **One inflation rate** applies to all spending categories; healthcare in particular tends to inflate faster. The same single rate also uprates State Pension and any DB pension (see #8).
 6. **Retirement Living Standards bands are not inflated forward** — they are compared against nominal future income, which flatters later years.
-7. **ISA/LISA contributions are not hard-capped** in the engine; the £20,000 combined and £4,000 LISA limits are warned about (§3.5), not enforced — unlike the pension allowance, which is a hard cap.
+7. **ISA/LISA caps are fixed and approximate.** The £20,000 and £4,000 limits are enforced (§4.1) but held flat in nominal terms, not uprated. LISA contributions stop at age 50 using whole years of age (last contributing year is 49), slightly earlier than the real 50th-birthday rule, and allowance freed by that stop isn't reassigned to other ISAs. The opening-age-40 rule is not modelled.
 8. **Single DB pension per person, simplified.** One Defined Benefit pension per person is supported (§3.11, §4.3), uprated by the household inflation rate (#5) rather than the scheme's own indexation (capped CPI, RPI, fixed, none). Not modelled: more than one DB pension per person (roadmap #31 — combine them by hand), per-scheme indexation (roadmap #32), commutation / a tax-free lump sum from the DB scheme, interaction with the Annual Allowance or Lump Sum Allowance, and survivor's pensions.
 9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan. Manual export/import (§3.7) can move a plan between devices or back it up, but there's no automatic sync.
 10. **No LISA first-home exception.** Real LISAs allow penalty-free access before 60 for a first home purchase; this tool has no house-purchase concept to hang that on, so the age-60 restriction is unconditional.
