@@ -141,7 +141,11 @@ function loadEngine(html) {
   // dbPensionGapYears returns a plain number.
   const dbPensionOf = (p) => JSON.parse(JSON.stringify(rawDbPensionOf(p)));
   const dbPensionGapYears = (p) => rawDbPensionGapYears(p);
+  // intent/033: ISA/LISA cap helpers return plain objects/numbers.
+  const isaContributionsFor = (p, age) => JSON.parse(JSON.stringify(sandbox.isaContributionsFor(p, age)));
+  const isaContributionMax = (p, field) => sandbox.isaContributionMax(p, field);
   return {
+    isaContributionsFor, isaContributionMax,
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
     taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
     dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput
@@ -151,12 +155,14 @@ function loadEngine(html) {
 let projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR;
 let taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE;
 let dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput;
+let isaContributionsFor, isaContributionMax;
 try {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
   ({
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
     taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
-    dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput
+    dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput,
+    isaContributionsFor, isaContributionMax
   } = loadEngine(html));
 } catch (err) {
   console.error('FATAL: could not extract a runnable projectJoint() from index.html');
@@ -987,9 +993,10 @@ check('computePotBreakdown() caps pension contributions at £60,000/year, and st
 
   const expectedContributions =
     pensionMonthly1 * 12 * years1 + p1.cashIsaContribution * 12 * years1 + p1.ssIsaContribution * 12 * years1 +
-      p1.lisaContribution * 1.25 * 12 * years1 +
+      0 + // intent/033: p1 is 60, past the LISA age-50 contribution stop
     pensionMonthly2 * 12 * years2 + p2.cashIsaContribution * 12 * years2 + p2.ssIsaContribution * 12 * years2 +
-      p2.lisaContribution * 1.25 * 12 * years2 + p2.otherSavings.reduce((s, a) => s + a.contribution * 12 * years2, 0);
+      0 + // intent/033: p2 is 50, at the LISA stop age, so no LISA contribution
+      p2.otherSavings.reduce((s, a) => s + a.contribution * 12 * years2, 0);
 
   assert.strictEqual(breakdown.contributions, expectedContributions);
 
@@ -1469,6 +1476,53 @@ check('formatNumber and parseNumberInput round-trip', () => {
   for (const n of [0, 25, 1000, 12548, 250000, 1234567.5]) {
     assert.strictEqual(parseNumberInput(formatNumber(n), -1, 0, 1e9), n);
   }
+});
+
+// intent/033: ISA and LISA hard caps.
+const isaP = (o) => ({ cashIsaContribution: 0, ssIsaContribution: 0, lisaContribution: 0, ...o });
+check('Contributions within the ISA and LISA limits are applied unchanged', () => {
+  const c = isaContributionsFor(isaP({ cashIsaContribution: 500, ssIsaContribution: 800, lisaContribution: 300 }), 30);
+  assert.deepStrictEqual(c, { cash: 500, ss: 800, lisa: 300 });
+});
+check('LISA is limited to its own £4,000/yr, before the combined allowance', () => {
+  const c = isaContributionsFor(isaP({ lisaContribution: 1000 }), 30);
+  assert.strictEqual(c.lisa, 4000 / 12);
+});
+check('Over the £20,000 combined allowance, the excess comes off S&S ISA first, then Cash ISA', () => {
+  const a = isaContributionsFor(isaP({ cashIsaContribution: 1000, ssIsaContribution: 1000, lisaContribution: 300 }), 30);
+  assert.strictEqual(a.lisa, 300);
+  assert.strictEqual(a.cash, 1000);
+  assert.ok(Math.abs(a.ss - (20000 / 12 - 300 - 1000)) < 1e-9);
+  const b = isaContributionsFor(isaP({ cashIsaContribution: 1800, ssIsaContribution: 500, lisaContribution: 0 }), 30);
+  assert.ok(Math.abs(b.cash - 20000 / 12) < 1e-9);
+  assert.strictEqual(b.ss, 0);
+});
+check('LISA contributions stop at age 50; the freed allowance is not reassigned', () => {
+  const p = isaP({ cashIsaContribution: 500, lisaContribution: 300 });
+  assert.strictEqual(isaContributionsFor(p, 49).lisa, 300);
+  assert.strictEqual(isaContributionsFor(p, 50).lisa, 0);
+  assert.strictEqual(isaContributionsFor(p, 50).cash, 500);
+});
+check('The LISA bonus is added to the capped LISA figure only', () => {
+  const s = { ...SCENARIO_G, person1: { ...SCENARIO_G.person1, lisaContribution: 1000, currentAge: 30 } };
+  const data = projectJoint(s);
+  const m = Math.pow(1 + 0.05, 1 / 12) - 1;
+  const capped = 4000 / 12;
+  const expected = Math.round(4000 * Math.pow(1 + m, 12) + capped * 1.25 * ((Math.pow(1 + m, 12) - 1) / m));
+  assert.strictEqual(data[1].p1Lisa, expected);
+});
+check('LISA contributions stop growing the balance once the person reaches 50', () => {
+  const s = { ...SCENARIO_G, person1: { ...SCENARIO_G.person1, currentAge: 49, lisaBalance: 0, lisaGrowth: 0 } };
+  const data = projectJoint(s);
+  assert.strictEqual(Math.round(data[1].p1Lisa), Math.round(300 * 1.25 * 12));
+  assert.strictEqual(data[2].p1Lisa, data[1].p1Lisa);
+});
+check('isaContributionMax leaves each box the shared allowance not used by the others', () => {
+  const p = isaP({ cashIsaContribution: 500, ssIsaContribution: 800, lisaContribution: 200 });
+  assert.strictEqual(isaContributionMax(p, 'cashIsaContribution'), Math.floor((20000 / 12 - 1000) * 100) / 100);
+  assert.strictEqual(isaContributionMax(p, 'lisaContribution'), Math.floor(Math.min(20000 / 12 - 1300, 4000 / 12) * 100) / 100);
+  assert.strictEqual(isaContributionMax(isaP({ ssIsaContribution: 1666 }), 'cashIsaContribution'), 0.66);
+  assert.strictEqual(isaContributionMax(isaP({ ssIsaContribution: 5000 }), 'cashIsaContribution'), 0);
 });
 
 // intent/026: the feedback form is pre-filled with APP_VERSION, which must

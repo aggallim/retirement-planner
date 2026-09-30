@@ -8,6 +8,25 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-09-30 — ISA and LISA hard caps (033)
+
+- Implements `intent/033-isa-lisa-hard-cap.md` (moved to `intent/done/`),
+  roadmap #4.
+- Input: each ISA contribution box is limited to what is left of the £20,000
+  combined allowance after the other two; the LISA box also to £4,000/yr.
+  Other boxes are never rewritten. Subtitle shows the remaining amount.
+- Engine: new `isaContributionsFor()` caps contributions (LISA first, excess
+  off S&S ISA then Cash ISA) and applies the LISA age-50 contribution stop;
+  `projectJoint()` and `computePotBreakdown()` both use it. Over-limit saved
+  plans load unchanged and are capped in the projection.
+- Calculation change: plans over the limits, or with LISA contributions past
+  50, now project lower ISA balances. The default/individual baseline is
+  unchanged.
+- Warnings reworded to say what is not counted; new warning when LISA
+  contributions stop at 50 before retirement.
+- Docs: §3.5, §4.1, §4.7, §5.4, §7 item 7. Cache and `APP_VERSION` v21 with
+  a `USER_CHANGELOG` entry. Tests added to `tests/test-engine.js`.
+
 ## 2026-09-29 — Input accessibility, number formatting and reliable saving (030, 031, 032)
 
 - Implements `intent/030-slider-accessible-names.md`,
