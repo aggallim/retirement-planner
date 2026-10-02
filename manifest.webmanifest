@@ -1,12 +1,12 @@
 {
   "name": "UK Retirement Planner",
   "short_name": "Retirement",
-  "description": "Personal UK retirement planning calculator",
+  "description": "Free UK retirement planning calculator: pensions, ISAs, State Pension and Income Tax. Your figures stay on your device.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#2563eb",
+  "background_color": "#f7f5f0",
+  "theme_color": "#283860",
   "icons": [
     {
       "src": "icon.svg",
