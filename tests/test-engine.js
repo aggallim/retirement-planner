@@ -144,7 +144,20 @@ function loadEngine(html) {
   // intent/033: ISA/LISA cap helpers return plain objects/numbers.
   const isaContributionsFor = (p, age) => JSON.parse(JSON.stringify(sandbox.isaContributionsFor(p, age)));
   const isaContributionMax = (p, field) => sandbox.isaContributionMax(p, field);
+  // 034 batch (intents 037-053): every new helper returns plain data, so one
+  // generic wrapper gives each the same cross-realm JSON round trip.
+  const plain = (name) => {
+    if (typeof sandbox[name] !== 'function') throw new Error(`Extraction sanity check failed: ${name} is not a function after eval`);
+    return (...a) => {
+      const r = sandbox[name](...a);
+      return r === null || typeof r !== 'object' ? r : JSON.parse(JSON.stringify(r));
+    };
+  };
+  const batch = {};
+  ['mortgageBalance', 'dbIndexFactor', 'dbPensionsOf', 'spendingPhaseFactor', 'livingStandardLevel', 'householdAtRetirement',
+    'planSummary', 'applyWhatIf', 'sensitivityAnalysis', 'runMonteCarlo', 'planForMode', 'planToEngineArgs'].forEach((n) => { batch[n] = plain(n); });
   return {
+    batch,
     isaContributionsFor, isaContributionMax,
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
     taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
@@ -156,13 +169,14 @@ let projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURR
 let taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE;
 let dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput;
 let isaContributionsFor, isaContributionMax;
+let batch;
 try {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
   ({
     projectJoint, migratePerson, findSupportableDelta, computePotBreakdown, CURRENT_YEAR,
     taxThresholdsFor, incomeTaxFor, lifetimeTaxTotals, computeTaxNotes, deflate, UK_REFERENCE,
     dbPensionOf, dbPensionGapYears, formatNumber, parseNumberInput,
-    isaContributionsFor, isaContributionMax
+    isaContributionsFor, isaContributionMax, batch
   } = loadEngine(html));
 } catch (err) {
   console.error('FATAL: could not extract a runnable projectJoint() from index.html');
@@ -1523,6 +1537,223 @@ check('isaContributionMax leaves each box the shared allowance not used by the o
   assert.strictEqual(isaContributionMax(p, 'lisaContribution'), Math.floor(Math.min(20000 / 12 - 1300, 4000 / 12) * 100) / 100);
   assert.strictEqual(isaContributionMax(isaP({ ssIsaContribution: 1666 }), 'cashIsaContribution'), 0.66);
   assert.strictEqual(isaContributionMax(isaP({ ssIsaContribution: 5000 }), 'cashIsaContribution'), 0);
+});
+
+
+// ---------------------------------------------------------------------------
+// 034 batch: intents 037-053. Every new engine input is opt-in; the
+// regression baseline above already proves that absent inputs change nothing.
+// ---------------------------------------------------------------------------
+const B = () => batch;
+const near = (a, b, tol = 1e-6) => assert.ok(Math.abs(a - b) <= tol, `${a} vs ${b}`);
+const couple = (p1, p2, hh = {}) => ({
+  inflationRate: 3, withdrawalRate: 4, annualExpenses: 40000, healthcareCosts: 0,
+  mortgagePayment: 0, mortgageYears: 0, ...hh,
+  person1: person({ name: 'A', currentAge: 50, retirementAge: 55, lifeExpectancy: 90, ...p1 }),
+  person2: p2 === null ? null : person({ name: 'B', currentAge: 50, retirementAge: 60, lifeExpectancy: 90, ...p2 })
+});
+
+// intent 038: mortgage balance with interest.
+check('mortgageBalance: 0% is payment x months; otherwise the annuity present value', () => {
+  near(B().mortgageBalance(1000, 120, 0), 120000);
+  const i = 0.045 / 12;
+  near(B().mortgageBalance(1000, 120, 4.5), 1000 * (1 - Math.pow(1 + i, -120)) / i);
+  assert.strictEqual(B().mortgageBalance(1000, 0, 4.5), 0);
+  assert.strictEqual(B().mortgageBalance(0, 120, 4.5), 0);
+});
+check('Mortgage interest changes only the balance shown, not the payments or the payoff year', () => {
+  const base = couple({}, null, { mortgagePayment: 1200, mortgageYears: 15 });
+  const flat = projectJoint(base);
+  const withRate = projectJoint({ ...base, mortgageRate: 4.5 });
+  assert.strictEqual(withRate[0].mortgage, -Math.round(B().mortgageBalance(1200, 180, 4.5)));
+  assert.ok(withRate[0].mortgage > flat[0].mortgage); // less owed (negative number closer to 0)
+  flat.forEach((r, k) => {
+    assert.strictEqual(withRate[k].targetExpenses, r.targetExpenses);
+    assert.strictEqual(withRate[k].mortgage === 0, r.mortgage === 0);
+  });
+});
+
+// intent 039: still-working partner's take-home pay.
+check('Take-home pay counts only while that person works after someone else has retired', () => {
+  const args = couple({}, { takeHomePay: 20000 });
+  const rows = projectJoint(args);
+  rows.forEach((r) => {
+    const someoneRetired = r.person1Age >= 55;
+    const p2Working = r.person2Age < 60;
+    const expected = someoneRetired && p2Working ? Math.round(20000 * Math.pow(1.03, r.year - CURRENT_YEAR)) : 0;
+    assert.strictEqual(r.workIncome || 0, expected, `year ${r.year}`);
+  });
+});
+check('Take-home pay reduces the savings draw by the same amount when savings fill the gap', () => {
+  const without = projectJoint(couple({ ssIsaBalance: 500000 }, {}));
+  const withPay = projectJoint(couple({ ssIsaBalance: 500000 }, { takeHomePay: 10000 }));
+  const y = without.findIndex((r) => r.person1Age === 56);
+  const drop = (without[y].isaWithdrawal + without[y].otherSavingsWithdrawal) - (withPay[y].isaWithdrawal + withPay[y].otherSavingsWithdrawal);
+  assert.ok(Math.abs(drop - withPay[y].workIncome) <= 1, `${drop} vs ${withPay[y].workIncome}`);
+  assert.strictEqual(withPay[y].incomeTax, without[y].incomeTax); // net pay isn't taxed
+});
+check('Take-home pay has no effect in individual mode', () => {
+  const a = projectJoint(couple({}, null));
+  const b = projectJoint(couple({ takeHomePay: 30000 }, null));
+  assert.deepStrictEqual(a, b);
+});
+
+// intent 049: spending phases and one-off costs.
+check('spendingPhaseFactor adds overlapping phases and never goes below zero', () => {
+  const phases = [{ fromAge: 60, toAge: 75, changePct: 15 }, { fromAge: 70, toAge: 80, changePct: -20 }];
+  assert.strictEqual(B().spendingPhaseFactor(phases, 59), 1);
+  near(B().spendingPhaseFactor(phases, 65), 1.15);
+  near(B().spendingPhaseFactor(phases, 72), 0.95);
+  near(B().spendingPhaseFactor(phases, 80), 0.8);
+  assert.strictEqual(B().spendingPhaseFactor([{ fromAge: 60, toAge: 90, changePct: -150 }], 70), 0);
+});
+check('Spending phases scale annual expenses only; one-off costs land in their year, inflated', () => {
+  const base = couple({}, null, { healthcareCosts: 2000 });
+  const plain = projectJoint(base);
+  const phased = projectJoint({ ...base, spendingPhases: [{ fromAge: 60, toAge: 64, changePct: 50 }], oneOffCosts: [{ age: 70, amount: 10000 }, { age: 52, amount: 99999 }] });
+  plain.forEach((r, k) => {
+    const age = r.person1Age;
+    const infl = Math.pow(1.03, r.year - CURRENT_YEAR);
+    let extra = 0;
+    if (age >= 55 && age >= 60 && age <= 64) extra += 40000 * 0.5 * infl;
+    if (age === 70) extra += 10000 * infl;
+    assert.ok(Math.abs(phased[k].targetExpenses - r.targetExpenses - extra) <= 1, `age ${age}`);
+  });
+  assert.ok(!phased.some((r) => r.person1Age === 52 && r.oneOffSpending)); // before retirement: ignored
+});
+
+// intent 052: property and downsizing.
+check('Downsizing releases sale - costs - new home - mortgage owed into Person 1\'s savings, and stops the mortgage', () => {
+  const property = { homeValue: 400000, growth: 3, downsize: true, downsizeAge: 60, newHomePct: 60, costsPct: 5 };
+  const args = couple({}, null, { mortgagePayment: 800, mortgageYears: 15, mortgageRate: 4, property });
+  const rows = projectJoint(args);
+  const k = rows.findIndex((r) => r.person1Age === 60);
+  const sale = 400000 * Math.pow(1.03, k);
+  const owed = B().mortgageBalance(800, (15 - k) * 12, 4);
+  const expected = sale - sale * 0.05 - sale * 0.6 - owed;
+  assert.strictEqual(rows[k].downsizeRelease, Math.round(expected));
+  assert.strictEqual(rows[k].mortgage, 0);
+  assert.ok(rows[k - 1].mortgage < 0);
+  const withoutMove = projectJoint({ ...args, property: { ...property, downsize: false } });
+  assert.ok(rows[k].p1OtherSavings - withoutMove[k].p1OtherSavings >= Math.round(expected) - 1);
+  assert.strictEqual(rows[k].homeValue, Math.round(sale * 0.6));
+});
+check('A move that would not cover the new home and costs is skipped', () => {
+  const property = { homeValue: 100000, growth: 0, downsize: true, downsizeAge: 60, newHomePct: 100, costsPct: 5 };
+  const rows = projectJoint(couple({}, null, { property }));
+  assert.ok(rows.some((r) => r.downsizeSkipped));
+  assert.ok(!rows.some((r) => r.downsizeRelease));
+  assert.strictEqual(rows[rows.length - 1].homeValue, 100000);
+});
+
+// intent 053: multiple DB pensions and indexation.
+check('dbIndexFactor: inflation, none, fixed, capped CPI and RPI', () => {
+  const s = (indexation, indexRate) => ({ indexation, indexRate });
+  near(B().dbIndexFactor(s('inflation'), 10, 3), Math.pow(1.03, 10));
+  assert.strictEqual(B().dbIndexFactor(s('none'), 10, 3), 1);
+  near(B().dbIndexFactor(s('fixed', 5), 10, 3), Math.pow(1.05, 10));
+  near(B().dbIndexFactor(s('cpiCapped', 2.5), 10, 3), Math.pow(1.025, 10));
+  near(B().dbIndexFactor(s('cpiCapped', 5), 10, 3), Math.pow(1.03, 10));
+  const wedgeYears = UK_REFERENCE.rpi.alignedFromYear - CURRENT_YEAR;
+  near(B().dbIndexFactor(s('rpi'), 10, 3), Math.pow(1.04, wedgeYears) * Math.pow(1.03, 10 - wedgeYears));
+  near(B().dbIndexFactor(s('rpi'), 2, 3), Math.pow(1.04, 2));
+});
+check('Extra DB schemes add to their owner\'s DB income and tax; planForMode strips them in Simple mode', () => {
+  const p1 = { dbPensionAmount: 6000, dbPensionStartAge: 60, dbPensions: [{ id: 'x', name: 'Two', amount: 4000, startAge: 65, indexation: 'none' }] };
+  const args = couple(p1, null);
+  const rows = projectJoint(args);
+  const at = (age) => rows.find((r) => r.person1Age === age);
+  assert.strictEqual(at(62).p1DbPension, Math.round(6000 * Math.pow(1.03, at(62).year - CURRENT_YEAR)));
+  assert.strictEqual(at(66).p1DbPension, Math.round(6000 * Math.pow(1.03, at(66).year - CURRENT_YEAR) + 4000));
+  const simple = B().planForMode(args, false);
+  assert.strictEqual(simple.person1.dbPensions, undefined);
+  const simpleRows = projectJoint(simple);
+  assert.strictEqual(simpleRows.find((r) => r.person1Age === 66).p1DbPension, Math.round(6000 * Math.pow(1.03, at(66).year - CURRENT_YEAR)));
+  assert.deepStrictEqual(B().planForMode(args, true), JSON.parse(JSON.stringify(args)));
+});
+check('A default-indexation DB scheme projects exactly as before 053', () => {
+  const a = projectJoint(couple({ dbPensionAmount: 9000, dbPensionStartAge: 62 }, null));
+  const b = projectJoint(couple({ dbPensionAmount: 9000, dbPensionStartAge: 62, dbPensionIndexation: 'inflation' }, null));
+  assert.deepStrictEqual(a, b);
+});
+
+// intent 051: Monte Carlo.
+check('Zero return shocks reproduce the deterministic projection exactly', () => {
+  const args = couple({ cashIsaBalance: 5000, otherSavings: [{ id: 'o', name: 'o', balance: 1000, contribution: 50, growth: 2 }] }, {});
+  const zero = projectJoint({ ...args, returnShocks: projectJoint(args).map(() => ({ growth: 0, cash: 0 })) });
+  assert.deepStrictEqual(zero, projectJoint(args));
+});
+check('A positive growth shock raises the pension; a cash shock moves only cash-like accounts', () => {
+  const args = couple({ cashIsaBalance: 10000 }, null);
+  const base = projectJoint(args);
+  const up = projectJoint({ ...args, returnShocks: [{ growth: 5, cash: 0 }] });
+  assert.ok(up[1].p1Pension > base[1].p1Pension);
+  assert.strictEqual(up[1].p1CashIsa, base[1].p1CashIsa);
+  const cashUp = projectJoint({ ...args, returnShocks: [{ growth: 0, cash: 5 }] });
+  assert.ok(cashUp[1].p1CashIsa > base[1].p1CashIsa);
+  assert.strictEqual(cashUp[1].p1Pension, base[1].p1Pension);
+});
+check('runMonteCarlo is deterministic, and with no volatility matches the fixed-rate verdict', () => {
+  const args = couple({}, null);
+  const a = B().runMonteCarlo(args, { runs: 50 });
+  const b = B().runMonteCarlo(args, { runs: 50 });
+  assert.deepStrictEqual(a, b);
+  assert.ok(a.successRate >= 0 && a.successRate <= 1);
+  a.fan.forEach((r) => assert.ok(r.p10 <= r.p50 && r.p50 <= r.p90));
+  const flat = B().runMonteCarlo(args, { runs: 5, growthVolatility: 0, cashVolatility: 0 });
+  assert.strictEqual(flat.successRate, B().planSummary(args).succeeds ? 1 : 0);
+});
+
+// intent 037: household figures and the today's-money Living Standard.
+check('livingStandardLevel compares a today\'s-money income with the bands', () => {
+  const b = UK_REFERENCE.plsa.single;
+  assert.strictEqual(B().livingStandardLevel(b.minimum - 1, false), 'Below Minimum');
+  assert.strictEqual(B().livingStandardLevel(b.minimum, false), 'Minimum');
+  assert.strictEqual(B().livingStandardLevel(b.moderate, false), 'Moderate');
+  assert.strictEqual(B().livingStandardLevel(UK_REFERENCE.plsa.couple.comfortable, true), 'Comfortable');
+});
+check('householdAtRetirement: nominal State Pension, savings at the withdrawal rate, and components that add up', () => {
+  const args = couple({ retirementAge: 68, statePensionAge: 67 }, null);
+  const rows = projectJoint(args);
+  const h = B().householdAtRetirement(args, rows);
+  const retRow = rows.find((r) => r.person1Age === 68);
+  assert.strictEqual(h.statePension, retRow.p1StatePension); // nominal, not the today's-money input
+  assert.ok(h.statePension > 12548);
+  assert.strictEqual(h.savingsIncome, Math.round((retRow.p1Isa + retRow.p1OtherSavings) * 0.04));
+  assert.strictEqual(h.annualIncome, h.pensionIncome + h.savingsIncome + h.statePension + h.dbPension - h.incomeTax);
+  const s = B().planSummary(args);
+  near(s.annualIncomeToday, h.annualIncome / Math.pow(1.03, h.year - CURRENT_YEAR));
+});
+
+// intents 040, 041: What if? and What matters most.
+check('applyWhatIf with no changes leaves the projection unchanged; retirement changes stay within limits', () => {
+  const args = couple({}, {});
+  assert.deepStrictEqual(projectJoint(B().applyWhatIf(args, {})), projectJoint(args));
+  const later = B().applyWhatIf(args, { retireDelta: 30 });
+  assert.strictEqual(later.person1.retirementAge, 75);
+  const earlier = B().applyWhatIf(args, { retireDelta: -30 });
+  assert.strictEqual(earlier.person1.retirementAge, 51);
+  const more = B().applyWhatIf(args, { spendPct: 10, extraPension: 100, growthDelta: 1 });
+  assert.strictEqual(more.annualExpenses, 44000);
+  assert.strictEqual(more.person1.pensionContribution, args.person1.pensionContribution + 100);
+  assert.strictEqual(more.person2.ssIsaGrowth, args.person2.ssIsaGrowth + 1);
+});
+check('sensitivityAnalysis returns all nine changes, sorted by the size of the change', () => {
+  const rows = B().sensitivityAnalysis(couple({ pensionPot: 900000, ssIsaBalance: 200000 }, null));
+  assert.strictEqual(rows.length, 9);
+  for (let k = 1; k < rows.length; k++) assert.ok(Math.abs(rows[k - 1].endWealthTodayChange) >= Math.abs(rows[k].endWealthTodayChange));
+  const less = rows.find((r) => r.key === 'spendLess');
+  const more = rows.find((r) => r.key === 'spendMore');
+  assert.ok(less.endWealthTodayChange > 0 && more.endWealthTodayChange < 0);
+});
+check('planToEngineArgs fills defaults for older plans and honours hasPartner', () => {
+  const a = B().planToEngineArgs({ hasPartner: false, person1: person({}), person2: person({}) }, true);
+  assert.strictEqual(a.person2, null);
+  assert.strictEqual(a.mortgageRate, 4.5);
+  assert.strictEqual(a.property, null);
+  const b = B().planToEngineArgs({ hasPartner: true, person1: person({}), person2: person({}), spendingPhases: [{ fromAge: 60, toAge: 70, changePct: 10 }] }, false);
+  assert.ok(b.person2);
+  assert.strictEqual(b.spendingPhases, undefined);
 });
 
 // intent/026: the feedback form is pre-filled with APP_VERSION, which must
