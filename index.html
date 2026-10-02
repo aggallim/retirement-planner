@@ -5570,7 +5570,7 @@ function RetirementCalculator() {
     className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Lock, {
     className: "h-3.5 w-3.5 flex-shrink-0"
-  }), "Your data stays on this device — no account, no upload, no bank connection, no analytics."), FEEDBACK_HREF && /*#__PURE__*/React.createElement("p", {
+  }), ACCOUNTS_ENABLED ? "Your plan stays on this device — no upload, no bank connection, no analytics. An account is only needed for Advanced mode." : "Your data stays on this device — no account, no upload, no bank connection, no analytics."), FEEDBACK_HREF && /*#__PURE__*/React.createElement("p", {
     className: "text-sm mt-2"
   }, /*#__PURE__*/React.createElement("a", {
     href: FEEDBACK_HREF,
