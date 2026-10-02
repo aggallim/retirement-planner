@@ -3138,6 +3138,28 @@ function planForMode(args, advanced) {
   const { spendingPhases, oneOffCosts, property, ...rest } = args;
   return { ...rest, person1: strip(args.person1), person2: strip(args.person2) };
 }
+// A saved plan (Export format, a scenario, or the share JSON) as engine
+// arguments, with the app's defaults for fields an older plan lacks. Used
+// by scenarios, the share export and the MCP server.
+const PLAN_DEFAULTS = { annualExpenses: 35000, healthcareCosts: 2000, mortgagePayment: 0, mortgageYears: 0, mortgageRate: 4.5, inflationRate: 3, withdrawalRate: 4 };
+function planToEngineArgs(plan, advanced) {
+  const v = k => plan[k] !== undefined ? plan[k] : PLAN_DEFAULTS[k];
+  const prop = plan.property && plan.property.homeValue > 0 ? plan.property : null;
+  return planForMode({
+    inflationRate: v('inflationRate'),
+    withdrawalRate: v('withdrawalRate'),
+    annualExpenses: v('annualExpenses'),
+    healthcareCosts: v('healthcareCosts'),
+    mortgagePayment: v('mortgagePayment'),
+    mortgageYears: v('mortgageYears'),
+    mortgageRate: v('mortgageRate'),
+    spendingPhases: plan.spendingPhases || [],
+    oneOffCosts: plan.oneOffCosts || [],
+    property: prop,
+    person1: migratePerson(plan.person1),
+    person2: plan.hasPartner && plan.person2 ? migratePerson(plan.person2) : null
+  }, advanced);
+}
 // ENGINE-EXTRACT-END
 
 // Scroll+highlight for any assumption anchor (spec/012-assumptions-panel.md
@@ -3170,6 +3192,170 @@ const nameValue = (name, value, isCouple) => isCouple ? `${name}: ${value}` : va
 // with formatCurrency's same whole-pound precision.
 const formatToday = v => `≈ ${formatCurrency(Math.round((v || 0) / 100) * 100)}`;
 
+
+/* ---------------- Share with your AI assistant (intent 042) ---------------- */
+const APP_URL = 'https://aggallim.github.io/retirement-planner/';
+const MCP_SETUP_URL = 'https://github.com/aggallim/retirement-planner/blob/main/tools/mcp/README.md';
+// Removes everything a person typed as a name. Ages stay: the app has no
+// dates of birth. Scenarios are summarised separately, never embedded.
+function anonymisePlan(plan) {
+  const person = (p, i) => p && {
+    ...p,
+    name: `Person ${i}`,
+    dbPensionName: p.dbPensionName ? 'DB scheme 1' : '',
+    otherSavings: (p.otherSavings || []).map((a, k) => ({ ...a, id: `other-${k + 1}`, name: `Other savings ${k + 1}` })),
+    dbPensions: (p.dbPensions || []).map((d, k) => ({ ...d, id: `db-${k + 2}`, name: `DB scheme ${k + 2}` }))
+  };
+  const { scenarios, ...rest } = plan;
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    ...rest,
+    person1: person(plan.person1, 1),
+    person2: person(plan.person2, 2),
+    oneOffCosts: (plan.oneOffCosts || []).map((c, k) => ({ ...c, name: `One-off cost ${k + 1}` }))
+  };
+}
+const INDEXATION_LABELS = {
+  inflation: 'follows the inflation assumption',
+  cpiCapped: 'CPI capped at',
+  rpi: 'RPI',
+  fixed: 'fixed at',
+  none: 'no increases'
+};
+const indexationText = s => s.indexation === 'cpiCapped' || s.indexation === 'fixed' ? `${INDEXATION_LABELS[s.indexation]} ${s.indexRate}%` : INDEXATION_LABELS[s.indexation] || INDEXATION_LABELS.inflation;
+function buildShareMarkdown({ plan, engineArgs, summary, advanced, version }) {
+  const fc = formatCurrency;
+  const isCouple = !!engineArgs.person2;
+  const anon = anonymisePlan(plan);
+  const h = summary.household;
+  const L = [];
+  const table = (rows) => {
+    L.push('| Item | Value |', '|---|---|');
+    rows.forEach(([k, v]) => L.push(`| ${k} | ${v} |`));
+    L.push('');
+  };
+  L.push('# My retirement plan (UK Retirement Planner)', '');
+  L.push(`> Exported from UK Retirement Planner (${APP_URL}) on ${new Date().toISOString().slice(0, 10)}, app version ${version}. These figures are an illustrative projection under the assumptions listed below. They are not financial advice. Names have been removed.`, '');
+  L.push('## Notes for the AI assistant', '');
+  L.push('- The person sharing this wants help understanding their own retirement projection.');
+  L.push('- The figures come from a deterministic model with fixed growth and inflation rates. Treat them as one projection under stated assumptions, not a forecast.');
+  L.push('- Amounts are in pounds sterling. "Today\'s money" means deflated to 2026 at the plan\'s own inflation rate. Other amounts are in the pounds of the year shown.');
+  L.push('- Explain trade-offs and what the numbers depend on. For a personal recommendation, the person should speak to a regulated financial adviser.');
+  L.push(`- If you can use the UK Retirement Planner MCP server, the JSON at the end can be passed to its \`project_retirement_plan\` tool to recalculate. Setup: ${MCP_SETUP_URL}`, '');
+  L.push('## Headline results', '');
+  table([
+    ['Verdict', summary.succeeds ? 'On track: the money lasts beyond the plan end' : `Needs attention: the money runs out in ${summary.fundedTo}`],
+    ['Plan runs', `${summary.firstRet} (first retirement) to ${summary.planEnd} (plan end)`],
+    [`Total savings when ${isCouple ? 'both are ' : ''}retired (${h.year})`, fc(h.totalPot)],
+    ['First-year sustainable income after tax', `${fc(h.annualIncome)} in ${h.year} pounds (≈ ${fc(Math.round(summary.annualIncomeToday / 100) * 100)} in today's money)`],
+    ['Income breakdown (first year)', `Pension ${fc(h.pensionIncome)}, savings ${fc(h.savingsIncome)}, State Pension ${fc(h.statePension)}, DB pension ${fc(h.dbPension)}, Income Tax −${fc(h.incomeTax)}`],
+    [`Living Standard (${UK_REFERENCE.plsa.publisher} ${UK_REFERENCE.plsa.year} bands, compared in today's money)`, summary.livingStandard],
+    [`Money left at plan end (${summary.planEnd})`, `≈ ${fc(Math.round(summary.endWealthToday / 100) * 100)} in today's money`],
+    ['Estimated Income Tax over retirement', `${fc(summary.lifetimeTax.nominal)} (≈ ${fc(Math.round(summary.lifetimeTax.today / 100) * 100)} in today's money)`]
+  ]);
+  L.push('## Household assumptions', '');
+  const hh = [
+    ['Planning as', isCouple ? 'a couple' : 'an individual'],
+    ['Inflation', `${engineArgs.inflationRate}% a year`],
+    ['Withdrawal rate', `${engineArgs.withdrawalRate}%: the first-year pension withdrawal is this share of the pot, then raised with inflation each year; the sustainable-income figure applies it to every pot`],
+    ['Annual spending (excluding mortgage), today\'s money', fc(engineArgs.annualExpenses)],
+    ['Annual healthcare costs, today\'s money', fc(engineArgs.healthcareCosts)],
+    ['Mortgage', engineArgs.mortgagePayment > 0 && engineArgs.mortgageYears > 0 ? `${fc(engineArgs.mortgagePayment)}/month for ${engineArgs.mortgageYears} more years at ${engineArgs.mortgageRate || 0}%` : 'none']
+  ];
+  table(hh);
+  [engineArgs.person1, engineArgs.person2].filter(Boolean).forEach((p, i) => {
+    L.push(`## Person ${i + 1}`, '');
+    const rows = [
+      ['Current age', p.currentAge],
+      ['Retirement age', p.retirementAge],
+      ['Plans to age (life expectancy)', p.lifeExpectancy],
+      ['Pension pot', `${fc(p.pensionPot)}, paying in ${fc(p.pensionContribution)}/month plus ${fc(p.employerContribution)}/month from an employer, growth ${p.pensionGrowth}%`],
+      ['Takes 25% tax-free lump sum', p.takeLumpSum ? 'yes' : 'no'],
+      ['Cash ISA', `${fc(p.cashIsaBalance)}, ${fc(p.cashIsaContribution)}/month, growth ${p.cashIsaGrowth}%`],
+      ['Stocks & Shares ISA', `${fc(p.ssIsaBalance)}, ${fc(p.ssIsaContribution)}/month, growth ${p.ssIsaGrowth}%`],
+      ['Lifetime ISA', `${fc(p.lisaBalance)}, ${fc(p.lisaContribution)}/month, growth ${p.lisaGrowth}%`]
+    ];
+    (p.otherSavings || []).forEach((a, k) => rows.push([`Other savings ${k + 1}`, `${fc(a.balance)}, ${fc(a.contribution)}/month, growth ${a.growth}%`]));
+    rows.push(['State Pension', `${fc(p.statePensionAmount)}/year from age ${p.statePensionAge} (today's money)`]);
+    dbPensionsOf(p).forEach((s, k) => rows.push([`DB pension ${k + 1}`, `${fc(s.amount)}/year from age ${s.startAge}, ${indexationText(s)} (today's money)`]));
+    if (p.inheritanceAmount > 0) rows.push(['Expected inheritance', `${fc(p.inheritanceAmount)} at age ${p.inheritanceAge}`]);
+    if (isCouple && p.takeHomePay > 0) rows.push(['Take-home pay while partner is retired', `${fc(p.takeHomePay)}/year (today's money)`]);
+    table(rows);
+  });
+  if (advanced) {
+    const adv = [];
+    (engineArgs.spendingPhases || []).forEach(ph => adv.push(['Spending phase', `${ph.changePct > 0 ? '+' : ''}${ph.changePct}% from Person 1's age ${ph.fromAge} to ${ph.toAge}`]));
+    (engineArgs.oneOffCosts || []).forEach((c, k) => adv.push([`One-off cost ${k + 1}`, `${fc(c.amount)} (today's money) at Person 1's age ${c.age}`]));
+    const pr = engineArgs.property;
+    if (pr) adv.push(['Home', `${fc(pr.homeValue)} today, growing ${pr.growth}%/yr${pr.downsize ? `; downsizing at Person 1's age ${pr.downsizeAge} to a home costing ${pr.newHomePct}% of the sale price, with ${pr.costsPct}% moving costs` : ''}`]);
+    if (adv.length) {
+      L.push('## Advanced settings', '');
+      table(adv);
+    }
+    L.push('## Year by year', '', 'Amounts in the pounds of each year.', '');
+    L.push(`| Year | Age${isCouple ? 's' : ''} | Spending | State Pension | DB pension | Pension draw | Savings draw | Earnings | Income Tax | Pensions | ISAs | Other savings |`);
+    L.push('|---|---|---|---|---|---|---|---|---|---|---|---|');
+    summary.projections.filter(r => r.year <= summary.planEnd).forEach(r => {
+      L.push(`| ${r.year} | ${r.person1Age}${isCouple ? `/${r.person2Age}` : ''} | ${fc(r.targetExpenses)} | ${fc(r.statePension)} | ${fc(r.dbPension)} | ${fc(r.pensionWithdrawal)} | ${fc(r.isaWithdrawal + r.otherSavingsWithdrawal)} | ${fc(r.workIncome || 0)} | ${fc(r.incomeTax)} | ${fc(r.totalPension)} | ${fc(r.totalIsa)} | ${fc(r.totalOtherSavings)} |`);
+    });
+    L.push('');
+    const scen = plan.scenarios || [];
+    if (scen.length) {
+      L.push('## Saved scenarios', '', '| Scenario | Money lasts | Income after tax (today\'s money) | Living Standard | Left at plan end (today\'s money) |', '|---|---|---|---|---|');
+      scen.forEach((sc, k) => {
+        const s = planSummary(planToEngineArgs(sc.plan, true));
+        L.push(`| Scenario ${k + 1} | ${lastsText(s)} | ≈ ${fc(Math.round(s.annualIncomeToday / 100) * 100)} | ${s.livingStandard} | ≈ ${fc(Math.round(s.endWealthToday / 100) * 100)} |`);
+      });
+      L.push('');
+    }
+  }
+  L.push('## How the model works (summary)', '');
+  L.push('- Growth compounds monthly at fixed rates; contributions stop at each person\'s retirement. Pension contributions are capped at the £60,000 annual allowance; ISA contributions at the £20,000 allowance (LISA £4,000, with a 25% bonus).');
+  L.push('- At retirement, an optional tax-free lump sum (25%, up to £268,275) moves into the Stocks & Shares ISA. Pension withdrawals follow the 4% rule style: a fixed first-year amount raised with inflation.');
+  L.push('- Spending is paid from State Pension and DB pensions first, then pension withdrawals, then savings in this order: other savings, Cash ISA, Stocks & Shares ISA, Lifetime ISA (from 60).');
+  L.push(`- Income Tax uses ${UK_REFERENCE.incomeTax.region} rates for ${UK_REFERENCE.taxYear}, per person, with thresholds frozen until 2030/31 and then raised with inflation.`);
+  L.push('- Not modelled: investment volatility (except an optional simulation), Scottish tax rates, care costs beyond the healthcare input, and inheritance tax.', '');
+  L.push('## Questions you could ask', '');
+  L.push('1. Explain in plain English what this projection says about my retirement.');
+  L.push('2. Which of my assumptions does this projection depend on most, and how sensitive is it to them?');
+  L.push('3. What are the main risks this model does not capture for someone in my position?');
+  L.push('4. Walk me through the year my money is under most pressure and why.');
+  L.push('5. What questions should I take to a regulated financial adviser about this plan?', '');
+  L.push('## Plan data (JSON, names removed)', '', '```json', JSON.stringify(anon, null, 2), '```', '');
+  return L.join('\n');
+}
+const ShareView = memo(function ShareView({ getShareText, advancedOn }) {
+  const [text] = useState(() => getShareText());
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+  const download = () => {
+    const blob = new Blob([text], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `retirement-plan-for-ai-${new Date().toISOString().slice(0, 10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  return React.createElement("div", { className: "space-y-3" },
+    React.createElement("p", { className: "text-xs text-slate-600" }, "Copy a summary of your plan to paste into an AI assistant you already use (such as Claude or ChatGPT), so you can ask it questions about your plan. This app doesn't send it anywhere."),
+    React.createElement("p", { className: "text-xs text-slate-600" }, "It has no names, but it does include your figures, and it goes wherever you paste it."),
+    React.createElement("textarea", { readOnly: true, value: text, "aria-label": "Plan summary for your AI assistant", className: "w-full h-32 text-[11px] font-mono rounded-lg border border-slate-200 bg-slate-50 p-2 text-slate-700" }),
+    React.createElement("div", { className: "flex gap-2" },
+      React.createElement("button", { type: "button", onClick: copy, className: "flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700" }, copied ? 'Copied' : 'Copy'),
+      React.createElement("button", { type: "button", onClick: download, className: "flex-1 px-3 py-2 rounded-lg font-semibold text-sm bg-white border-2 border-slate-200 text-slate-700 hover:border-slate-400" }, "Download .md")),
+    React.createElement("p", { className: "text-xs text-slate-500" }, advancedOn ? "Includes the year-by-year table and your saved scenarios." : "Advanced mode adds a year-by-year table and your saved scenarios."),
+    React.createElement("p", { className: "text-xs text-slate-500" }, "Using an assistant that supports MCP? ", React.createElement("a", { href: MCP_SETUP_URL, target: "_blank", rel: "noopener noreferrer", className: "text-blue-600 font-semibold" }, "Connect the planner's calculator ↗")));
+});
 
 /* ---------------- Mode switch and modal (intent 044) ---------------- */
 const ModeSwitch = memo(function ModeSwitch({ mode, onChange }) {
@@ -3507,11 +3693,15 @@ function countAdvancedSettings(plan) {
 
 /* ---------------- Settings menu: export / import (module level + memoized) ---------------- */
 const THEME_OPTIONS = [['system', Monitor, 'System'], ['light', Sun, 'Light'], ['dark', Moon, 'Dark']];
+const SETTINGS_TITLES = { menu: 'Export & import', whatsnew: "What's new", share: 'Share with your AI assistant', account: 'Account' };
 const SettingsMenu = memo(function SettingsMenu({
   onExport,
   onImport,
   theme,
-  onThemeChange
+  onThemeChange,
+  getShareText,
+  advancedOn,
+  accountState
 }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState('menu');
@@ -3564,7 +3754,7 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "flex items-center justify-between"
   }, React.createElement("h3", {
     className: "text-sm font-bold text-slate-900"
-  }, view === 'whatsnew' ? "What's new" : 'Export & import'), React.createElement("button", {
+  }, SETTINGS_TITLES[view]), React.createElement("button", {
     onClick: () => setOpen(false),
     "aria-label": "Close"
   }, React.createElement(X, {
@@ -3575,7 +3765,7 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5"
   }), React.createElement("p", {
     className: "text-xs text-slate-500"
-  }, "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file or send feedback yourself.")), React.createElement("div", {
+  }, ACCOUNTS_ENABLED ? "Everything you enter stays in this browser. No upload, no bank connection, and no analytics or tracking. An account is only needed for Advanced mode, and it never holds your plan figures." : "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file or send feedback yourself.")), React.createElement("div", {
     className: "space-y-2"
   }, React.createElement("p", {
     className: "text-xs text-slate-500"
@@ -3619,6 +3809,16 @@ const SettingsMenu = memo(function SettingsMenu({
   }))))), React.createElement("div", {
     className: "pt-2 border-t border-slate-100"
   }, React.createElement("button", {
+    onClick: () => setView('share'),
+    className: "text-sm text-blue-600 font-medium"
+  }, "Share with your AI assistant")), ACCOUNTS_ENABLED && React.createElement("div", {
+    className: "pt-2 border-t border-slate-100"
+  }, React.createElement("button", {
+    onClick: () => setView('account'),
+    className: "text-sm text-blue-600 font-medium"
+  }, accountState.status === 'signedIn' ? 'Account' : 'Sign in (for Advanced mode)')), React.createElement("div", {
+    className: "pt-2 border-t border-slate-100"
+  }, React.createElement("button", {
     onClick: () => setView('whatsnew'),
     className: "text-sm text-blue-600 font-medium"
   }, `What's new (${USER_CHANGELOG[0].version})`)), FEEDBACK_HREF && React.createElement("div", {
@@ -3628,7 +3828,18 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "text-sm text-blue-600 font-medium"
   }, "Send feedback"), React.createElement("p", {
     className: "text-xs text-slate-500"
-  }, "Sends only what you type here to the developer. Your plan figures aren't included."))) : React.createElement(React.Fragment, null, React.createElement("button", {
+  }, "Sends only what you type here to the developer. Your plan figures aren't included."))) : view === 'share' ? React.createElement(React.Fragment, null, React.createElement("button", {
+    onClick: () => setView('menu'),
+    className: "text-sm text-blue-600 font-medium"
+  }, "← Back"), React.createElement(ShareView, {
+    getShareText,
+    advancedOn
+  })) : view === 'account' ? React.createElement(React.Fragment, null, React.createElement("button", {
+    onClick: () => setView('menu'),
+    className: "text-sm text-blue-600 font-medium"
+  }, "← Back"), React.createElement(AccountPanel, {
+    accountState
+  })) : React.createElement(React.Fragment, null, React.createElement("button", {
     onClick: () => setView('menu'),
     className: "text-sm text-blue-600 font-medium"
   }, "← Back"), React.createElement("div", {
@@ -3958,6 +4169,11 @@ function RetirementCalculator() {
   const incomeToday = deflate(household.annualIncome, household.year, d.infl);
   const livingStandard = useMemo(() => livingStandardFor(incomeToday, isCouple), [incomeToday, isCouple]);
   const summary = useMemo(() => planSummary(engineArgs, projections), [engineArgs, projections]);
+  // Built only when the Share view opens; the ref keeps the callback stable
+  // so the memoised Settings menu doesn't re-render on every drag.
+  const shareRef = useRef(null);
+  shareRef.current = () => buildShareMarkdown({ plan, engineArgs, summary, advanced: advancedOn, version: APP_VERSION });
+  const getShareText = useCallback(() => shareRef.current(), []);
   const potBreakdown = useMemo(() => computePotBreakdown(isCouple ? [d.p1, d.p2] : [d.p1], projections, household.year), [d.p1, d.p2, isCouple, projections, household.year]);
   const longevity = useMemo(() => {
     const firstRet = Math.min(CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge) : Infinity);
@@ -4188,7 +4404,10 @@ function RetirementCalculator() {
     onExport: handleExport,
     onImport: handleImport,
     theme: theme,
-    onThemeChange: setTheme
+    onThemeChange: setTheme,
+    getShareText: getShareText,
+    advancedOn: advancedOn,
+    accountState: accountState
   }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setHasPartner(v => !v),
     className: `flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm ${hasPartner ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-white border-2 border-blue-200 text-blue-700 hover:border-blue-400'}`
