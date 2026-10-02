@@ -27,7 +27,8 @@ It answers three questions:
 | Projection span | Current age through to age 100 (or the life expectancy, if that is higher), anchored on calendar years |
 | Tax year basis | 2026/27 allowances; Retirement Living Standards 2026 (Pensions UK) |
 | Income tax | Rest-of-UK bands, thresholds frozen to 2030/31 then inflation-uprated |
-| Data storage | Browser localStorage on-device only. Nothing leaves the device. The optional feedback page (§3.12) sends only what the user types into it, and only when they press Send. |
+| Modes | **Simple** (default, the core model) and **Advanced** (beta: scenarios, Monte Carlo, phased spending, downsizing, multiple DB pensions, comparisons, a printable report) — §3.15 |
+| Data storage | Browser localStorage on-device only. Plan figures never leave the device. The optional feedback page (§3.12) sends only what the user types into it, and only when they press Send. The optional account (§3.16), off until configured, holds an email address, a consent choice and an access flag, never plan figures. |
 
 ---
 
@@ -65,6 +66,7 @@ A sophisticated, production-grade UK retirement calculator with exceptional desi
 - [x] Smooth, non-jerky sliders
 - [x] Package as an installable phone app
 - [x] "Send feedback" page that files private GitHub issues, with daily triage (intent 026)
+- [x] Roadmap batch, decided autonomously at the owner's request (intents 034–056): Living Standard compared in today's money, mortgage interest, a still-working partner's pay, "What if?" sliders, "What matters most", share with your AI assistant, AI/search discoverability, Simple/Advanced modes, magic-link accounts with marketing consent, scenarios, pension vs ISA vs cash, bridge to State Pension, phased and one-off spending, printable report, Monte Carlo, property and downsizing, multiple DB pensions with indexation, a Simple-mode cap on extra savings accounts, an MCP server and a brand identity
 
 ---
 
@@ -81,7 +83,8 @@ Tap **Add a partner** in the header (or the dashed card in the left column). Thi
 In joint mode the layout changes:
 - A **Retirement Years** card shows both retirement years side by side
 - **Per-person breakdown cards** show each person's pension, ISA and total at their own retirement
-- The wealth chart stacks each person separately — blue/green for person one, teal/lime for person two
+- The wealth chart stacks each person separately — ink/green for person one, teal/lime for person two
+- Each person gets a **Take-home Pay (Annual)** slider (§3.3, §4.5)
 - Living standard switches to the **two-person** Retirement Living Standards bands
 
 Both names are editable — tap the name to rename.
@@ -90,13 +93,13 @@ Both names are editable — tap the name to rename.
 
 | Section | Per person or shared? | Notes |
 |---|---|---|
-| Ages and retirement timing | Per person | Shows the calendar year they retire |
-| Savings | Per person | Cash ISA, Stocks & Shares ISA, LISA, and any number of free-form "other savings" accounts |
+| Ages and retirement timing | Per person | Shows the calendar year they retire. In couple mode, also **Take-home Pay (Annual)**: pay after tax and the person's own contributions, in today's money, used only in years when the other partner has retired and this one hasn't (§4.5) |
+| Savings | Per person | Cash ISA, Stocks & Shares ISA, LISA, and free-form "other savings" accounts (up to 3 in Simple mode, any number in Advanced; §3.15) |
 | Pension | Per person | Includes employer contributions and lump sum choice |
 | Defined Benefit (DB) Pension | Per person | Optional — one DB pension each (§3.11) |
 | State Pension and inheritance | Per person | Each person can have a different State Pension age |
 | Living costs | Shared | Entered once for the household |
-| Mortgage | Shared | Single joint liability |
+| Mortgage | Shared | Single joint liability. **Mortgage Interest Rate** (0–10%, default 4.5%, shown while there is a mortgage) sets the outstanding balance; its subtitle shows the balance owed today (§4.4) |
 | Inflation and withdrawal rate | Shared | Applied across the whole plan |
 
 > **Annual Expenses excludes the mortgage.** The mortgage is tracked separately so it can correctly disappear from spending once it is paid off. The subtitle under the field shows the combined total as a sanity check.
@@ -110,7 +113,8 @@ Both names are editable — tap the name to rename.
 - **"Explain this" (Pot card)** — a small expandable control under the Pot card's caption. Expands to show how the headline Pot figure is made up: Starting balance, Contributions, Growth, and Withdrawals, all in nominal terms and always showing all four lines even when one is £0. This reconstruction is read from the same inputs and per-year projection data as the rest of the app, not a separate calculation of the pot itself — the four figures always sum exactly to the Pot card's headline number.
 - **Wealth Projection** — stacked pension and ISA balances by calendar year, with mortgage debt shown below the zero line. Dashed reference lines mark each retirement and the mortgage-free year. Hovering any point also shows a "Total (today's money)" row, netting in mortgage debt as-is alongside the per-series nominal figures.
 - **Retirement Income vs Expenses** — income split by source (pension drawdown, ISA, State Pension, and — only when someone has one — DB pension as its own pink series, never merged into the State Pension bar) against the dashed target-expenses line, with each year's estimated **Income Tax** shown as a grey bar below the zero line so the bars visibly net down. Where the bars above the line, less the tax below it, fall short of the target line, the plan is under-funded in that year. Hovering any point also shows a "Total after tax (today's money)" row: the income sources minus the tax, excluding the target-expenses reference line (it's a spending target, not income). Under the chart, one line gives the **estimated Income Tax over retirement** (first retirement to the plan horizon), its "≈ £X in today's money" equivalent — each year's tax deflated from its own year and summed, not the total deflated once — and a "2026/27 tax year" label. A neutral blue **Tax notes** panel under that line lists plain facts about the plan's tax (§3.10); it is hidden when there are none.
-- **Living Standard gauge** — positions household income after tax against the Retirement Living Standards bands (Pensions UK). The big income figure above the gauge carries the same today's-money line as the summary cards, and the sub-line beneath it now reads "Pension £X · State £Y · DB £W · Tax −£Z" (the DB entry appears only when a DB pension is being paid in that year, the Tax entry only when tax is due), which adds up to the big figure. A permanent caveat line under the gauge notes that the income figure is shown in future £ while the bands themselves are today's-money figures, so the two aren't directly comparable (see limitation #6 below).
+- **Living Standard gauge** — positions household income after tax, **in today's money**, against the Retirement Living Standards bands (Pensions UK), which are themselves today's-money figures (intent 037). The big figure is the today's-money income; the line under it gives the same income in the pounds of that year. The sub-line reads "Pension £X · Savings £S · State £Y · DB £W · Tax −£Z" in that year's pounds (each entry appears only when non-zero), which adds up to the future-£ figure. The Living Standard level on the summary card, the sticky banner and the "below minimum" warning all use the same today's-money comparison.
+- **Sustainable income** (Income card, sticky banner, gauge) is the first year everyone is retired: the withdrawal rate applied to each person's pension pot at their own retirement (taxed) and to their ISAs and other savings (tax-free), plus State Pension and DB pensions already being paid in that year (the projection's own figures for that year), minus Income Tax (§4.8).
 
 ### 3.5 Warnings
 
@@ -121,7 +125,7 @@ The red banner appears when any of these trigger:
 - A person still contributing to a LISA will reach age 50 before retiring (LISA contributions stop at 50)
 - A gap exists between retirement and State Pension age
 - A gap exists between retirement and a person's DB pension start age (only when that person has a DB pension)
-- Household income (after tax) falls below the Retirement Living Standards minimum
+- Household income (after tax, in today's money) falls below the Retirement Living Standards minimum
 - Funds are projected to run out before the plan horizon
 
 The banner has a **×** close control. Dismissing it hides the whole banner — not individual warning lines — and persists across reloads on that device. It's tied to the exact set of warnings shown at the time: if any input change alters which warnings apply (a figure changes, a warning appears or disappears), the banner reappears automatically with the new set. This is separate from the *"This file contains your personal financial figures..."* warning in §3.7, which is shown every time regardless of prior dismissal — that one is a data-handling caution aimed at whoever currently has the Data panel open, not necessarily the person who saw it last time, so a persistent dismiss wouldn't be appropriate there the way it is for this planning-condition banner.
@@ -187,6 +191,56 @@ A **Send feedback** item in the **⚙ Data** panel, below What's new, and a smal
 
 Behind the page, a small Cloudflare Worker files each submission as an issue in a **private** GitHub repo, not this public one. The optional email goes into that private issue. A daily Claude Code routine labels and comments on new issues (triage only) and never copies an email address anywhere. Setup, spam limits and triage rules: `tools/feedback/README.md` and `tools/feedback/TRIAGE.md`.
 
+### 3.13 "What if…?" and "What matters most"
+
+Two collapsible cards sit under "Your projection assumes...". Both are closed by default and only calculate while open.
+
+- **What if…?** (intent 040) — four sliders applied together to a copy of your plan: retire earlier or later (−5 to +5 years, one shared change for a couple, within the usual 50–75 limits), change spending (−30% to +30%), change investment growth (−3 to +3 points on every account) and an extra pension contribution (£0–£1,000 a month per person, within the annual allowance). A table shows **Your plan** beside **What if** for: money lasts, pot at retirement, first-year income after tax in today's money, Living Standard and money left at the plan end in today's money; changed figures are highlighted. **Apply to my plan** (after a confirm) writes the retirement, spending and contribution changes into your inputs; growth is not applied because it is set by the profile buttons. **Reset** zeroes the sliders, which are never saved.
+- **What matters most in your projection** (intent 041) — nine one-at-a-time changes (retire 2 years later/earlier, spend 10% less/more, growth 1 point higher/lower, inflation 1 point higher, £100 a month more into each pension, plan for 5 more years), ranked by the change in money left at the plan end (today's money), each with a bar and, where it moves, the change in how many years the money lasts. Headed "These are not recommendations"; every row describes the model's response only.
+
+### 3.14 Share with your AI assistant
+
+**⚙ Data → Share with your AI assistant** (intent 042) builds a Markdown summary of the plan to paste into an assistant the user already uses (Claude, ChatGPT…), with **Copy** and **Download .md**. It contains: a header (illustrative, not advice, names removed), notes for the assistant, headline results, every input, a methodology summary, five example questions and the plan as JSON in the Export format with names removed (so an assistant with the MCP server, §3.18, can recalculate it). **No personal identifiers:** people become "Person 1/2", DB schemes, savings accounts and one-off costs get generic labels. Advanced mode adds a year-by-year table and a summary of each saved scenario. The view says the text goes wherever it is pasted. The app itself never sends it anywhere.
+
+### 3.15 Simple and Advanced modes
+
+A **Simple | Advanced (beta)** switch sits in the header (intent 044). **Simple** is the core model and everything above. **Advanced** adds:
+
+- *Inputs:* spending phases and one-off costs (in Living Costs), a **Home & downsizing** card, extra DB pensions and per-scheme yearly increases (in each DB pension section), and unlimited other-savings accounts (Simple allows 3 per person; plans that already have more keep them all — intent 054).
+- *Tools* (cards under the Living Standard): **Report (PDF)**, **Scenarios**, **Varied returns (Monte Carlo)**, **Pension, ISA or cash?** and **Bridge to State Pension** (§3.17).
+
+Advanced inputs are saved with the plan but **only apply in Advanced mode**: in Simple mode the projection ignores them and a blue note says how many Advanced settings are switched off, with a link to switch. The mode is a device display preference (like the theme), never part of an exported plan.
+
+**Access.** While accounts are not configured, or `advancedRequiresAccount` is false, Advanced is an open beta preview. When it is true, choosing Advanced without access opens the sign-in dialog (§3.16).
+
+### 3.16 Accounts (optional, for Advanced)
+
+Off until a Supabase project is set in `account-config.js` (intent 045; setup in `tools/accounts/README.md`); until then no account UI appears anywhere and the privacy wording still says "no account". When on:
+
+- **⚙ Data → Sign in (for Advanced mode)** (or the dialog when locked Advanced is chosen) asks for an email address and offers an **unticked** "Email me product news and offers (optional)" box (roadmap #14). A magic link is emailed; opening it on the same device signs in and the app strips the tokens from the address bar.
+- The account panel shows the email, whether Advanced is unlocked, the marketing choice (changeable) and **Sign out**.
+- The account holds an email address, the consent choice and an access flag. **Plan figures are never sent.** The Data panel and footer privacy lines change to say an account is only needed for Advanced mode.
+
+### 3.17 Advanced tools
+
+- **Spending phases** (intent 049) — rows of from age / to age / change % (−50 to +50) on Person 1's timeline, applied to annual expenses only (not healthcare or the mortgage); overlaps add. Presets: "Active early years (+15% to 75)" and "Slower later years (−20% from 80)".
+- **One-off costs** (intent 049) — name, Person 1's age and an amount in today's money, inflation-uprated and added to that year's spending; only from the first retirement onward.
+- **Home & downsizing** (intent 052) — home value today, house price growth (default 3%), and optionally a move at Person 1's chosen age to a home costing a % of the sale price (default 60%) with moving costs (default 5%). The card states the cash released (also in today's money), whether the move had to be skipped because the sale wouldn't cover it, and the projected home value at the end. The home is never counted as savings.
+- **More DB pensions and yearly increases** (intent 053) — each DB scheme, including the first, can follow the inflation assumption (default), CPI capped at a rate, RPI, a fixed rate or no increases; **+ Add another DB pension** adds schemes with name, amount and start age.
+- **Scenarios** (intent 046) — save the current inputs under a name (up to 10), rename, load (after a confirm; saved scenarios are kept) or delete. Tick up to three to compare with the current plan in a table (money lasts, pot at retirement, income after tax and Living Standard in today's money, money left at the end, lifetime tax) and a chart of total savings over time. Scenarios are saved with the plan and go through Export/Import.
+- **Pension, ISA or cash?** (intent 047) — an extra monthly amount (cost to you, £25–£2,000) for either person, put into a pension (grossed up 25% by basic-rate relief), a Stocks & Shares ISA or a Cash ISA (limited to the remaining allowance, noted when it bites) or other savings at the Cash ISA rate. A table compares income after tax, money lasts, money left and lifetime tax, with the best figure per column in bold — described as what the model calculates, not what to do.
+- **Bridge to State Pension** (intent 048) — for each person retiring before State Pension age: the bridge years, the total drawn from pensions and savings across the household bridge period (today's money), and a year-by-year table of spending, guaranteed income, earnings, pension drawn, tax, from savings and savings left.
+- **Varied returns (Monte Carlo)** (intent 051) — **Run 1,000 simulations** reruns the plan with each year's growth varied (§4.9). Shows the share of runs where the money lasts to the plan end, the middle depletion year among runs that ran out, and a fan chart (10th–90th percentile band and the middle outcome) of total savings in today's money. A note appears if inputs change after a run.
+- **Report (PDF)** (intent 050) — opens a full-page, always-light report and the browser's print dialog ("Save as PDF"): summary, both charts, every input (with names, since the file is the user's), a year-by-year table and a methodology summary. Print CSS hides the app.
+
+### 3.18 MCP server
+
+An MCP server (intent 055; `tools/mcp/README.md`) lets an AI assistant that supports the Model Context Protocol run the planner's own engine on a plan in the Export format: `project_retirement_plan`, `what_if`, `what_matters_most`, `get_methodology`, `get_uk_reference_figures`. It is stateless and keeps nothing. The Share view (§3.14) links to its setup.
+
+### 3.19 Discoverability
+
+The page carries a meta description, Open Graph tags, JSON-LD (`WebApplication`, `FAQPage`) and a static summary inside `#root` that React replaces on load, so crawlers that don't run JavaScript still see what the tool does. `llms.txt` and `llms-full.txt` (the full methodology) describe the tool for AI assistants; `robots.txt` allows every crawler and points at `sitemap.xml` (intent 043). No analytics or tracking were added.
+
 ---
 
 ## 4. Financial technicals
@@ -223,7 +277,8 @@ yearWithdrawal = initialWithdrawal × (1 + inflation) ^ yearsRetired
 
 Spending is funded in this order each year:
 
-1. **Guaranteed income: State Pension + DB pension** — State Pension begins at each person's State Pension age; a DB pension begins at that person's DB start age. Both are inflation-uprated from today by the household rate and pooled into one figure; there is no ordering between them (both are non-depletable, already-promised income)
+1. **Guaranteed income: State Pension + DB pension** — State Pension begins at each person's State Pension age; a DB pension begins at that person's DB start age. State Pension is inflation-uprated from today by the household rate; each DB scheme by its own indexation (household rate by default; §4.3 "Defined Benefit (DB) pension"). They are pooled into one figure; there is no ordering between them (both are non-depletable, already-promised income)
+1a. **Take-home pay** of a partner who is still working while the other has retired (couple mode, §4.5) — net pay, so not taxed again
 2. **Pension drawdown** — the sustainable amount above, capped at the remaining pot
 3. **Income tax** — each person's pension draw + State Pension + DB pension, taxed against their own allowance; tax reduces net income, and the gap is funded from savings
 4. **Savings** — top up whatever gap remains, drawn in a **fixed priority order**: other savings first, then Cash ISA, then Stocks & Shares ISA, then the **LISA** — and the LISA is only drawable once the person turns **60** (no first-home exception is modelled; before 60 it is excluded from funding the gap entirely, though it keeps accruing contributions, bonus and growth). This order is shown in the app's Assumptions panel so it's never left implicit.
@@ -250,7 +305,7 @@ additional = max(0, taxable - ART)
 tax        = basic × 20% + higher × 40% + additional × 45%
 
 dbPension = age >= dbStartAge ? dbAmount × (1 + inflation) ^ years : 0   // exactly like State Pension
-gap = max(0, targetExpenses - (statePension + dbPension + pensionDraw - tax))  // funded from savings tiers
+gap = max(0, targetExpenses - (statePension + dbPension + takeHomePay + pensionDraw - tax))  // funded from savings tiers
 ```
 
 - **Freeze, then inflation.** Thresholds are kept at today's amounts through 2030/31 (to 5 April 2031, as announced), then rise each year with the household inflation input. All four thresholds move together — including the £100,000 taper threshold and £125,140, which in law aren't indexed — so the Personal Allowance still reaches zero exactly at the additional-rate threshold every year. Thresholds and tax are not rounded inside the calculation; rows round per field.
@@ -262,7 +317,17 @@ gap = max(0, targetExpenses - (statePension + dbPension + pensionDraw - tax))  /
 
 #### Defined Benefit (DB) pension
 
-One DB pension per person (`dbPensionName`, `dbPensionAmount`, `dbPensionStartAge` on the person object; all optional — `dbPensionOf()` reads absent fields as amount 0, start age 65). The user enters an already-promised annual income, so the engine models it exactly like the State Pension: paid from its start age, uprated from today by the household inflation input (not the scheme's own indexation — limitation #5/#8), taxed as that person's income, and pooled with State Pension as guaranteed income ahead of the savings tiers. Deliberately **not** modelled, because there is no factual basis in the inputs to model them: commutation / a tax-free lump sum from the DB scheme (scheme-specific factors — approximate with Expected Inheritance if needed); DB accrual against the Annual Allowance (16× test) or crystallisation against the Lump Sum Allowance (20× valuation); and survivor's pensions (the tool has no death-triggered mechanic anywhere).
+One DB pension per person in Simple mode (`dbPensionName`, `dbPensionAmount`, `dbPensionStartAge` on the person object; all optional — `dbPensionOf()` reads absent fields as amount 0, start age 65). Advanced mode (intent 053) adds `dbPensions: [{ id, name, amount, startAge, indexation, indexRate }]` for more schemes and `dbPensionIndexation` / `dbPensionIndexRate` for the first one. `dbPensionsOf(p)` returns every scheme with amount > 0; the engine sums them per person. The user enters an already-promised annual income in today's money, paid from its start age, taxed as that person's income, and pooled with State Pension as guaranteed income ahead of the savings tiers. Uprating from today, `dbIndexFactor(scheme, y, inflation)`:
+
+```javascript
+inflation (default)  (1 + inflation)^y            // identical to State Pension, so pre-053 plans are unchanged
+cpiCapped            (1 + min(inflation, cap))^y
+fixed                (1 + rate)^y
+none                 1
+rpi                  (1 + inflation + 1pt)^w × (1 + inflation)^(y − w),  w = min(y, 2030 − 2026)
+```
+
+RPI is modelled as running 1 percentage point above the inflation input until 2030 and equal to it afterwards, because RPI is being aligned with CPIH from February 2030 (`UK_REFERENCE.rpi`). The increase applies to the today's-money amount from today; deferred revaluation and pension-in-payment increases are not modelled separately. In Simple mode `planForMode()` strips `dbPensions` and the indexation fields, so only the first scheme at the household rate counts. Deliberately **not** modelled, because there is no factual basis in the inputs to model them: commutation / a tax-free lump sum from the DB scheme (scheme-specific factors — approximate with Expected Inheritance if needed); DB accrual against the Annual Allowance (16× test) or crystallisation against the Lump Sum Allowance (20× valuation); and survivor's pensions (the tool has no death-triggered mechanic anywhere).
 
 #### Annual allowance and MPAA
 
@@ -271,17 +336,29 @@ The £60,000 pension annual allowance is already a hard cap in the engine (§4.1
 ### 4.4 Expenses and inflation
 
 ```javascript
-targetExpenses = (annualExpenses + healthcare) × (1 + inflation) ^ years
-                 + mortgagePayment × 12   [while the mortgage runs]
+targetExpenses = annualExpenses × phaseFactor(p1Age) × (1 + inflation) ^ years
+                 + healthcare × (1 + inflation) ^ years
+                 + mortgagePayment × 12                 [while the mortgage runs]
+                 + Σ oneOff.amount × (1 + inflation) ^ years   [one-offs at p1Age, Advanced]
+phaseFactor(age) = max(0, 1 + Σ changePct of phases with fromAge ≤ age ≤ toAge)   [Advanced; 1 otherwise]
 ```
 
-Non-mortgage spending inflates; mortgage payments stay flat until the debt clears, then drop out entirely.
+Non-mortgage spending inflates; mortgage payments stay flat until the debt clears, then drop out entirely. Spending only starts at the first retirement, so spending phases and one-off costs before then have no effect (the one-off age box starts at retirement age). Phases and one-offs are keyed on Person 1's age (intent 049).
+
+**Mortgage balance (intent 038).** The payment and years left are the user's inputs; the outstanding balance shown on the Wealth chart is the present value of the remaining monthly payments at the Mortgage Interest Rate, `mortgageBalance(payment, months, rate)`:
+
+```javascript
+i = rate / 12;  n = months left at the start of the row year
+balance = i > 0 ? payment × (1 − (1 + i)^−n) / i : payment × n
+```
+
+At 0% this is the old straight line. Payments and the payoff year do not depend on the rate. Saved plans without the field load with 4.5%; the engine treats an absent `mortgageRate` as 0, so the regression baseline is unchanged.
 
 ### 4.5 Joint-planning model
 
 > Each person's pension and ISA grow and are drawn **independently**, using their own ages and retirement dates. Shared living costs and the mortgage are a **single joint liability**, funded from combined pots from the moment the **first** person retires.
 
-The still-working partner's salary is **not modelled**. From the first retirement onward, full household costs are drawn from savings. This is deliberately cautious — in reality a working partner's income would offset much of that spending, so the tool understates how long funds last where retirement dates differ significantly.
+**A still-working partner's take-home pay (intent 039).** In couple mode each person can enter `takeHomePay` (annual, today's money: pay after tax and their own pension and savings contributions). It counts only in years when someone in the household has retired and this person hasn't, rises with the household inflation rate (no real pay growth), and pays for spending after guaranteed income and before pension drawdown and savings. Pay above what the household spends is not saved, and it is never taxed again. Rows carry `workIncome`, `p1WorkIncome` and `p2WorkIncome` only when it is in use (so the baseline row shape is unchanged), and the income chart shows an "Earnings" bar. Left at £0 (the default) the old, deliberately cautious behaviour applies: from the first retirement onward, full household costs are drawn from savings. In individual mode it has no effect, because spending only starts at retirement.
 
 The projection is anchored on **calendar years** so that differing ages align correctly across all charts.
 
@@ -313,11 +390,61 @@ Every figure below lives in one object, `UK_REFERENCE`, in `index.html` (tagged 
 | LISA minimum access age | 60 (no first-home exception modelled) | — | https://www.gov.uk/lifetime-isa |
 | Retirement Living Standards, one-person | Min £13,900 / Mod £32,700 / Comf £45,400 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
 | Retirement Living Standards, two-person | Min £22,500 / Mod £45,400 / Comf £62,700 | 2026 (Pensions UK, formerly the PLSA); after tax, excluding housing costs, outside London | https://www.retirementlivingstandards.org.uk/details |
+| RPI–CPI wedge for RPI-linked DB schemes (Advanced) | +1 percentage point over the inflation input until 2030, then 0 (RPI aligned with CPIH from February 2030) | Modelling assumption from the published reform | https://www.gov.uk/government/consultations/a-response-to-the-consultation-on-the-reform-to-retail-prices-index-rpi-methodology |
 | Default life expectancy (new/reset plans) | 81 (mean of UK period life expectancy at birth 79.1 male and 83.0 female, rounded) | ONS national life tables, UK 2022 to 2024 | https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/nationallifetablesunitedkingdom/2022to2024 |
 
-No new reference figures are needed for DB pensions: the amount is a user input, and its yearly increase reuses the household inflation input rather than any published index (a deliberate simplification — see §4.3 and limitation #8).
+No reference figures are needed for a default DB pension: the amount is a user input, and its yearly increase reuses the household inflation input. Advanced-mode RPI indexation uses the RPI row above. The Monte Carlo volatilities (§4.9) and the mortgage-rate default (4.5%) are modelling assumptions, not reference figures, so they live in code constants (`MONTE_CARLO`, `DEFAULT_MORTGAGE_RATE`) rather than `UK_REFERENCE`.
 
-The Retirement Living Standards are the cost of each lifestyle; meeting them needs enough **after-tax** income, which is why the app compares them with after-tax household income. State Pension age is rising from 66 to 67, phased from April 2026.
+The Retirement Living Standards are the cost of each lifestyle; meeting them needs enough **after-tax** income, which is why the app compares them with after-tax household income, in today's money (§4.8). State Pension age is rising from 66 to 67, phased from April 2026.
+
+### 4.8 Headline figures and the Living Standard
+
+`householdAtRetirement(args, projections)` (engine span) computes the summary-card figures for `bothYear`, the first year everyone is retired; `planSummary(args)` wraps it with the verdict fields and is shared by the summary cards, What if, What matters most, scenarios, the comparison, the share export, the report and the MCP server, so none of them can disagree.
+
+```javascript
+per person i:
+  pensionIncome_i = pensionPot_i at own retirement row × withdrawalRate        // taxable
+  savingsIncome_i = (ISAs_i + otherSavings_i) at own retirement row × withdrawalRate   // tax-free (037 addendum)
+  sp_i, db_i      = the projection's own p{i}StatePension / p{i}DbPension for bothYear (nominal)
+  tax_i           = incomeTaxFor(pensionIncome_i + sp_i + db_i, thresholds(bothYear))
+annualIncome      = Σ round(components) − round(Σ tax)                      // future £ of bothYear
+incomeToday       = annualIncome / (1 + inflation)^(bothYear − 2026)
+livingStandard    = livingStandardLevel(incomeToday, isCouple)              // vs today's-money bands
+```
+
+Intent 037 fixed two problems that only showed once the comparison was like-for-like: State Pension and DB pension used to be today's-money input amounts added to a future-£ pension figure, and "sustainable income" ignored ISAs and other savings (including the tax-free lump sum the model moves into the Stocks & Shares ISA). The projection engine itself is unchanged by both fixes.
+
+### 4.9 Monte Carlo (Advanced)
+
+`projectJoint()` accepts an optional `returnShocks` array indexed by projection year: `{ growth, cash }` percentage-point changes to that year's growth rates (`growth` → pensions, Stocks & Shares ISA, LISA; `cash` → Cash ISA and other savings, including downsizing proceeds). Absent or zero shocks reproduce the deterministic projection exactly. `runMonteCarlo(args, opts)`:
+
+```javascript
+MONTE_CARLO = { runs: 1000, growthVolatility: 12, cashVolatility: 1, seed: 20261002 }
+for each run: shock_y = { growth: N(0,1) × 12, cash: N(0,1) × 1 } for every year   // mulberry32 + Box–Muller
+successRate  = share of runs where planSucceeds(rows, firstRet, planEnd)
+fan          = per year ≤ planEnd: 10th / 50th / 90th percentile of total savings, deflated to today's money
+medianDepletionYear = middle depletion year among runs that ran out by planEnd
+```
+
+Shocks are independent from year to year and shared by both people. The fixed seed makes results repeatable for the same plan. The volatilities are illustrative assumptions, stated in the card.
+
+### 4.10 Property and downsizing (Advanced)
+
+`projectJoint({ property })`, with `property = { homeValue, growth, downsize, downsizeAge, newHomePct, costsPct }` (absent or `homeValue` 0 = no property). The home value grows at `growth` each year. In the year Person 1 reaches `downsizeAge`, if `downsize`:
+
+```javascript
+sale    = home value that year
+release = sale − sale × costsPct − sale × newHomePct − mortgageBalance(owed that year)
+if release ≥ 0: release joins Person 1's other savings as "Downsizing proceeds" (growth = Person 1's Cash ISA rate,
+                drawn in the first tier); the mortgage is repaid and its payments stop; home value = new home cost
+else:           no move is modelled (row flag downsizeSkipped)
+```
+
+The home is never counted in savings, the verdict or depletion. Rows carry `homeValue` (and `downsizeRelease` in the move year) only when a property is entered.
+
+### 4.11 What if, What matters most and the allocation comparison
+
+All three run the unchanged engine on modified copies of the plan. `applyWhatIf(args, changes)` applies `retireDelta` (shared, clamped to each person's 50/current-age+1 to 75 range, with life expectancy kept at least one year after retirement), `spendPct` (annual expenses), `growthDelta` (every account, including other savings), `extraPension` (added to each person's own pension contribution; the engine's annual-allowance cap still applies), `lifeDelta` and `inflationDelta`. `sensitivityAnalysis()` runs the nine `SENSITIVITY_CHANGES`, measuring money left at the **base** plan end (except the longer-life row, measured at its own end) and the change in the year money runs out. `allocationOptions()` (display layer) builds the four comparison plans: pension contribution + amount × 1.25 (basic-rate relief at source); S&S or Cash ISA contribution + min(amount, remaining allowance from `isaContributionMax`); or a new other-savings account at the Cash ISA rate.
 
 ---
 
@@ -327,8 +454,9 @@ The Retirement Living Standards are the cost of each lifestyle; meeting them nee
 
 - **React 18** with hooks — no state management library
 - **Recharts** for all three visualisations
-- **Tailwind CSS** for styling — the inlined stylesheet is a one-time, pre-generated build containing only the utility classes the app actually used at build time, not a runtime compiler. A Tailwind class name that was never used anywhere in the original source (e.g. `min-w-0`, `break-words`) has **no CSS behind it** if added to the JSX later — it silently does nothing. Adding a not-yet-present utility means hand-writing its rule (matching Tailwind's own output) into the custom rules already inlined in the component's `<style>` block, alongside `.tabular`/`.gradient-text`/etc.
-- **Fraunces** (serif headings) paired with **Inter Tight** (body) via Google Fonts
+- **Tailwind CSS** for styling — the inlined stylesheet is pre-generated, not a runtime compiler, so a class with no CSS behind it silently does nothing. Since intent 036 it is regenerated from the app script by the dev-only `tools/tailwind/` (`npm install && npm run build`), which safelists every class from the original build so the output is always a superset. **Run it after adding Tailwind classes** and commit the rewritten `index.html`; there is still no build step to deploy. Its config also holds the brand palette (intent 056: Tailwind's `blue` scale is replaced by "ink", so every `blue-*` class is brand ink) and softer shadows. Dark-mode overrides remain hand-written `.dark` rules in the component's `<style>` block. Dynamic class names built from strings aren't seen by the scanner — write them out in full.
+- **Fraunces** (serif headings and the wordmark) paired with **Inter Tight** (body) via Google Fonts
+- **Brand** (intent 056): ink navy (`#283860`/`#3a518f`), teal for the partner, a marigold accent in the sunrise mark (`icon.svg`, also inlined as `BrandMark`), warm paper background (`#f7f5f0`; dark `#0b1020`)
 - Single `.jsx` file, roughly 750 lines, precompiled and inlined into `index.html`
 
 ### 5.2 Architecture
@@ -341,8 +469,18 @@ projectJoint()          pure function — the entire financial engine
   └─ returns one row per calendar year
 lifetimeTaxTotals()     nominal + today's-money tax over retirement (uses deflate())
 computeTaxNotes()       first-year tax facts per person (data only)
-dbPensionOf()           one person's DB pension with defaults for absent fields
+dbPensionOf()           one person's first DB pension with defaults for absent fields
+dbPensionsOf()          every DB scheme a person has, with indexation (053)
+dbIndexFactor()         uprating factor for one scheme (053)
 dbPensionGapYears()     retirement-to-DB-start gap for the warning banner
+mortgageBalance()       present value of remaining mortgage payments (038)
+spendingPhaseFactor()   spending-phase multiplier at Person 1's age (049)
+householdAtRetirement() summary-card household figures (037)
+planSummary()           every headline result for one plan (shared everywhere)
+applyWhatIf() / sensitivityAnalysis()   What if and What matters most (040, 041)
+runMonteCarlo()         seeded simulation over returnShocks (051)
+planForMode()           strips Advanced-only inputs in Simple mode (044)
+planToEngineArgs()      saved plan / scenario / share JSON -> engine args (046, 055)
 
 RetirementCalculator()  state, derived memos, layout
   ├─ SliderWithInput    memoised, module-level
@@ -350,8 +488,21 @@ RetirementCalculator()  state, derived memos, layout
   │   └─ DbPensionInputs memoised, module-level
   ├─ WealthChart        memoised
   ├─ IncomeChart        memoised
-  └─ TaxNotesPanel      memoised, module-level (wording from taxNoteText())
+  ├─ TaxNotesPanel      memoised, module-level (wording from taxNoteText())
+  ├─ CollapsibleCard    memoised shell for the optional panels; children render only while open
+  │   ├─ WhatIfBody, WhatMattersBody                      (040, 041)
+  │   └─ ScenariosBody, MonteCarloBody, AllocationBody, BridgeBody   (Advanced)
+  ├─ PhasedSpendingInputs, PropertyInputs, ExtraDbPensions, NumberField   (Advanced inputs)
+  ├─ ModeSwitch, Modal, AccountPanel (+ useAccount() hook)  (044, 045)
+  ├─ SettingsMenu views: menu, Share (ShareView + buildShareMarkdown), Account, What's new
+  └─ ReportView         portal on document.body for printing (050)
 ```
+
+**Plan state (034 batch).** `PERSISTED_FIELDS` gained `mortgageRate`, `spendingPhases`, `oneOffCosts`, `property` and `scenarios`. The component builds one memoised `plan` object from its state, read by auto-save, Export, scenarios and the share export; `applyPlanFields()` is the single tolerant setter used by Import, loading a scenario and What if's Apply. All derived figures read one memoised `engineArgs` (already passed through `planForMode()`), so Simple mode never sees Advanced inputs.
+
+**Accounts (intent 045).** `account-config.js` (`window.ACCOUNT_CONFIG`, cached by `sw.js`) holds the Supabase URL, the public anon key and `advancedRequiresAccount`. `accountApi` calls Supabase's REST endpoints with `fetch` (no SDK); `useAccount()` reads a magic-link return from the URL hash once, strips it with `history.replaceState`, keeps the session under `ukRetirementPlanner.session.v1`, refreshes it when expired and loads the `profiles` row. `advancedAccessFor(account)` is the gate. Schema, row-level security and setup: `tools/accounts/`.
+
+**MCP server (intent 055).** `tools/mcp/worker/` is a stateless Cloudflare Worker speaking MCP's Streamable HTTP transport with JSON responses (POST `/mcp`, JSON-RPC 2.0, no sessions, no storage). `tools/mcp/build-engine.mjs` copies the `ENGINE-EXTRACT` spans and `llms-full.txt` into `worker/src/engine.generated.js`, so it runs the app's own engine; `tests/test-mcp-worker.mjs` fails if that copy is stale. `.github/workflows/deploy-mcp-worker.yml` deploys it on `main`.
 
 **Feedback (intent 026).** `feedback-config.js` sets `window.FEEDBACK_ENDPOINT`, the feedback Worker's URL. It's loaded by both `index.html` and `feedback.html`, and listed in the `sw.js` cache. In `index.html`, `APP_VERSION` and the derived `FEEDBACK_HREF` (`feedback.html#v=<APP_VERSION>`, or `''` when the endpoint is empty) are module-level constants just above `USER_CHANGELOG`, and both entry points render only when `FEEDBACK_HREF` is non-empty. `APP_VERSION` must equal the `sw.js` `CACHE` suffix; `tests/test-engine.js` fails if they differ. The version travels in the URL hash rather than a query string so the service worker's cache key stays `feedback.html`.
 
@@ -436,6 +587,20 @@ The built PWA was additionally rendered in a headless browser to confirm it boot
 - a failed send shows the error and keeps the text
 - all at desktop and phone widths, in light and dark mode, with no horizontal scroll
 
+**034 batch (intents 035–056)** — `tests/test-engine.js` (20 new checks, 74 in total):
+- Mortgage: `mortgageBalance` is payment × months at 0% and the annuity present value otherwise; a rate changes only the balance, never `targetExpenses` or the payoff year
+- Take-home pay counts exactly in years when someone has retired and that person hasn't, inflation-uprated; it reduces the savings draw one-for-one and isn't taxed; it has no effect in individual mode
+- `spendingPhaseFactor` adds overlapping phases and floors at zero; phases scale annual expenses only; one-offs land in their year, inflated, and are ignored before the first retirement
+- Downsizing release = sale − costs − new home − mortgage owed, lands in Person 1's other savings, stops the mortgage and resets the home value; a move that wouldn't cover itself is skipped
+- `dbIndexFactor` for inflation, none, fixed, capped CPI (both sides of the cap) and RPI (inside and beyond the wedge years); extra schemes add to their owner's DB income; `planForMode` strips them in Simple mode and is the identity in Advanced; a default-indexation scheme projects byte-for-byte as before 053
+- All-zero `returnShocks` reproduce the deterministic projection exactly; growth shocks move only growth accounts and cash shocks only cash-like ones; `runMonteCarlo` is deterministic for a seed, keeps p10 ≤ p50 ≤ p90, and with zero volatility matches the fixed-rate verdict
+- `livingStandardLevel` boundaries; `householdAtRetirement` uses the nominal State Pension, counts savings at the withdrawal rate, and its components add up; `planSummary`'s today's-money income is the household figure deflated
+- `applyWhatIf` with no changes is the identity and clamps retirement to 50–75; `sensitivityAnalysis` returns nine rows sorted by size; `planToEngineArgs` fills defaults and honours `hasPartner`
+
+`tests/test-mcp-worker.mjs` (10 checks): the generated engine copy is current; initialize negotiates the protocol version; notifications get 202; the five tools list with read-only hints; each tool answers with the disclaimer and never echoes names; bad input is a tool error and unknown tools/methods are JSON-RPC errors; batches, parse errors, GET 405, CORS and `/health`.
+
+Headless (Playwright, desktop and phone widths, light and dark): chart hover tooltips return (035); no console errors; no horizontal scroll; What if and What matters most open and compute; Share produces anonymised Markdown; Advanced inputs and tools render and calculate; Simple mode reports the right number of switched-off settings; the report opens, calls print, and print media hides `#root`; against a mocked Supabase, the magic-link request carries the unticked consent, a token return unlocks Advanced and strips the hash, and the consent toggle PATCHes only consent columns; crawler-visible static content is present in the served HTML and gone after render.
+
 **Life expectancy scale (intent 029):**
 - the slider runs 75–110; new and reset plans start at the `UK_REFERENCE` default (81)
 - with retirement age 74 the slider minimum is 75; raising retirement age to 75 lifts a life expectancy of 75 to 76
@@ -444,7 +609,7 @@ The built PWA was additionally rendered in a headless browser to confirm it boot
 
 ### 5.5 PWA packaging
 
-Everything is inlined into one `index.html` (~825 KB, ~222 KB zipped):
+Everything is inlined into one `index.html` (~1.07 MB, ~284 KB zipped after the 034 batch):
 
 - JSX **precompiled** with Babel — no in-browser transpiler, so startup is fast on a phone
 - React, ReactDOM, `react-is` and Recharts embedded as **UMD builds**
@@ -472,6 +637,8 @@ No personal data sits in the repo — figures live only in device storage.
 
 Push changes to `main`. The service worker caches aggressively, so if you don't see an update, bump `CACHE = 'retirement-planner-v1'` in `sw.js` to `v2`, or fully close and reopen the installed app. Bump `APP_VERSION` in `index.html` to the same value at the same time (the test harness checks they match).
 
+The MCP server (§3.18) is a second Cloudflare Worker, deployed by `.github/workflows/deploy-mcp-worker.yml` with the same two Cloudflare secrets; it needs no GitHub token or KV. Accounts (§3.16) use a Supabase project the owner creates (`tools/accounts/README.md`); the app talks to it directly from the browser, so GitHub Pages remains the only web host.
+
 The feedback Worker (§3.12) is hosted separately, on Cloudflare. It redeploys automatically when anything under `tools/feedback/worker/` changes on `main`, via `.github/workflows/deploy-feedback-worker.yml`. That workflow needs three repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `FEEDBACK_GITHUB_TOKEN`), described in `tools/feedback/README.md`. The fine-grained `FEEDBACK_GITHUB_TOKEN` expires yearly and must be renewed.
 
 ---
@@ -481,14 +648,18 @@ The feedback Worker (§3.12) is hosted separately, on Cloudflare. It redeploys a
 > These are deliberate simplifications, not defects. Worth knowing before relying on the output.
 
 1. **Income tax is estimated, not exhaustive.** Modelled: rest-of-UK income tax on pension drawdown, State Pension and DB pension, per person, with the £100k taper, thresholds frozen to 2030/31 and then inflation-uprated. Not modelled: (a) Scottish rates (roadmap #27; [GOV.UK: Scottish Income Tax](https://www.gov.uk/scottish-income-tax)); (b) tax on non-ISA savings interest ([Personal Savings Allowance](https://www.gov.uk/apply-tax-free-interest-on-savings)); (c) [Marriage Allowance](https://www.gov.uk/marriage-allowance), [Blind Person's Allowance](https://www.gov.uk/blind-persons-allowance) and other reliefs; (d) the announced 2027/28 easement for pensioners whose only income is the State Pension ([House of Commons Library, "Taxation of state pension"](https://commonslibrary.parliament.uk/research-briefings/cbp-10250/); see also [GOV.UK: how your State Pension is taxed](https://www.gov.uk/guidance/how-your-state-pension-is-taxed)); (e) threshold paths other than freeze-then-inflation ([GOV.UK: thresholds maintained until 5 April 2031](https://www.gov.uk/government/publications/maintaining-income-tax-and-equivalent-national-insurance-contributions-thresholds-until-5-april-2031)); (f) no gross-up, so drawdown stays at the 4%-rule gross amount and tax is covered from savings ([GOV.UK: Income Tax rates](https://www.gov.uk/income-tax-rates)).
-2. **Salary is not modelled at all.** Where retirement dates differ, the working partner's earnings do not offset household costs, so longevity is understated.
-3. **Mortgage is a straight-line runoff** — monthly payment × 12 × years, reduced annually. There is no interest amortisation, so the outstanding balance shown is an approximation of a real redemption figure.
-4. **Growth is a fixed annual rate** with no sequence-of-returns risk or volatility modelling. A poor first decade of retirement is far more damaging than the same average return implies.
+2. **Salary is only modelled for a still-working partner, and simply.** In couple mode, take-home pay (§4.5) offsets household spending while one partner works after the other retires. It is entered net, rises only with inflation (no real pay growth), and any surplus isn't saved. Salary before the first retirement isn't needed (spending starts then), and phased retirement isn't modelled.
+3. **Mortgage is a repayment mortgage with fixed payments.** The balance is the present value of the remaining payments at one fixed rate (§4.4), stepped yearly. Interest-only, rate changes, overpayments and early-repayment charges aren't modelled.
+4. **Growth is a fixed annual rate in the main projection** with no sequence-of-returns risk. A poor first decade of retirement is far more damaging than the same average return implies. Advanced mode's Monte Carlo (§4.9) tests this with illustrative, independent, normally distributed yearly returns — no fat tails, no correlation between years, the same shock for both people.
 5. **One inflation rate** applies to all spending categories; healthcare in particular tends to inflate faster. The same single rate also uprates State Pension and any DB pension (see #8).
-6. **Retirement Living Standards bands are not inflated forward** — they are compared against nominal future income, which flatters later years.
+6. **Living Standard is a first-year snapshot.** It compares the first year everyone is retired, in today's money, with the bands (§4.8). A State Pension that starts a few years later isn't in that year's figure, and later years aren't compared.
 7. **ISA/LISA caps are fixed and approximate.** The £20,000 and £4,000 limits are enforced (§4.1) but held flat in nominal terms, not uprated. LISA contributions stop at age 50 using whole years of age (last contributing year is 49), slightly earlier than the real 50th-birthday rule, and allowance freed by that stop isn't reassigned to other ISAs. The opening-age-40 rule is not modelled.
-8. **Single DB pension per person, simplified.** One Defined Benefit pension per person is supported (§3.11, §4.3), uprated by the household inflation rate (#5) rather than the scheme's own indexation (capped CPI, RPI, fixed, none). Not modelled: more than one DB pension per person (roadmap #31 — combine them by hand), per-scheme indexation (roadmap #32), commutation / a tax-free lump sum from the DB scheme, interaction with the Annual Allowance or Lump Sum Allowance, and survivor's pensions.
+8. **DB pensions are simplified.** Simple mode supports one DB pension per person, uprated by the household inflation rate (#5). Advanced mode adds more schemes and per-scheme indexation (capped CPI, RPI, fixed, none; §4.3), applied from today rather than as separate deferred revaluation and payment increases; RPI is an approximation (inflation + 1 point until 2030). Not modelled: commutation / a tax-free lump sum from the DB scheme, interaction with the Annual Allowance or Lump Sum Allowance, and survivor's pensions.
 9. **Device-local storage** — phone and laptop keep separate plans, and clearing browser data erases the saved plan. Manual export/import (§3.7) can move a plan between devices or back it up, but there's no automatic sync.
 10. **No LISA first-home exception.** Real LISAs allow penalty-free access before 60 for a first home purchase; this tool has no house-purchase concept to hang that on, so the age-60 restriction is unconditional.
-11. **Unlimited free-form "other savings" accounts.** A person can add any number of named non-ISA savings accounts — this is intentional, not a bug.
+11. **Other savings accounts are capped at 3 per person in Simple mode** (unlimited in Advanced; intent 054). A plan that already has more keeps them all, and they all count, in either mode; the cap only stops adding more.
 12. **Feedback relies on an outside service and has daily limits.** Sending feedback (§3.12) goes through a Cloudflare Worker to a private GitHub repo. It needs a connection, and there's no offline check before sending. At most 5 submissions per hour per IP and 20 issues per day are filed; anything over that is refused with the "didn't send" message, not queued. Nobody who leaves an email is contacted automatically yet.
+13. **Advanced access is a client-side gate.** With accounts on and `advancedRequiresAccount` true, the app checks the signed-in profile, but Advanced code still ships in the public page. Keeping paid logic out of the free bundle is planned with payments (roadmap #25).
+14. **Spending phases, one-off costs and downsizing follow Person 1's age**, and one-offs only count from the first retirement. Downsizing assumes a single move; the new home's costs and stamp duty are one combined percentage; the released cash grows at Person 1's Cash ISA rate.
+15. **The pension vs ISA vs cash comparison** uses basic-rate relief at source only (no higher-rate reclaim, salary sacrifice, National Insurance savings or employer matching) and adds the extra amount for the whole time until that person retires.
+16. **The MCP server runs within Cloudflare's free CPU limit** (10 ms per request). A large couple plan's `what_matters_most` call (about 8 ms) could occasionally exceed it; the Workers Paid plan removes the risk (`tools/mcp/README.md`).

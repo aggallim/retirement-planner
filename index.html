@@ -1086,7 +1086,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v21';
+const APP_VERSION = 'v22';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -1098,6 +1098,21 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v22',
+  date: '2026-10-02', // set to the actual merge date
+  title: 'What if?, an Advanced mode, a new look and fairer figures',
+  items: [
+    'The Living Standard now compares your income in today\'s money, like the Pensions UK bands it\'s measured against. Your sustainable income also now counts your ISAs and other savings, not just your pension. Some plans will show a different level than before.',
+    'New "What if…?" sliders let you try retiring earlier or later, spending more or less, different investment growth or paying more into your pension, side by side with your plan, and apply the changes if you want them.',
+    'New "What matters most" view shows which changes move your result the most, one at a time.',
+    'Add your mortgage interest rate to see a realistic amount still owed. Your payments and end date don\'t change.',
+    'Planning as a couple? Enter take-home pay for whoever is still working after the other retires, and it now helps pay household spending in those years.',
+    'Data menu → "Share with your AI assistant" copies a summary of your plan, without names, to paste into an AI assistant you already use. Assistants that support MCP can also run the planner\'s calculations directly.',
+    'A new Advanced mode (beta, free for now) adds saved scenarios you can compare, varied-returns simulations, spending phases and one-off costs, downsizing your home, more than one DB pension with its own yearly increases, a pension vs ISA vs cash comparison, a bridge-to-State-Pension view and a printable PDF report. Simple mode keeps up to 3 extra savings accounts each; any you already have are kept.',
+    'Hovering the charts shows the figures for each year again (this had stopped working in v20).',
+    'A new look: a sunrise logo, calmer colours and a warmer page.'
+  ]
+}, {
   version: 'v21',
   date: '2026-09-30', // set to the actual merge date
   title: 'ISA and LISA limits now apply',
@@ -4103,7 +4118,8 @@ function useAccount() {
     const profile = await accountApi.setConsent(acc.session, acc.userId, consent);
     if (profile) setState(st => ({ ...st, account: { ...st.account, profile } }));
   }, [state.account]);
-  return { ...state, signOut, setConsent };
+  // Memoised so the memoised Settings menu doesn't re-render on every drag.
+  return useMemo(() => ({ ...state, signOut, setConsent }), [state, signOut, setConsent]);
 }
 // Sign-in / account panel: shown in the Data menu and when someone picks
 // Advanced without access. The marketing box is unticked by default (#14).
@@ -5534,7 +5550,11 @@ function RetirementCalculator() {
     className: "px-6 pb-6 space-y-4 text-sm text-slate-700 border-t border-slate-200 pt-4"
   }, React.createElement("p", { className: "text-xs text-slate-500" }, "Figures last updated: ", UK_REFERENCE.lastUpdated, " (", UK_REFERENCE.taxYear, " tax year)"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
-  }, "Joint planning model"), /*#__PURE__*/React.createElement("p", null, "Each person’s pension and ISA grow and are drawn independently using their own ages and retirement dates. Shared living costs and the mortgage are treated as one joint liability funded from combined pots once the first person retires. The still-working partner’s salary is not modelled, so household costs are drawn from savings from the first retirement onward — a deliberately cautious assumption.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  }, "Joint planning model"), /*#__PURE__*/React.createElement("p", null, "Each person’s pension and ISA grow and are drawn independently using their own ages and retirement dates. Shared living costs and the mortgage are treated as one joint liability funded from combined pots once the first person retires. If one of you is still working then, the take-home pay you enter for that person pays for spending first (after any State Pension or DB pension), rising with inflation; pay above your spending isn't saved. With no take-home pay entered, household costs are drawn from savings from the first retirement onward — a deliberately cautious assumption.")), React.createElement("div", null, React.createElement("h3", {
+    className: "font-bold text-slate-900 mb-1"
+  }, "Sustainable income and the Living Standard"), React.createElement("p", null, "Sustainable income is worked out for the first year everyone is retired: your withdrawal rate applied to each pension pot (taxed) and to ISAs and other savings (tax-free), plus any State Pension and DB pension already being paid that year, minus Income Tax. The Pensions UK bands are in today's money, so this income is converted to today's money at your inflation rate before it's compared with them.")), React.createElement("div", null, React.createElement("h3", {
+    className: "font-bold text-slate-900 mb-1"
+  }, "Mortgage"), React.createElement("p", null, "Your monthly payment and years left set when the mortgage ends. The amount still owed, shown on the Wealth Projection chart, is the value of the remaining payments at your mortgage interest rate, as for a repayment mortgage. Interest-only mortgages and rate changes aren't modelled.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
   }, "Investment growth"), /*#__PURE__*/React.createElement("p", null, "Growth rates are illustrative. Actual returns vary with markets and fees.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-slate-900 mb-1"
@@ -5562,7 +5582,7 @@ function RetirementCalculator() {
       " · ", sourceLink(UK_REFERENCE.statePension.taxSource, UK_REFERENCE.statePension.taxSourceLabel))),
   React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Defined Benefit (DB) pension"),
     React.createElement("p", null,
-      "Each person can enter one DB pension (a final salary or career average scheme) as a yearly amount in today's money and the age it starts. It is paid from that age and, like the State Pension, is taxable income added to that person's own income and taxed against their own Personal Allowance and bands. Together with the State Pension it pays for your spending first, before pension withdrawals and savings. We raise it each year by your single inflation assumption, the same as the State Pension. Real schemes differ: some increases are capped, linked to CPI or RPI, fixed, or not given at all, so your actual DB income may grow more slowly or quickly than shown. Not included: taking a tax-free lump sum from the DB scheme itself, how a DB pension counts towards the pension Annual Allowance or Lump Sum Allowance, and any pension paid to a surviving partner.")),
+      "Each person can enter one DB pension (a final salary or career average scheme) as a yearly amount in today's money and the age it starts. It is paid from that age and, like the State Pension, is taxable income added to that person's own income and taxed against their own Personal Allowance and bands. Together with the State Pension it pays for your spending first, before pension withdrawals and savings. We raise it each year by your single inflation assumption, the same as the State Pension (in Advanced mode you can choose each scheme's increases instead: capped CPI, RPI, a fixed rate or none, and add more schemes). Real schemes differ: some increases are capped, linked to CPI or RPI, fixed, or not given at all, so your actual DB income may grow more slowly or quickly than shown. Not included: taking a tax-free lump sum from the DB scheme itself, how a DB pension counts towards the pension Annual Allowance or Lump Sum Allowance, and any pension paid to a surviving partner.")),
   React.createElement("div", null, React.createElement("h3", { className: "font-bold text-slate-900 mb-1" }, "Allowances"),
     React.createElement("p", null,
       `Pension annual allowance ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} (incl. employer); combined Cash ISA + Stocks & Shares ISA + LISA allowance ${formatCurrency(UK_REFERENCE.isa.allowance)}, of which up to ${formatCurrency(UK_REFERENCE.lisa.annualLimit)} can be LISA (${UK_REFERENCE.taxYear}). LISA contributions get a ${Math.round(UK_REFERENCE.lisa.bonusRate * 100)}% government bonus and aren't accessible before age ${UK_REFERENCE.lisa.accessAge} in this tool. Pension contributions above the ${formatCurrency(UK_REFERENCE.pensionAnnualAllowance.amount)} annual allowance (including employer contributions) are capped in this projection rather than taxed. The lower ${formatCurrency(UK_REFERENCE.moneyPurchaseAnnualAllowance.amount)} Money Purchase Annual Allowance, which applies once someone starts taking money flexibly from a pension while still paying in, can't arise here, because contributions stop in the same year withdrawals start.`,
