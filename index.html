@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzFlM2E4YSIvPjxzdG9wIG9mZnNldD0iNjAlIiBzdG9wLWNvbG9yPSIjMjU2M2ViIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGQ5NDg4Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0idXJsKCNiZykiLz4KICA8cGF0aCBkPSJNOTYgMzQ0IEwxNzYgMjY0IEwyNDggMzEyIEw0MTYgMTUyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMzAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjQxNiIgY3k9IjE1MiIgcj0iMjYiIGZpbGw9IiM1ZWVhZDQiLz4KICA8cGF0aCBkPSJNOTYgNDAwIGgzMjAiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNDUiIHN0cm9rZS13aWR0aD0iMTgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzFlM2E4YSIvPjxzdG9wIG9mZnNldD0iNjAlIiBzdG9wLWNvbG9yPSIjMjU2M2ViIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGQ5NDg4Ii8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0idXJsKCNiZykiLz4KICA8cGF0aCBkPSJNOTYgMzQ0IEwxNzYgMjY0IEwyNDggMzEyIEw0MTYgMTUyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMzAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjQxNiIgY3k9IjE1MiIgcj0iMjYiIGZpbGw9IiM1ZWVhZDQiLz4KICA8cGF0aCBkPSJNOTYgNDAwIGgzMjAiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLW9wYWNpdHk9IjAuNDUiIHN0cm9rZS13aWR0aD0iMTgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
 <script src="feedback-config.js"></script>
+<script src="account-config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>
@@ -760,6 +761,15 @@ const UK_REFERENCE = {
     source: 'https://www.gov.uk/lifetime-isa',
     sourceLabel: 'GOV.UK: Lifetime ISA'
   },
+  // RPI for DB schemes with RPI-linked increases (intent 053). RPI has run
+  // about 1 point above CPI; UKSA and HM Treasury are aligning it with CPIH
+  // from February 2030, after which it's modelled as the inflation input.
+  rpi: {
+    wedge: 1.0,
+    alignedFromYear: 2030,
+    source: 'https://www.gov.uk/government/consultations/a-response-to-the-consultation-on-the-reform-to-retail-prices-index-rpi-methodology',
+    sourceLabel: 'GOV.UK: RPI reform consultation response'
+  },
   // Retirement Living Standards 2026, published by Pensions UK (formerly
   // the PLSA), May 2026 (spec/018 user decision Q2). The key stays `plsa`
   // so the PLSA alias, livingStandardFor() and the gauge are unchanged.
@@ -801,21 +811,22 @@ const formatCurrency = v => new Intl.NumberFormat('en-GB', {
 }).format(Math.round(v || 0));
 const formatCurrencyK = v => `${v < 0 ? '−' : ''}£${Math.abs(Math.round((v || 0) / 1000))}k`;
 const PLSA = UK_REFERENCE.plsa; // .single/.couple keep their shape — livingStandardFor, warnings and the gauge are unchanged
-const livingStandardFor = (income, isCouple) => {
-  const b = isCouple ? PLSA.couple : PLSA.single;
-  if (income >= b.comfortable) return {
+// income must be in today's money, like the bands (intent 037).
+const livingStandardFor = (incomeToday, isCouple) => {
+  const level = livingStandardLevel(incomeToday, isCouple);
+  if (level === 'Comfortable') return {
     level: 'Comfortable',
     color: 'text-emerald-600',
     bg: 'bg-emerald-50',
     border: 'border-emerald-200'
   };
-  if (income >= b.moderate) return {
+  if (level === 'Moderate') return {
     level: 'Moderate',
     color: 'text-green-600',
     bg: 'bg-green-50',
     border: 'border-green-200'
   };
-  if (income >= b.minimum) return {
+  if (level === 'Minimum') return {
     level: 'Minimum',
     color: 'text-amber-600',
     bg: 'bg-amber-50',
@@ -860,6 +871,7 @@ const makePerson = (o = {}) => ({
   dbPensionStartAge: DB_PENSION_DEFAULT_START_AGE,
   inheritanceAmount: 0,
   inheritanceAge: 70,
+  takeHomePay: 0,
   ...o
 });
 const makeOtherSavingsAccount = (o = {}) => ({
@@ -915,6 +927,24 @@ const saveTheme = theme => {
   } catch {}
 };
 
+/* ---------------- Simple / Advanced mode (intent 044) ---------------- */
+// A device display preference like the theme, so it never goes through
+// Export/Import. Advanced-only plan inputs are saved with the plan but only
+// reach the engine while Advanced is on (planForMode()).
+const MODE_KEY = 'ukRetirementPlanner.mode';
+const loadMode = () => {
+  try {
+    return localStorage.getItem(MODE_KEY) === 'advanced' ? 'advanced' : 'simple';
+  } catch {
+    return 'simple';
+  }
+};
+const saveMode = mode => {
+  try {
+    localStorage.setItem(MODE_KEY, mode);
+  } catch {}
+};
+
 /* ---------------- Dismissed warnings ---------------- */
 // Separate from STORE_KEY/PERSISTED_FIELDS on purpose, same reasoning as
 // THEME_KEY above — "have I seen this warning set" is device-local UI
@@ -934,7 +964,19 @@ const DISMISSED = (() => {
 // PERSISTED_FIELDS is the single source of truth for "what's in a plan" —
 // the auto-save effect in RetirementCalculator, exportPlan and
 // importPlanFields all read this same list, so they can't drift apart.
-const PERSISTED_FIELDS = ['hasPartner', 'person1', 'person2', 'annualExpenses', 'healthcareCosts', 'mortgagePayment', 'mortgageYears', 'inflationRate', 'withdrawalRate'];
+const PERSISTED_FIELDS = ['hasPartner', 'person1', 'person2', 'annualExpenses', 'healthcareCosts', 'mortgagePayment', 'mortgageYears', 'mortgageRate', 'inflationRate', 'withdrawalRate', 'spendingPhases', 'oneOffCosts', 'property', 'scenarios'];
+// Defaults for fields added by the 034 batch. A plan saved before them
+// simply lacks the key, and pick() falls back to these.
+const DEFAULT_MORTGAGE_RATE = 4.5;
+const makeProperty = (o = {}) => ({
+  homeValue: 0,
+  growth: 3,
+  downsize: false,
+  downsizeAge: 75,
+  newHomePct: 60,
+  costsPct: 5,
+  ...o
+});
 const SCHEMA_VERSION = 1;
 const exportPlan = state => {
   const payload = {
@@ -1461,7 +1503,9 @@ const PersonInputs = memo(function PersonInputs({
   onOtherRemove,
   onOtherChange,
   accent,
-  personKey
+  personKey,
+  isCouple,
+  advancedOn
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-6"
@@ -1496,7 +1540,19 @@ const PersonInputs = memo(function PersonInputs({
     min: lifeExpectancyFloor(person),
     max: LIFE_EXPECTANCY_MAX,
     accent: accent
-  }))), /*#__PURE__*/React.createElement("div", {
+  })), isCouple && React.createElement(SliderWithInput, {
+    label: "Take-home Pay (Annual)",
+    field: "takeHomePay",
+    value: person.takeHomePay || 0,
+    onChange: onChange,
+    min: 0,
+    max: 150000,
+    step: 500,
+    prefix: "£",
+    accent: accent,
+    subtitle: "Only counts while you're working after your partner has retired.",
+    tooltip: "Pay after tax and after your own pension and savings contributions, in today's money. In years when your partner has retired and you haven't, it helps pay household spending before pensions and savings are used. It rises with inflation. Pay above your spending isn't saved."
+  })), /*#__PURE__*/React.createElement("div", {
     className: "pt-4 border-t border-slate-100"
   }, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-slate-800 mb-4 flex items-center gap-2"
@@ -1919,7 +1975,8 @@ const IncomeChart = memo(function IncomeChart({
   data,
   isDark,
   inflationRate,
-  hasDbPension
+  hasDbPension,
+  hasEarnings
 }) {
   return /*#__PURE__*/React.createElement(ResponsiveContainer, {
     width: "100%",
@@ -1954,6 +2011,12 @@ const IncomeChart = memo(function IncomeChart({
       fontWeight: 600,
       color: isDark ? CHART_LEGEND_COLOR.dark : CHART_LEGEND_COLOR.light
     }
+  }), hasEarnings && React.createElement(Bar, {
+    // Still-working partner's take-home pay (intent 039); omitted when none.
+    isAnimationActive: false,
+    dataKey: "Earnings",
+    stackId: "a",
+    fill: "#0891b2"
   }), /*#__PURE__*/React.createElement(Bar, {
     isAnimationActive: false,
     dataKey: "Other Savings",
@@ -2335,6 +2398,69 @@ function isaContributionMax(p, field) {
   if (field === 'lisaContribution') max = Math.min(max, UK_REFERENCE.lisa.annualLimit / 12);
   return Math.max(0, Math.floor(max * 100) / 100);
 }
+// Every DB pension a person has (intent 053): the original single scheme
+// (025) first, then any extra schemes from Advanced mode's list. Each carries
+// its indexation choice; absent fields mean "follow the inflation input",
+// which is exactly the pre-053 behaviour.
+const DB_INDEXATION_OPTIONS = ['inflation', 'cpiCapped', 'rpi', 'fixed', 'none'];
+function dbPensionsOf(p) {
+  const schemes = [];
+  const first = dbPensionOf(p);
+  if (first.amount > 0) schemes.push({
+    ...first,
+    indexation: p.dbPensionIndexation || 'inflation',
+    indexRate: p.dbPensionIndexRate ?? 2.5
+  });
+  (p.dbPensions || []).forEach(s => {
+    if (s && s.amount > 0) schemes.push({
+      name: s.name || '',
+      amount: s.amount,
+      startAge: s.startAge ?? DB_PENSION_DEFAULT_START_AGE,
+      indexation: s.indexation || 'inflation',
+      indexRate: s.indexRate ?? 2.5
+    });
+  });
+  return schemes;
+}
+// Uprating factor from today to projection year y for one DB scheme.
+// 'inflation' is the same expression projectJoint() uses for State Pension,
+// so default schemes reproduce pre-053 figures exactly. RPI = inflation +
+// the RPI wedge for each year up to the 2030 alignment with CPIH, then the
+// inflation input alone (UK_REFERENCE.rpi).
+function dbIndexFactor(scheme, y, inflationRate) {
+  const years = Math.max(0, y);
+  switch (scheme.indexation) {
+    case 'none':
+      return 1;
+    case 'fixed':
+      return Math.pow(1 + scheme.indexRate / 100, years);
+    case 'cpiCapped':
+      return Math.pow(1 + Math.min(inflationRate, scheme.indexRate) / 100, years);
+    case 'rpi': {
+      const r = UK_REFERENCE.rpi;
+      const wedgeYears = Math.max(0, Math.min(years, r.alignedFromYear - CURRENT_YEAR));
+      return Math.pow(1 + (inflationRate + r.wedge) / 100, wedgeYears) * Math.pow(1 + inflationRate / 100, years - wedgeYears);
+    }
+    default:
+      return Math.pow(1 + inflationRate / 100, years);
+  }
+}
+// Outstanding repayment-mortgage balance (intent 038): the present value of
+// `months` remaining monthly payments at an annual rate. 0% = payment x months.
+function mortgageBalance(payment, months, annualRate) {
+  if (!(payment > 0) || !(months > 0)) return 0;
+  const i = (annualRate || 0) / 100 / 12;
+  return i > 0 ? payment * (1 - Math.pow(1 + i, -months)) / i : payment * months;
+}
+// Spending-phase multiplier for annual expenses at Person 1's age (intent
+// 049). Overlapping phases add their percentages; never below zero.
+function spendingPhaseFactor(phases, age) {
+  let pct = 0;
+  (phases || []).forEach(ph => {
+    if (age >= ph.fromAge && age <= ph.toAge) pct += ph.changePct || 0;
+  });
+  return pct === 0 ? 1 : Math.max(0, 1 + pct / 100);
+}
 function projectJoint({
   inflationRate,
   withdrawalRate,
@@ -2342,6 +2468,11 @@ function projectJoint({
   healthcareCosts,
   mortgagePayment,
   mortgageYears,
+  mortgageRate = 0,
+  spendingPhases = [],
+  oneOffCosts = [],
+  property = null,
+  returnShocks = null,
   person1,
   person2
 }) {
@@ -2355,6 +2486,7 @@ function projectJoint({
     other: (p.otherSavings || []).map(a => ({
       ...a
     })),
+    dbSchemes: dbPensionsOf(p),
     pension: p.pensionPot,
     appliedLump: false,
     initialWithdrawal: 0,
@@ -2367,11 +2499,47 @@ function projectJoint({
   if (person2) people.push(init(person2));
   const maxYears = Math.max(...people.map(p => Math.max(100, p.cfg.lifeExpectancy) - p.cfg.currentAge));
   const firstRetYear = Math.min(...people.map(p => CURRENT_YEAR + (p.cfg.retirementAge - p.cfg.currentAge)));
-  let mortgage = mortgagePayment * 12 * mortgageYears;
+  // Months of mortgage payments left at the start of the row year (intent
+  // 038). The balance is the present value of those payments at
+  // mortgageRate; at 0% that is payment x months, the old straight line.
+  let mortgageMonths = Math.max(0, mortgageYears) * 12;
+  // Home value and the one-off downsizing move (intent 052).
+  const prop = property && property.homeValue > 0 ? property : null;
+  let homeValue = prop ? prop.homeValue : 0;
+  let downsized = false;
   const data = [];
   for (let y = 0; y <= maxYears; y++) {
     const year = CURRENT_YEAR + y;
     const jInfl = inflM(y);
+    const anyRetired = year >= firstRetYear;
+    const p1Age = person1.currentAge + y;
+    // Monte Carlo (intent 051): percentage-point changes to this year's
+    // growth. growth -> pensions, S&S ISA, LISA; cash -> Cash ISA, other savings.
+    const shock = returnShocks && returnShocks[y] ? returnShocks[y] : null;
+    let downsizeRelease = 0;
+    let downsizeSkipped = false;
+    if (prop && prop.downsize && !downsized && p1Age === prop.downsizeAge) {
+      downsized = true;
+      const sale = homeValue;
+      const newHome = sale * (prop.newHomePct ?? 60) / 100;
+      const costs = sale * (prop.costsPct ?? 5) / 100;
+      const owed = mortgageBalance(mortgagePayment, mortgageMonths, mortgageRate);
+      const release = sale - costs - newHome - owed;
+      if (release >= 0) {
+        downsizeRelease = release;
+        mortgageMonths = 0; // repaid from the sale; payments stop
+        homeValue = newHome;
+        people[0].other.push({
+          id: '__downsize',
+          name: 'Downsizing proceeds',
+          balance: release,
+          contribution: 0,
+          growth: person1.cashIsaGrowth
+        });
+      } else {
+        downsizeSkipped = true;
+      }
+    }
     const pp = people.map(p => {
       const age = p.cfg.currentAge + y;
       const retired = age >= p.cfg.retirementAge;
@@ -2394,24 +2562,33 @@ function projectJoint({
         p.appliedLump = true;
       }
       if (age === p.cfg.inheritanceAge && p.cfg.inheritanceAmount > 0) p.ssIsa += p.cfg.inheritanceAmount;
-      // DB pension mirrors State Pension exactly: starts at its own age,
-      // uprated from today by the household inflation rate (intent/025
-      // decision 3 — no per-scheme indexation in the free tier).
-      const db = dbPensionOf(p.cfg);
+      // DB pensions start at their own ages. Each is uprated from today by
+      // its own indexation (intent 053); the default follows the household
+      // inflation rate, exactly like State Pension (intent/025 decision 3).
+      const dbPension = p.dbSchemes.reduce((s, db) => s + (age >= db.startAge ? db.amount * dbIndexFactor(db, y, inflationRate) : 0), 0);
+      // Take-home pay counts only while this person still works and someone
+      // in the household has retired (intent 039).
+      const workIncome = anyRetired && !retired ? Math.max(0, p.cfg.takeHomePay || 0) * jInfl : 0;
       return {
         p,
         age,
         retired,
         statePension: hasSP ? p.cfg.statePensionAmount * jInfl : 0,
-        dbPension: db.amount > 0 && age >= db.startAge ? db.amount * jInfl : 0,
+        dbPension,
+        workIncome,
         lumpSum,
         lumpSumExcess
       };
     });
-    const anyRetired = year >= firstRetYear;
-    const targetExpenses = anyRetired ? annualExpenses * jInfl + healthcareCosts * jInfl + (mortgage > 0 ? mortgagePayment * 12 : 0) : 0;
+    // Spending phases scale annual expenses only (not healthcare or the
+    // mortgage); one-off costs are added in their year (intent 049). Both
+    // are keyed on Person 1's age and only count once someone has retired.
+    const oneOffSpending = anyRetired ? oneOffCosts.reduce((s, c) => s + (c.age === p1Age && c.amount > 0 ? c.amount * jInfl : 0), 0) : 0;
+    const mortgageDue = mortgageMonths > 0 ? mortgagePayment * 12 : 0;
+    const targetExpenses = anyRetired ? annualExpenses * spendingPhaseFactor(spendingPhases, p1Age) * jInfl + healthcareCosts * jInfl + mortgageDue + oneOffSpending : 0;
     const totalSP = pp.reduce((s, x) => s + x.statePension, 0);
     const totalDB = pp.reduce((s, x) => s + x.dbPension, 0);
+    const totalWork = pp.reduce((s, x) => s + x.workIncome, 0);
     // State Pension + DB pension = one pooled "guaranteed income" figure
     // that funds target expenses first (intent/025 decision 5). Kept as
     // separate row fields below for display (decision 6).
@@ -2426,14 +2603,15 @@ function projectJoint({
     // Per-person taxable income = own pension draw + own State Pension
     // + own DB pension (intent/018 decision 7; intent/025 decision 4 — DB
     // shares that person's own allowance and bands). ISA/LISA/other-savings draws and the tax-free
-    // lump sum are not taxable. The 4%-rule draw stays gross (decision 8).
+    // lump sum are not taxable. Take-home pay is already net (intent 039).
+    // The 4%-rule draw stays gross (decision 8).
     // Tax reduces net income, and the larger gap is funded from the existing
     // tax-free savings tiers in the existing order. There is no gross-up.
     const th = taxThresholdsFor(year, inflationRate);
     const taxableIncomes = pp.map((x, i) => penDraws[i] + x.statePension + x.dbPension);
     const taxes = taxableIncomes.map(t => incomeTaxFor(t, th));
     const totalTax = taxes.reduce((s, t) => s + t, 0);
-    let gap = Math.max(0, targetExpenses - (totalGuaranteed + totalPenW - totalTax));
+    let gap = Math.max(0, targetExpenses - (totalGuaranteed + totalWork + totalPenW - totalTax));
 
     // Fixed drawdown priority: other savings -> Cash ISA -> S&S ISA -> LISA
     // (from age 60), each tier drawn proportionally-by-balance across every
@@ -2473,11 +2651,12 @@ function projectJoint({
     gap = Math.max(0, gap - lisaResult.drawn);
 
     const otherSavingsOf = pi => pp[pi].p.other.reduce((s, a) => s + a.balance, 0);
+    const mortgageOwed = mortgageBalance(mortgagePayment, mortgageMonths, mortgageRate);
     const row = {
       year,
       person1Age: person1.currentAge + y,
       person2Age: person2 ? person2.currentAge + y : null,
-      mortgage: mortgage > 0 ? -Math.round(mortgage) : 0,
+      mortgage: mortgageOwed > 0 ? -Math.round(mortgageOwed) : 0,
       targetExpenses: Math.round(targetExpenses),
       statePension: Math.round(totalSP),
       dbPension: Math.round(totalDB),
@@ -2516,11 +2695,27 @@ function projectJoint({
     row.netIncome = row.statePension + row.dbPension + row.pensionWithdrawal - row.incomeTax; // taxable income after tax; excludes savings draws
     row.totalIsa = row.p1Isa + row.p2Isa;
     row.totalOtherSavings = row.p1OtherSavings + row.p2OtherSavings;
+    // Fields added by the 034 batch are only present when their feature is
+    // in use, so the regression baseline's row shape is unchanged.
+    if (totalWork > 0) {
+      row.workIncome = Math.round(totalWork);
+      row.p1WorkIncome = Math.round(pp[0].workIncome);
+      row.p2WorkIncome = pp[1] ? Math.round(pp[1].workIncome) : 0;
+    }
+    if (oneOffSpending > 0) row.oneOffSpending = Math.round(oneOffSpending);
+    if (prop) {
+      row.homeValue = Math.round(homeValue);
+      if (downsizeRelease > 0) row.downsizeRelease = Math.round(downsizeRelease);
+      if (downsizeSkipped) row.downsizeSkipped = true;
+    }
     data.push(row);
     otherInstances.forEach((inst, idx) => {
       const acc = pp[inst.pi].p.other[inst.ai];
       acc.balance = Math.max(0, acc.balance - otherResult.draws[idx]);
     });
+    const gShock = shock ? shock.growth || 0 : 0;
+    const cShock = shock ? shock.cash || 0 : 0;
+    const monthly = (rate, add) => Math.pow(1 + Math.max(-99, rate + add) / 100, 1 / 12) - 1;
     pp.forEach((x, i) => {
       x.p.pension = Math.max(0, x.p.pension - penDraws[i]);
       const cashDraw = cashInstances[i] ? cashResult.draws[i] : 0;
@@ -2531,26 +2726,33 @@ function projectJoint({
       x.p.lisa = Math.max(0, x.p.lisa - lisaDraw);
       if (!x.retired) {
         const isaC = isaContributionsFor(x.p.cfg, x.age);
-        for (let m = 0; m < 12; m++) x.p.cashIsa = x.p.cashIsa * (1 + x.p.mCashIsaG) + isaC.cash;
-        for (let m = 0; m < 12; m++) x.p.ssIsa = x.p.ssIsa * (1 + x.p.mSsIsaG) + isaC.ss;
-        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + x.p.mLisaG) + isaC.lisa * (1 + UK_REFERENCE.lisa.bonusRate);
+        // Precomputed monthly rates unless a Monte Carlo shock changes this year's.
+        const mCash = cShock ? monthly(x.p.cfg.cashIsaGrowth, cShock) : x.p.mCashIsaG;
+        const mSs = gShock ? monthly(x.p.cfg.ssIsaGrowth, gShock) : x.p.mSsIsaG;
+        const mLisa = gShock ? monthly(x.p.cfg.lisaGrowth, gShock) : x.p.mLisaG;
+        const mPen = gShock ? monthly(x.p.cfg.pensionGrowth, gShock) : x.p.mPenG;
+        for (let m = 0; m < 12; m++) x.p.cashIsa = x.p.cashIsa * (1 + mCash) + isaC.cash;
+        for (let m = 0; m < 12; m++) x.p.ssIsa = x.p.ssIsa * (1 + mSs) + isaC.ss;
+        for (let m = 0; m < 12; m++) x.p.lisa = x.p.lisa * (1 + mLisa) + isaC.lisa * (1 + UK_REFERENCE.lisa.bonusRate);
         x.p.other.forEach(acc => {
-          const mG = Math.pow(1 + acc.growth / 100, 1 / 12) - 1;
+          const mG = monthly(acc.growth, cShock);
           for (let m = 0; m < 12; m++) acc.balance = acc.balance * (1 + mG) + acc.contribution;
         });
         const cm = Math.min(x.p.cfg.pensionContribution + x.p.cfg.employerContribution, cap / 12);
-        for (let m = 0; m < 12; m++) x.p.pension = x.p.pension * (1 + x.p.mPenG) + cm;
+        for (let m = 0; m < 12; m++) x.p.pension = x.p.pension * (1 + mPen) + cm;
       } else {
-        x.p.pension *= 1 + x.p.cfg.pensionGrowth / 100;
-        x.p.cashIsa *= 1 + x.p.cfg.cashIsaGrowth / 100;
-        x.p.ssIsa *= 1 + x.p.cfg.ssIsaGrowth / 100;
-        x.p.lisa *= 1 + x.p.cfg.lisaGrowth / 100;
+        const grow = (rate, add) => 1 + Math.max(-99, rate + add) / 100;
+        x.p.pension *= grow(x.p.cfg.pensionGrowth, gShock);
+        x.p.cashIsa *= grow(x.p.cfg.cashIsaGrowth, cShock);
+        x.p.ssIsa *= grow(x.p.cfg.ssIsaGrowth, gShock);
+        x.p.lisa *= grow(x.p.cfg.lisaGrowth, gShock);
         x.p.other.forEach(acc => {
-          acc.balance *= 1 + acc.growth / 100;
+          acc.balance *= grow(acc.growth, cShock);
         });
       }
     });
-    if (mortgage > 0) mortgage = Math.max(0, mortgage - mortgagePayment * 12);
+    if (mortgageMonths > 0) mortgageMonths = Math.max(0, mortgageMonths - 12);
+    if (prop) homeValue *= 1 + (prop.growth ?? 3) / 100;
   }
   return data;
 }
@@ -2698,6 +2900,236 @@ function computeTaxNotes(projections, people, inflationRate, planEnd) {
   return notes.sort((a, b) => a.year - b.year || a.personIndex - b.personIndex
     || TAX_NOTE_ORDER.indexOf(a.type) - TAX_NOTE_ORDER.indexOf(b.type));
 }
+// Living Standard level for a today's-money income (intent 037). The bands
+// are today's-money figures, so the income compared with them must be too.
+function livingStandardLevel(incomeToday, isCouple) {
+  const b = isCouple ? UK_REFERENCE.plsa.couple : UK_REFERENCE.plsa.single;
+  if (incomeToday >= b.comfortable) return 'Comfortable';
+  if (incomeToday >= b.moderate) return 'Moderate';
+  if (incomeToday >= b.minimum) return 'Minimum';
+  return 'Below Minimum';
+}
+// Household figures for the first year everyone is retired ("bothYear"),
+// shared by the summary cards, the What if / What matters most panels, the
+// MCP server and the share export so they can't disagree. Each person's
+// pension income is their pot at their own retirement x the withdrawal
+// rate; State Pension and DB pension are the projection's own nominal
+// figures for that year (intent 037 fixed these being today's-money amounts
+// added to a future-£ pension figure). Components are rounded before the
+// total, so "Pension + State + DB − Tax" always adds up.
+function householdAtRetirement(args, projections) {
+  const people = [args.person1, args.person2].filter(Boolean);
+  const bothYear = Math.max(...people.map(p => CURRENT_YEAR + (p.retirementAge - p.currentAge)));
+  const row = projections.find(r => r.year === bothYear) || projections[projections.length - 1];
+  const th = taxThresholdsFor(bothYear, args.inflationRate);
+  const parts = people.map((p, i) => {
+    const k = `p${i + 1}`;
+    const retRow = projections.find(r => r[i === 0 ? 'person1Age' : 'person2Age'] === p.retirementAge);
+    const pensionIncome = retRow ? retRow[`${k}Pension`] * (args.withdrawalRate / 100) : 0;
+    const sp = row[`${k}StatePension`] || 0;
+    const db = row[`${k}DbPension`] || 0;
+    return {
+      pensionIncome,
+      sp,
+      db,
+      tax: incomeTaxFor(pensionIncome + sp + db, th),
+      potAtRetirement: retRow ? retRow[`${k}Pension`] + retRow[`${k}Isa`] + retRow[`${k}OtherSavings`] : 0,
+      lumpSum: retRow ? retRow[`${k}LumpSum`] : 0
+    };
+  });
+  const sum = f => parts.reduce((s, x) => s + x[f], 0);
+  const pensionIncome = Math.round(sum('pensionIncome'));
+  const statePension = Math.round(sum('sp'));
+  const dbPension = Math.round(sum('db'));
+  const incomeTax = Math.round(sum('tax'));
+  const grossIncome = pensionIncome + statePension + dbPension;
+  return {
+    totalPot: row.totalPension + row.totalIsa + row.totalOtherSavings,
+    pensionIncome,
+    statePension,
+    dbPension,
+    grossIncome,
+    incomeTax,
+    annualIncome: grossIncome - incomeTax,
+    year: bothYear,
+    perPerson: parts
+  };
+}
+// One call that gives every headline result for a plan (engine args as
+// passed to projectJoint). Used by the What if and What matters most panels,
+// scenarios, the allocation comparison, the MCP server and the share export.
+function planSummary(args, projections) {
+  const rows = projections || projectJoint(args);
+  const people = [args.person1, args.person2].filter(Boolean);
+  const isCouple = people.length === 2;
+  const firstRet = Math.min(...people.map(p => CURRENT_YEAR + (p.retirementAge - p.currentAge)));
+  const planEnd = Math.max(...people.map(p => CURRENT_YEAR + (p.lifeExpectancy - p.currentAge)));
+  let depleted = null;
+  for (const r of rows) {
+    if (r.year < firstRet) continue;
+    if (r.totalPension + r.totalIsa + r.totalOtherSavings < 1000) {
+      depleted = r.year;
+      break;
+    }
+  }
+  const succeeds = planSucceeds(rows, firstRet, planEnd);
+  const household = householdAtRetirement(args, rows);
+  const annualIncomeToday = deflate(household.annualIncome, household.year, args.inflationRate);
+  const endRow = rows.find(r => r.year === planEnd) || rows[rows.length - 1];
+  const endWealth = endRow.totalPension + endRow.totalIsa + endRow.totalOtherSavings;
+  return {
+    projections: rows,
+    isCouple,
+    firstRet,
+    planEnd,
+    depleted,
+    fundedTo: depleted || rows[rows.length - 1].year,
+    succeeds,
+    household,
+    annualIncomeToday,
+    livingStandard: livingStandardLevel(annualIncomeToday, isCouple),
+    endWealth,
+    endWealthToday: deflate(endWealth, endRow.year, args.inflationRate),
+    lifetimeTax: lifetimeTaxTotals(rows, firstRet, planEnd, args.inflationRate)
+  };
+}
+// The What if? changes (intent 040), shared with the MCP what_if tool.
+// changes: { retireDelta (years, shared), spendPct, growthDelta (points,
+// every account), extraPension (£/month per person, within the annual
+// allowance), lifeDelta (years), inflationDelta (points) }.
+function applyWhatIf(args, changes) {
+  const c = changes || {};
+  const bump = p => {
+    if (!p) return p;
+    const q = { ...p };
+    if (c.retireDelta) {
+      q.retirementAge = Math.min(75, Math.max(Math.max(50, p.currentAge + 1), p.retirementAge + c.retireDelta));
+    }
+    if (c.lifeDelta) q.lifeExpectancy = p.lifeExpectancy + c.lifeDelta;
+    q.lifeExpectancy = Math.max(q.lifeExpectancy, q.retirementAge + 1);
+    if (c.growthDelta) {
+      ['pensionGrowth', 'cashIsaGrowth', 'ssIsaGrowth', 'lisaGrowth'].forEach(f => {
+        q[f] = p[f] + c.growthDelta;
+      });
+      q.otherSavings = (p.otherSavings || []).map(a => ({ ...a, growth: a.growth + c.growthDelta }));
+    }
+    if (c.extraPension) q.pensionContribution = p.pensionContribution + c.extraPension;
+    return q;
+  };
+  return {
+    ...args,
+    annualExpenses: c.spendPct ? args.annualExpenses * (1 + c.spendPct / 100) : args.annualExpenses,
+    inflationRate: c.inflationDelta ? args.inflationRate + c.inflationDelta : args.inflationRate,
+    person1: bump(args.person1),
+    person2: bump(args.person2)
+  };
+}
+// "What matters most" (intent 041): nine one-at-a-time changes, each run
+// through the engine, measured as the change in money left at plan end
+// (today's money) and in the year money runs out. The plan horizon is held
+// at the base plan's except for the longer-life row, so rows compare like
+// with like.
+const SENSITIVITY_CHANGES = [
+  { key: 'retireLater', label: 'Retire 2 years later', changes: { retireDelta: 2 } },
+  { key: 'retireEarlier', label: 'Retire 2 years earlier', changes: { retireDelta: -2 } },
+  { key: 'spendLess', label: 'Spend 10% less', changes: { spendPct: -10 } },
+  { key: 'spendMore', label: 'Spend 10% more', changes: { spendPct: 10 } },
+  { key: 'growthUp', label: 'Investment growth 1 point higher', changes: { growthDelta: 1 } },
+  { key: 'growthDown', label: 'Investment growth 1 point lower', changes: { growthDelta: -1 } },
+  { key: 'inflationUp', label: 'Inflation 1 point higher', changes: { inflationDelta: 1 } },
+  { key: 'savePension', label: '£100 a month more into each pension', changes: { extraPension: 100 } },
+  { key: 'liveLonger', label: 'Plan for 5 more years of life', changes: { lifeDelta: 5 } }
+];
+function sensitivityAnalysis(args, base) {
+  const b = base || planSummary(args);
+  const rows = SENSITIVITY_CHANGES.map(s => {
+    const altArgs = applyWhatIf(args, s.changes);
+    const alt = planSummary(altArgs);
+    // Measure everything at the base plan end, except the longer-life row
+    // which is about the end moving.
+    const endRow = s.key === 'liveLonger' ? null : alt.projections.find(r => r.year === b.planEnd);
+    const altEndToday = endRow ? deflate(endRow.totalPension + endRow.totalIsa + endRow.totalOtherSavings, endRow.year, altArgs.inflationRate) : alt.endWealthToday;
+    return {
+      key: s.key,
+      label: s.label,
+      endWealthTodayChange: altEndToday - b.endWealthToday,
+      fundedToChange: (alt.depleted || b.depleted) ? alt.fundedTo - b.fundedTo : 0,
+      succeeds: alt.succeeds
+    };
+  });
+  return rows.sort((x, y) => Math.abs(y.endWealthTodayChange) - Math.abs(x.endWealthTodayChange));
+}
+// Monte Carlo (intent 051). Deterministic: mulberry32 seeded PRNG and
+// Box-Muller normals. Volatilities are illustrative assumptions, not
+// reference figures, so they live here rather than in UK_REFERENCE.
+const MONTE_CARLO = { runs: 1000, growthVolatility: 12, cashVolatility: 1, seed: 20261002 };
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function runMonteCarlo(args, opts) {
+  const o = { ...MONTE_CARLO, ...(opts || {}) };
+  const rand = mulberry32(o.seed);
+  const normal = () => {
+    let u = 0;
+    while (u === 0) u = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rand());
+  };
+  const base = planSummary(args);
+  const years = base.projections.length;
+  const totalsByYear = Array.from({ length: years }, () => []);
+  const depletions = [];
+  let successes = 0;
+  for (let run = 0; run < o.runs; run++) {
+    const returnShocks = [];
+    for (let y = 0; y < years; y++) returnShocks.push({ growth: normal() * o.growthVolatility, cash: normal() * o.cashVolatility });
+    const rows = projectJoint({ ...args, returnShocks });
+    if (planSucceeds(rows, base.firstRet, base.planEnd)) successes++;
+    let depleted = null;
+    rows.forEach((r, y) => {
+      const total = r.totalPension + r.totalIsa + r.totalOtherSavings;
+      totalsByYear[y].push(deflate(total, r.year, args.inflationRate));
+      if (depleted === null && r.year >= base.firstRet && total < 1000) depleted = r.year;
+    });
+    if (depleted !== null && depleted <= base.planEnd) depletions.push(depleted);
+  }
+  const pct = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
+  const fan = totalsByYear.map((vals, y) => {
+    const s = vals.slice().sort((a, b) => a - b);
+    return { year: CURRENT_YEAR + y, p10: Math.round(pct(s, 0.1)), p50: Math.round(pct(s, 0.5)), p90: Math.round(pct(s, 0.9)) };
+  }).filter(r => r.year <= base.planEnd);
+  depletions.sort((a, b) => a - b);
+  return {
+    runs: o.runs,
+    successRate: successes / o.runs,
+    fan,
+    medianDepletionYear: depletions.length ? depletions[Math.floor(depletions.length / 2)] : null,
+    depletionShare: depletions.length / o.runs,
+    planEnd: base.planEnd,
+    firstRet: base.firstRet
+  };
+}
+// Advanced-only fields are stripped before the engine sees a plan in Simple
+// mode (intent 044), so Simple mode's projection depends only on what Simple
+// mode shows. The engine itself honours whatever it's given.
+const ADVANCED_PERSON_FIELDS = ['dbPensions', 'dbPensionIndexation', 'dbPensionIndexRate'];
+function planForMode(args, advanced) {
+  if (advanced) return args;
+  const strip = p => {
+    if (!p) return p;
+    const q = { ...p };
+    ADVANCED_PERSON_FIELDS.forEach(f => delete q[f]);
+    return q;
+  };
+  const { spendingPhases, oneOffCosts, property, ...rest } = args;
+  return { ...rest, person1: strip(args.person1), person2: strip(args.person2) };
+}
 // ENGINE-EXTRACT-END
 
 // Scroll+highlight for any assumption anchor (spec/012-assumptions-panel.md
@@ -2729,6 +3161,210 @@ const nameValue = (name, value, isCouple) => isCouple ? `${name}: ${value}` : va
 // the exact nominal figure it's derived from, so it shouldn't be shown
 // with formatCurrency's same whole-pound precision.
 const formatToday = v => `≈ ${formatCurrency(Math.round((v || 0) / 100) * 100)}`;
+
+
+/* ---------------- Accounts (intent 045) ---------------- */
+// Supabase Auth over its REST API — no SDK, so nothing joins the bundle.
+// Accounts exist only to unlock Advanced mode. Plan figures are never sent:
+// the account holds an email address, a marketing-consent choice and an
+// access flag, nothing else.
+const ACCOUNT = typeof window !== 'undefined' && window.ACCOUNT_CONFIG || {};
+const ACCOUNTS_ENABLED = !!(ACCOUNT.supabaseUrl && ACCOUNT.supabaseAnonKey);
+const SESSION_KEY = 'ukRetirementPlanner.session.v1';
+// Advanced is open to everyone (a beta preview) unless accounts are set up
+// AND advancedRequiresAccount is on; then the signed-in profile decides.
+function advancedAccessFor(account) {
+  if (!ACCOUNTS_ENABLED || !ACCOUNT.advancedRequiresAccount) return true;
+  return !!(account && account.profile && account.profile.advanced_access);
+}
+const authRequest = async (path, {
+  method = 'GET',
+  body,
+  token,
+  headers = {}
+} = {}) => {
+  const res = await fetch(ACCOUNT.supabaseUrl.replace(/\/$/, '') + path, {
+    method,
+    headers: {
+      apikey: ACCOUNT.supabaseAnonKey,
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const text = await res.text();
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {}
+  if (!res.ok) throw new Error(json && (json.msg || json.error_description || json.message) || `Request failed (${res.status})`);
+  return json;
+};
+const loadSession = () => {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+const saveSession = session => {
+  try {
+    if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));else localStorage.removeItem(SESSION_KEY);
+  } catch {}
+};
+const sessionFrom = t => ({
+  access_token: t.access_token,
+  refresh_token: t.refresh_token,
+  expires_at: Date.now() + (Number(t.expires_in) || 3600) * 1000
+});
+// The magic link returns here with the tokens (or an error) in the URL hash.
+// Read them once, then strip the hash so a reload or a shared URL can't
+// carry them.
+function takeAuthRedirect() {
+  if (typeof window === 'undefined' || !window.location.hash) return null;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  if (!params.get('access_token') && !params.get('error_description')) return null;
+  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  if (params.get('error_description')) return { error: params.get('error_description') };
+  return { session: sessionFrom(Object.fromEntries(params)) };
+}
+const accountApi = {
+  sendMagicLink: (email, marketingConsent) => authRequest(`/auth/v1/otp?redirect_to=${encodeURIComponent(window.location.origin + window.location.pathname)}`, {
+    method: 'POST',
+    body: {
+      email,
+      create_user: true,
+      data: {
+        marketing_consent: !!marketingConsent,
+        marketing_consent_at: marketingConsent ? new Date().toISOString() : null
+      }
+    }
+  }),
+  refresh: async session => sessionFrom(await authRequest('/auth/v1/token?grant_type=refresh_token', {
+    method: 'POST',
+    body: { refresh_token: session.refresh_token }
+  })),
+  user: session => authRequest('/auth/v1/user', { token: session.access_token }),
+  profile: async (session, userId) => {
+    const rows = await authRequest(`/rest/v1/profiles?select=*&id=eq.${encodeURIComponent(userId)}`, { token: session.access_token });
+    return rows && rows[0] || null;
+  },
+  setConsent: async (session, userId, consent) => {
+    const rows = await authRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+      method: 'PATCH',
+      token: session.access_token,
+      headers: { Prefer: 'return=representation' },
+      body: { marketing_consent: consent, marketing_consent_at: consent ? new Date().toISOString() : null }
+    });
+    return rows && rows[0] || null;
+  },
+  signOut: session => authRequest('/auth/v1/logout', { method: 'POST', token: session.access_token }).catch(() => null)
+};
+// Custom hook (module level, like every component here). account is null
+// when signed out; status is 'off' | 'loading' | 'signedOut' | 'signedIn'.
+function useAccount() {
+  const [state, setState] = useState(() => ({ status: ACCOUNTS_ENABLED ? 'loading' : 'off', account: null, error: '' }));
+  const load = useCallback(async session => {
+    try {
+      let s = session;
+      if (s.expires_at < Date.now() + 60000) s = await accountApi.refresh(s);
+      saveSession(s);
+      const user = await accountApi.user(s);
+      const profile = await accountApi.profile(s, user.id).catch(() => null);
+      setState({ status: 'signedIn', error: '', account: { session: s, userId: user.id, email: user.email, profile } });
+    } catch (e) {
+      saveSession(null);
+      setState({ status: 'signedOut', account: null, error: '' });
+    }
+  }, []);
+  useEffect(() => {
+    if (!ACCOUNTS_ENABLED) return;
+    const redirect = takeAuthRedirect();
+    if (redirect && redirect.error) {
+      setState({ status: 'signedOut', account: null, error: redirect.error });
+      return;
+    }
+    const session = redirect ? redirect.session : loadSession();
+    if (session) load(session);else setState({ status: 'signedOut', account: null, error: '' });
+  }, [load]);
+  const signOut = useCallback(async () => {
+    const s = loadSession();
+    saveSession(null);
+    setState({ status: 'signedOut', account: null, error: '' });
+    if (s) await accountApi.signOut(s);
+  }, []);
+  const setConsent = useCallback(async consent => {
+    const acc = state.account;
+    if (!acc) return;
+    const profile = await accountApi.setConsent(acc.session, acc.userId, consent);
+    if (profile) setState(st => ({ ...st, account: { ...st.account, profile } }));
+  }, [state.account]);
+  return { ...state, signOut, setConsent };
+}
+// Sign-in / account panel: shown in the Data menu and when someone picks
+// Advanced without access. The marketing box is unticked by default (#14).
+const AccountPanel = memo(function AccountPanel({ accountState, reason }) {
+  const [email, setEmail] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const { status, account } = accountState;
+  if (status === 'off') return null;
+  if (status === 'loading') return React.createElement("p", { className: "text-sm text-slate-500" }, "Checking your account…");
+  if (status === 'signedIn') {
+    const p = account.profile;
+    return React.createElement("div", { className: "space-y-3" },
+      React.createElement("p", { className: "text-sm text-slate-700" }, "Signed in as ", React.createElement("span", { className: "font-semibold text-slate-900 break-words" }, account.email)),
+      React.createElement("p", { className: "text-xs text-slate-500" }, p && p.advanced_access ? "Advanced mode: unlocked on this account." : "Advanced mode isn't unlocked on this account yet."),
+      p && React.createElement("label", { className: "flex items-start gap-2 text-xs text-slate-600 cursor-pointer" },
+        React.createElement("input", { type: "checkbox", checked: !!p.marketing_consent, onChange: e => accountState.setConsent(e.target.checked), className: "mt-0.5" }),
+        "Email me product news and offers. You can change this at any time."),
+      React.createElement("p", { className: "text-xs text-slate-500" }, "Your account holds your email address, this choice and your access level. Your plan figures stay on this device."),
+      React.createElement("button", { type: "button", onClick: accountState.signOut, className: "text-sm font-semibold text-blue-600 hover:text-blue-700" }, "Sign out"));
+  }
+  const submit = async e => {
+    e.preventDefault();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
+      setError('Enter a valid email address.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      await accountApi.sendMagicLink(email.trim(), consent);
+      setSent(true);
+    } catch (err) {
+      setError(err.message || 'Could not send the link. Check your connection and try again.');
+    }
+    setBusy(false);
+  };
+  if (sent) return React.createElement("p", { className: "text-sm text-slate-700" }, "Check your email for a sign-in link. Open it on this device to finish signing in.");
+  return React.createElement("form", { onSubmit: submit, className: "space-y-3", noValidate: true },
+    reason && React.createElement("p", { className: "text-sm text-slate-700" }, reason),
+    React.createElement("label", { className: "block text-xs font-semibold text-slate-600" }, "Email address",
+      React.createElement("input", { type: "email", value: email, onChange: e => setEmail(e.target.value), autoComplete: "email", className: "mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" })),
+    React.createElement("label", { className: "flex items-start gap-2 text-xs text-slate-600 cursor-pointer" },
+      React.createElement("input", { type: "checkbox", checked: consent, onChange: e => setConsent(e.target.checked), className: "mt-0.5" }),
+      "Email me product news and offers (optional)."),
+    (error || accountState.error) && React.createElement("p", { className: "text-xs text-red-600 font-medium" }, error || accountState.error),
+    React.createElement("button", { type: "submit", disabled: busy, className: "w-full px-3 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60" }, busy ? 'Sending…' : 'Email me a sign-in link'),
+    React.createElement("p", { className: "text-xs text-slate-500" }, "No password. The account is only for Advanced mode, and holds your email address, your choice above and your access level. Your plan figures stay on this device."));
+});
+// Number of Advanced-only settings in a plan, for Simple mode's "switched
+// off" note (intent 044).
+function countAdvancedSettings(plan) {
+  let n = (plan.spendingPhases || []).length + (plan.oneOffCosts || []).length;
+  if (plan.property && plan.property.homeValue > 0) n++;
+  const people = plan.hasPartner ? [plan.person1, plan.person2] : [plan.person1];
+  people.forEach(p => {
+    n += (p.dbPensions || []).filter(s => s.amount > 0).length;
+    if (p.dbPensionIndexation && p.dbPensionIndexation !== 'inflation' && p.dbPensionAmount > 0) n++;
+  });
+  return n;
+}
 
 /* ---------------- Settings menu: export / import (module level + memoized) ---------------- */
 const THEME_OPTIONS = [['system', Monitor, 'System'], ['light', Sun, 'Light'], ['dark', Moon, 'Dark']];
@@ -2874,6 +3510,8 @@ const SettingsMenu = memo(function SettingsMenu({
 
 /* ---------------- Main ---------------- */
 function RetirementCalculator() {
+  const accountState = useAccount();
+  const account = accountState.account;
   const [hasPartner, setHasPartner] = useState(pick('hasPartner', false));
   const [person1, setPerson1] = useState(migratePerson(pick('person1', makePerson({
     name: 'You'
@@ -2891,8 +3529,16 @@ function RetirementCalculator() {
   const [healthcareCosts, setHealthcareCosts] = useState(pick('healthcareCosts', 2000));
   const [mortgagePayment, setMortgagePayment] = useState(pick('mortgagePayment', 1200));
   const [mortgageYears, setMortgageYears] = useState(pick('mortgageYears', 15));
+  const [mortgageRate, setMortgageRate] = useState(pick('mortgageRate', DEFAULT_MORTGAGE_RATE));
   const [inflationRate, setInflationRate] = useState(pick('inflationRate', 3));
   const [withdrawalRate, setWithdrawalRate] = useState(pick('withdrawalRate', 4));
+  // Advanced-mode plan inputs (intents 046, 049, 052). Saved with the plan,
+  // but only applied while Advanced mode is on (intent 044).
+  const [spendingPhases, setSpendingPhases] = useState(pick('spendingPhases', []));
+  const [oneOffCosts, setOneOffCosts] = useState(pick('oneOffCosts', []));
+  const [property, setProperty] = useState(makeProperty(pick('property', {})));
+  const [scenarios, setScenarios] = useState(pick('scenarios', []));
+  const [mode, setMode] = useState(loadMode()); // 'simple' | 'advanced' (intent 044)
   const [justSaved, setJustSaved] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const pendingSaveRef = useRef(null);
@@ -2935,21 +3581,32 @@ function RetirementCalculator() {
     setSaveFailed(!ok);
     if (ok) setJustSaved(true);
   }, []);
+  // Every persisted field in one object (PERSISTED_FIELDS order), read by
+  // auto-save, Export and scenarios, so the three can't drift apart.
+  const plan = useMemo(() => ({
+    hasPartner,
+    person1,
+    person2,
+    annualExpenses,
+    healthcareCosts,
+    mortgagePayment,
+    mortgageYears,
+    mortgageRate,
+    inflationRate,
+    withdrawalRate,
+    spendingPhases,
+    oneOffCosts,
+    property,
+    scenarios
+  }), [hasPartner, person1, person2, annualExpenses, healthcareCosts, mortgagePayment, mortgageYears, mortgageRate, inflationRate, withdrawalRate, spendingPhases, oneOffCosts, property, scenarios]);
   useEffect(() => {
-    pendingSaveRef.current = {
-      hasPartner,
-      person1,
-      person2,
-      annualExpenses,
-      healthcareCosts,
-      mortgagePayment,
-      mortgageYears,
-      inflationRate,
-      withdrawalRate
-    };
+    pendingSaveRef.current = plan;
     const t = setTimeout(flushSave, 600);
     return () => clearTimeout(t);
-  }, [hasPartner, person1, person2, annualExpenses, healthcareCosts, mortgagePayment, mortgageYears, inflationRate, withdrawalRate, flushSave]);
+  }, [plan, flushSave]);
+  useEffect(() => {
+    saveMode(mode);
+  }, [mode]);
   useEffect(() => {
     if (!justSaved) return undefined;
     const h = setTimeout(() => setJustSaved(false), 1400);
@@ -2983,32 +3640,33 @@ function RetirementCalculator() {
   // Same field list as the auto-save effect above (both read PERSISTED_FIELDS
   // conceptually; exportPlan itself pulls only PERSISTED_FIELDS off this object).
   const handleExport = useCallback(() => {
-    exportPlan({
-      hasPartner,
-      person1,
-      person2,
-      annualExpenses,
-      healthcareCosts,
-      mortgagePayment,
-      mortgageYears,
-      inflationRate,
-      withdrawalRate
+    exportPlan(plan);
+  }, [plan]);
+  // Per-field tolerant: a field absent from the imported file (or scenario)
+  // leaves the current value untouched rather than resetting it to an app
+  // default. Shared by Import, loading a scenario and What if's "Apply".
+  const applyPlanFields = useCallback(fields => {
+    const setters = {
+      hasPartner: setHasPartner,
+      person1: v => setPerson1(migratePerson(v)),
+      person2: v => setPerson2(migratePerson(v)),
+      annualExpenses: setAnnualExpenses,
+      healthcareCosts: setHealthcareCosts,
+      mortgagePayment: setMortgagePayment,
+      mortgageYears: setMortgageYears,
+      mortgageRate: setMortgageRate,
+      inflationRate: setInflationRate,
+      withdrawalRate: setWithdrawalRate,
+      spendingPhases: setSpendingPhases,
+      oneOffCosts: setOneOffCosts,
+      property: v => setProperty(makeProperty(v)),
+      scenarios: setScenarios
+    };
+    Object.keys(setters).forEach(key => {
+      if (fields[key] !== undefined) setters[key](fields[key]);
     });
-  }, [hasPartner, person1, person2, annualExpenses, healthcareCosts, mortgagePayment, mortgageYears, inflationRate, withdrawalRate]);
-  // Per-field tolerant: a field absent from the imported file leaves the
-  // current value untouched rather than resetting it to an app default.
-  const handleImport = useCallback(parsed => {
-    const fields = importPlanFields(parsed);
-    if (fields.hasPartner !== undefined) setHasPartner(fields.hasPartner);
-    if (fields.person1 !== undefined) setPerson1(migratePerson(fields.person1));
-    if (fields.person2 !== undefined) setPerson2(migratePerson(fields.person2));
-    if (fields.annualExpenses !== undefined) setAnnualExpenses(fields.annualExpenses);
-    if (fields.healthcareCosts !== undefined) setHealthcareCosts(fields.healthcareCosts);
-    if (fields.mortgagePayment !== undefined) setMortgagePayment(fields.mortgagePayment);
-    if (fields.mortgageYears !== undefined) setMortgageYears(fields.mortgageYears);
-    if (fields.inflationRate !== undefined) setInflationRate(fields.inflationRate);
-    if (fields.withdrawalRate !== undefined) setWithdrawalRate(fields.withdrawalRate);
   }, []);
+  const handleImport = useCallback(parsed => applyPlanFields(importPlanFields(parsed)), [applyPlanFields]);
 
   // Stable callbacks so memoized children don't re-render needlessly
   const updateP1 = useCallback((field, value) => setPerson1(p => {
@@ -3064,7 +3722,7 @@ function RetirementCalculator() {
     } : a)
   })), []);
   const updateShared = useCallback((field, value) => {
-    if (field === 'annualExpenses') setAnnualExpenses(value);else if (field === 'healthcareCosts') setHealthcareCosts(value);else if (field === 'mortgagePayment') setMortgagePayment(value);else if (field === 'mortgageYears') setMortgageYears(value);else if (field === 'withdrawalRate') setWithdrawalRate(value);
+    if (field === 'annualExpenses') setAnnualExpenses(value);else if (field === 'healthcareCosts') setHealthcareCosts(value);else if (field === 'mortgagePayment') setMortgagePayment(value);else if (field === 'mortgageYears') setMortgageYears(value);else if (field === 'mortgageRate') setMortgageRate(value);else if (field === 'withdrawalRate') setWithdrawalRate(value);
   }, []);
 
   // Defer everything the heavy projection depends on
@@ -3077,22 +3735,38 @@ function RetirementCalculator() {
     exp: useDeferredValue(annualExpenses),
     hc: useDeferredValue(healthcareCosts),
     mp: useDeferredValue(mortgagePayment),
-    my: useDeferredValue(mortgageYears)
+    my: useDeferredValue(mortgageYears),
+    mr: useDeferredValue(mortgageRate),
+    phases: useDeferredValue(spendingPhases),
+    oneOffs: useDeferredValue(oneOffCosts),
+    prop: useDeferredValue(property)
   };
-  const projections = useMemo(() => projectJoint({
+  const advancedAllowed = advancedAccessFor(account);
+  const advancedOn = mode === 'advanced' && advancedAllowed;
+  // The single set of engine arguments every derived figure reads, already
+  // stripped of Advanced-only inputs in Simple mode (intent 044).
+  const engineArgs = useMemo(() => planForMode({
     inflationRate: d.infl,
     withdrawalRate: d.wr,
     annualExpenses: d.exp,
     healthcareCosts: d.hc,
     mortgagePayment: d.mp,
     mortgageYears: d.my,
+    mortgageRate: d.mr,
+    spendingPhases: d.phases,
+    oneOffCosts: d.oneOffs,
+    property: d.prop.homeValue > 0 ? d.prop : null,
     person1: d.p1,
     person2: d.partner ? d.p2 : null
-  }), [d.infl, d.wr, d.exp, d.hc, d.mp, d.my, d.p1, d.p2, d.partner]);
+  }, advancedOn), [d.infl, d.wr, d.exp, d.hc, d.mp, d.my, d.mr, d.phases, d.oneOffs, d.prop, d.p1, d.p2, d.partner, advancedOn]);
+  const projections = useMemo(() => projectJoint(engineArgs), [engineArgs]);
   const isCouple = d.partner;
   const p1Db = dbPensionOf(d.p1);
   const p2Db = dbPensionOf(d.p2);
-  const hasDbPension = p1Db.amount > 0 || isCouple && p2Db.amount > 0;
+  const hasDbPension = projections.some(r => r.dbPension > 0);
+  const hasEarnings = projections.some(r => r.workIncome > 0);
+  // How many Advanced-only settings Simple mode is currently ignoring.
+  const advancedIgnored = !advancedOn ? countAdvancedSettings(plan) : 0;
   const summaryOf =(person, key) => {
     const row = projections.find(r => r[key === 1 ? 'person1Age' : 'person2Age'] === person.retirementAge);
     if (!row) return {
@@ -3117,39 +3791,13 @@ function RetirementCalculator() {
   };
   const p1Summary = useMemo(() => summaryOf(d.p1, 1), [projections, d.p1, d.wr]);
   const p2Summary = useMemo(() => isCouple ? summaryOf(d.p2, 2) : null, [projections, d.p2, d.wr, isCouple]);
-  const household = useMemo(() => {
-    const bothYear = Math.max(CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge) : -Infinity);
-    const row = projections.find(r => r.year === bothYear) || projections[projections.length - 1];
-    const y = bothYear - CURRENT_YEAR;
-    const sp1 = d.p1.currentAge + y >= d.p1.statePensionAge ? d.p1.statePensionAmount : 0;
-    const sp2 = isCouple && d.p2.currentAge + y >= d.p2.statePensionAge ? d.p2.statePensionAmount : 0;
-    // DB pension, same today's-money basis as sp1/sp2 above (intent/025).
-    const db1 = p1Db.amount > 0 && d.p1.currentAge + y >= p1Db.startAge ? p1Db.amount : 0;
-    const db2 = isCouple && p2Db.amount > 0 && d.p2.currentAge + y >= p2Db.startAge ? p2Db.amount : 0;
-    // Same per-person helper and same year thresholds as projectJoint()
-    // (intent/018 decisions 7, 13), applied to the components this card
-    // already shows. Components are rounded to whole pounds before the
-    // total is derived, so the displayed "Pension £X · State £Y · Tax −£Z"
-    // always adds up exactly to the after-tax figure above it.
-    const th = taxThresholdsFor(bothYear, d.infl);
-    const pensionIncome = Math.round(p1Summary.pensionIncome + (p2Summary ? p2Summary.pensionIncome : 0));
-    const statePension = Math.round(sp1 + sp2);
-    const dbPension = Math.round(db1 + db2);
-    const incomeTax = Math.round(incomeTaxFor(p1Summary.pensionIncome + sp1 + db1, th)
-      + (p2Summary ? incomeTaxFor(p2Summary.pensionIncome + sp2 + db2, th) : 0));
-    const grossIncome = pensionIncome + statePension + dbPension;
-    return {
-      totalPot: row.totalPension + row.totalIsa + row.totalOtherSavings,
-      pensionIncome,
-      statePension,
-      dbPension,
-      grossIncome,
-      incomeTax,
-      annualIncome: grossIncome - incomeTax,   // now AFTER tax — every existing reader picks this up
-      year: bothYear
-    };
-  }, [projections, d.p1, d.p2, d.infl, isCouple, p1Summary, p2Summary]);
-  const livingStandard = useMemo(() => livingStandardFor(household.annualIncome, isCouple), [household.annualIncome, isCouple]);
+  // householdAtRetirement() is shared with the What if / What matters most
+  // panels, the share export and the MCP server (engine span).
+  const household = useMemo(() => householdAtRetirement(engineArgs, projections), [engineArgs, projections]);
+  // Compared with the today's-money bands in today's money (intent 037).
+  const incomeToday = deflate(household.annualIncome, household.year, d.infl);
+  const livingStandard = useMemo(() => livingStandardFor(incomeToday, isCouple), [incomeToday, isCouple]);
+  const summary = useMemo(() => planSummary(engineArgs, projections), [engineArgs, projections]);
   const potBreakdown = useMemo(() => computePotBreakdown(isCouple ? [d.p1, d.p2] : [d.p1], projections, household.year), [d.p1, d.p2, isCouple, projections, household.year]);
   const longevity = useMemo(() => {
     const firstRet = Math.min(CURRENT_YEAR + (d.p1.retirementAge - d.p1.currentAge), isCouple ? CURRENT_YEAR + (d.p2.retirementAge - d.p2.currentAge) : Infinity);
@@ -3188,22 +3836,12 @@ function RetirementCalculator() {
   // extracted as planSucceeds() so this and findSupportableDelta() agree.
   const verdict = useMemo(() => {
     const succeeds = planSucceeds(projections, longevity.firstRet, longevity.planEnd);
-    const engineArgs = {
-      inflationRate: d.infl,
-      withdrawalRate: d.wr,
-      annualExpenses: d.exp,
-      healthcareCosts: d.hc,
-      mortgagePayment: d.mp,
-      mortgageYears: d.my,
-      person1: d.p1,
-      person2: d.partner ? d.p2 : null
-    };
     const supportableDelta = findSupportableDelta(engineArgs, succeeds);
     return {
       succeeds,
       supportableDelta
     };
-  }, [projections, longevity.firstRet, longevity.planEnd, d.infl, d.wr, d.exp, d.hc, d.mp, d.my, d.p1, d.p2, d.partner]);
+  }, [projections, longevity.firstRet, longevity.planEnd, engineArgs]);
   const warnings = useMemo(() => {
     const w = [];
     const check = (p, label) => {
@@ -3218,10 +3856,10 @@ function RetirementCalculator() {
     check(d.p1, isCouple ? d.p1.name : 'You');
     if (isCouple) check(d.p2, d.p2.name);
     const minBand = isCouple ? PLSA.couple.minimum : PLSA.single.minimum;
-    if (household.annualIncome < minBand) w.push(`Household income below minimum living standard (${formatCurrency(minBand)})`);
+    if (incomeToday < minBand) w.push(`Household income below minimum living standard (${formatCurrency(minBand)} a year in today's money)`);
     if (longevity.depleted && longevity.depleted <= longevity.planEnd) w.push(`Funds projected to run out in ${longevity.depleted}, before plan end (${longevity.planEnd})`);
     return w;
-  }, [d.p1, d.p2, isCouple, household, longevity]);
+  }, [d.p1, d.p2, isCouple, incomeToday, longevity]);
   // Order-sensitive is fine — warnings is built in a fixed, deterministic
   // order for a given input set, so two equal warning sets always produce
   // the same array (spec/done/008-dismissable-warning-banner.md).
@@ -3239,6 +3877,7 @@ function RetirementCalculator() {
     'Other Savings': r.otherSavingsWithdrawal,
     'State Pension': r.statePension,
     'DB Pension': r.dbPension,
+    Earnings: r.workIncome || 0,
     'Income Tax': -r.incomeTax,
     Expenses: r.targetExpenses
   })), [projections, longevity.firstRet]);
@@ -3621,7 +4260,9 @@ function RetirementCalculator() {
     onOtherRemove: removeOtherP1,
     onOtherChange: updateOtherP1,
     accent: "blue",
-    personKey: "p1"
+    personKey: "p1",
+    isCouple: hasPartner,
+    advancedOn: advancedOn
   })), hasPartner ? /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-6 border border-slate-200"
   }, /*#__PURE__*/React.createElement("div", {
@@ -3649,7 +4290,9 @@ function RetirementCalculator() {
     onOtherRemove: removeOtherP2,
     onOtherChange: updateOtherP2,
     accent: "teal",
-    personKey: "p2"
+    personKey: "p2",
+    isCouple: hasPartner,
+    advancedOn: advancedOn
   })) : /*#__PURE__*/React.createElement("button", {
     onClick: () => setHasPartner(true),
     className: "w-full bg-white rounded-xl shadow-lg p-6 border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-teal-50/30 transition-colors text-center"
@@ -3700,6 +4343,17 @@ function RetirementCalculator() {
     min: 0,
     max: 35,
     subtitle: mortgageYears > 0 ? `Paid off in ${CURRENT_YEAR + mortgageYears}` : 'No mortgage'
+  }), mortgagePayment > 0 && mortgageYears > 0 && React.createElement(SliderWithInput, {
+    label: "Mortgage Interest Rate",
+    field: "mortgageRate",
+    value: mortgageRate,
+    onChange: updateShared,
+    min: 0,
+    max: 10,
+    step: 0.1,
+    suffix: "%",
+    subtitle: `Outstanding balance today ≈ ${formatCurrency(mortgageBalance(mortgagePayment, mortgageYears * 12, mortgageRate))}`,
+    tooltip: "Your repayment mortgage's interest rate. With your monthly payment and years left, it sets how much you still owe, shown on the Wealth Projection chart. It doesn't change your payments or when the mortgage ends."
   }), /*#__PURE__*/React.createElement(SliderWithInput, {
     label: "Annual Healthcare Costs",
     field: "healthcareCosts",
@@ -3775,7 +4429,8 @@ function RetirementCalculator() {
     data: incomeData,
     isDark: isDark,
     inflationRate: d.infl,
-    hasDbPension: hasDbPension
+    hasDbPension: hasDbPension,
+    hasEarnings: hasEarnings
   }), React.createElement("div", {
     className: "mt-3 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap"
   },
@@ -3796,9 +4451,9 @@ function RetirementCalculator() {
     className: "text-center"
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-5xl font-bold gradient-text mb-1 tabular"
-  }, formatCurrency(household.annualIncome)), /*#__PURE__*/React.createElement("p", {
+  }, formatToday(incomeToday)), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-slate-500 tabular mb-1"
-  }, formatToday(deflate(household.annualIncome, household.year, d.infl)), " in today's money"), /*#__PURE__*/React.createElement("p", {
+  }, "a year in today's money (", formatCurrency(household.annualIncome), " in ", household.year, " pounds)"), /*#__PURE__*/React.createElement("p", {
     className: "text-slate-500 text-sm"
   }, "Under these assumptions, sustainable annual income after tax, first year ", isCouple ? 'both' : '', " retired"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 flex-wrap"
@@ -3831,7 +4486,7 @@ function RetirementCalculator() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute top-0 h-full w-1.5 bg-white shadow-[0_0_0_2px_rgba(15,23,42,0.4)] rounded-full",
     style: {
-      left: `${gPos(household.annualIncome)}%`
+      left: `${gPos(incomeToday)}%`
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute -top-9 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap"
@@ -3874,7 +4529,7 @@ function RetirementCalculator() {
     className: "text-sm text-slate-500 text-center mt-1"
   }, UK_REFERENCE.plsa.publisher, " ", isCouple ? 'two-person' : 'one-person', " household, outside London")), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 text-center mt-2"
-  }, "The income above is shown in future £, before adjusting for inflation. The Pensions UK bands are today's-money figures, so the two aren't directly comparable."))), /*#__PURE__*/React.createElement("div", {
+  }, "Your income and the Pensions UK bands are both shown in today's money, so they compare directly. The breakdown above is in ", household.year, " pounds."))), /*#__PURE__*/React.createElement("div", {
     id: "assumptions-disclaimers",
     className: "bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
