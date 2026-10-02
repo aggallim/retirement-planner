@@ -1,0 +1,11 @@
+{
+  "name": "retirement-planner-tailwind",
+  "private": true,
+  "description": "Dev-only: regenerates the Tailwind CSS inlined in index.html (intent 036). Not needed to deploy.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.19"
+  }
+}
