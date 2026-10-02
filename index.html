@@ -1205,7 +1205,9 @@ function formatNumber(n) {
   return (n < 0 ? '-' : '') + whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (frac ? '.' + frac : '');
 }
 function parseNumberInput(text, previous, min, max) {
-  const cleaned = String(text).replace(/[^0-9.]/g, '');
+  // A leading minus only counts on fields that allow negatives (the What
+  // if? sliders, intent 040); elsewhere it's stripped as before.
+  const cleaned = min < 0 ? String(text).replace(/[^0-9.-]/g, '').replace(/(?!^)-/g, '') : String(text).replace(/[^0-9.]/g, '');
   const n = parseFloat(cleaned);
   if (!isFinite(n)) return previous;
   return Math.max(min, Math.min(max, n));
@@ -1269,7 +1271,7 @@ const SliderWithInput = memo(function SliderWithInput({
     inputMode: "decimal",
     value: text,
     "aria-describedby": subtitle ? subId : undefined,
-    onChange: e => setText(e.target.value.replace(/[^0-9.]/g, '')),
+    onChange: e => setText(e.target.value.replace(min < 0 ? /[^0-9.-]/g : /[^0-9.]/g, '')),
     onFocus: () => {
       setEditing(true);
       setText(String(value));
@@ -2926,10 +2928,14 @@ function householdAtRetirement(args, projections) {
     const k = `p${i + 1}`;
     const retRow = projections.find(r => r[i === 0 ? 'person1Age' : 'person2Age'] === p.retirementAge);
     const pensionIncome = retRow ? retRow[`${k}Pension`] * (args.withdrawalRate / 100) : 0;
+    // The withdrawal rate applies to ISA and other savings too (intent 037
+    // addendum); those draws are tax-free.
+    const savingsIncome = retRow ? (retRow[`${k}Isa`] + retRow[`${k}OtherSavings`]) * (args.withdrawalRate / 100) : 0;
     const sp = row[`${k}StatePension`] || 0;
     const db = row[`${k}DbPension`] || 0;
     return {
       pensionIncome,
+      savingsIncome,
       sp,
       db,
       tax: incomeTaxFor(pensionIncome + sp + db, th),
@@ -2939,13 +2945,15 @@ function householdAtRetirement(args, projections) {
   });
   const sum = f => parts.reduce((s, x) => s + x[f], 0);
   const pensionIncome = Math.round(sum('pensionIncome'));
+  const savingsIncome = Math.round(sum('savingsIncome'));
   const statePension = Math.round(sum('sp'));
   const dbPension = Math.round(sum('db'));
   const incomeTax = Math.round(sum('tax'));
-  const grossIncome = pensionIncome + statePension + dbPension;
+  const grossIncome = pensionIncome + savingsIncome + statePension + dbPension;
   return {
     totalPot: row.totalPension + row.totalIsa + row.totalOtherSavings,
     pensionIncome,
+    savingsIncome,
     statePension,
     dbPension,
     grossIncome,
@@ -3162,6 +3170,137 @@ const nameValue = (name, value, isCouple) => isCouple ? `${name}: ${value}` : va
 // with formatCurrency's same whole-pound precision.
 const formatToday = v => `≈ ${formatCurrency(Math.round((v || 0) / 100) * 100)}`;
 
+
+/* ---------------- Mode switch and modal (intent 044) ---------------- */
+const ModeSwitch = memo(function ModeSwitch({ mode, onChange }) {
+  const btn = (value, label) => React.createElement("button", {
+    type: "button",
+    onClick: () => onChange(value),
+    "aria-pressed": mode === value,
+    className: `px-3 py-2 text-sm font-semibold transition-colors ${mode === value ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`
+  }, label);
+  return React.createElement("div", {
+    role: "group",
+    "aria-label": "Planning mode",
+    className: "flex rounded-xl border-2 border-slate-200 overflow-hidden"
+  }, btn('simple', 'Simple'), btn('advanced', React.createElement(React.Fragment, null, "Advanced", React.createElement("span", { className: "hidden sm:inline" }, " (beta)"))));
+});
+const Modal = memo(function Modal({ title, onClose, children, wide }) {
+  useEffect(() => {
+    const onKey = e => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60",
+    onClick: e => {
+      if (e.target === e.currentTarget) onClose();
+    }
+  }, React.createElement("div", {
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": title,
+    className: `bg-white rounded-xl shadow-xl border border-slate-200 w-full ${wide ? 'max-w-3xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto p-6`
+  }, React.createElement("div", { className: "flex items-center justify-between mb-4" },
+    React.createElement("h2", { className: "text-xl font-bold text-slate-900 serif" }, title),
+    React.createElement("button", { type: "button", onClick: onClose, "aria-label": "Close" }, React.createElement(X, { className: "h-5 w-5 text-slate-400 hover:text-slate-600" }))), children));
+});
+
+/* ---------------- What if? and What matters most (intents 040, 041) ---------------- */
+// Shared collapsible card shell for the batch's optional panels. Module
+// level and memoised (docs §5.3); children only render while open, so a
+// closed panel costs nothing during slider drags.
+const CollapsibleCard = memo(function CollapsibleCard({
+  id,
+  title,
+  subtitle,
+  badge,
+  defaultOpen = false,
+  children
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return React.createElement("div", {
+    id,
+    className: "mb-8 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setOpen(v => !v),
+    "aria-expanded": open,
+    className: "w-full px-6 py-4 flex items-center justify-between gap-3 text-left hover:bg-slate-50"
+  }, React.createElement("span", null, React.createElement("span", {
+    className: "text-xl font-bold text-slate-900 serif flex items-center gap-2"
+  }, title, badge && React.createElement("span", {
+    className: "text-[10px] font-semibold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5"
+  }, badge)), subtitle && React.createElement("span", {
+    className: "block text-sm text-slate-500 mt-0.5"
+  }, subtitle)), open ? React.createElement(ChevronUp, {
+    className: "h-6 w-6 text-slate-600 flex-shrink-0"
+  }) : React.createElement(ChevronDown, {
+    className: "h-6 w-6 text-slate-600 flex-shrink-0"
+  })), open && React.createElement("div", {
+    className: "px-6 pb-6 pt-4 border-t border-slate-200"
+  }, children));
+});
+const lastsText = s => s.succeeds ? `Beyond plan end (${s.planEnd})` : `Until ${s.fundedTo}`;
+const signedMoney = v => `${v >= 0 ? '+' : '−'}${formatCurrency(Math.abs(Math.round(v / 100) * 100))}`;
+const WHAT_IF_ZERO = { retireDelta: 0, spendPct: 0, growthDelta: 0, extraPension: 0 };
+const WhatIfBody = memo(function WhatIfBody({ engineArgs, base, isCouple, onApply }) {
+  const [changes, setChanges] = useState(WHAT_IF_ZERO);
+  const deferred = useDeferredValue(changes);
+  const set = useCallback((field, value) => setChanges(c => ({ ...c, [field]: value })), []);
+  const anyChange = Object.values(deferred).some(v => v !== 0);
+  const alt = useMemo(() => anyChange ? planSummary(applyWhatIf(engineArgs, deferred)) : base, [anyChange, engineArgs, deferred, base]);
+  const rows = [
+    ['Money lasts', lastsText(base), lastsText(alt)],
+    ['Pot at retirement', formatCurrency(base.household.totalPot), formatCurrency(alt.household.totalPot)],
+    ["First-year income after tax (today's money)", formatToday(base.annualIncomeToday), formatToday(alt.annualIncomeToday)],
+    ['Living Standard', base.livingStandard, alt.livingStandard],
+    ["Left at plan end (today's money)", formatToday(base.endWealthToday), formatToday(alt.endWealthToday)]
+  ];
+  return React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-8" },
+    React.createElement("div", { className: "space-y-5" },
+      React.createElement(SliderWithInput, { label: isCouple ? "Retire earlier or later (both)" : "Retire earlier or later", field: "retireDelta", value: changes.retireDelta, onChange: set, min: -5, max: 5, suffix: " yrs" }),
+      React.createElement(SliderWithInput, { label: "Change spending", field: "spendPct", value: changes.spendPct, onChange: set, min: -30, max: 30, suffix: "%" }),
+      React.createElement(SliderWithInput, { label: "Change investment growth", field: "growthDelta", value: changes.growthDelta, onChange: set, min: -3, max: 3, step: 0.5, suffix: " pts", subtitle: "Added to every account's growth rate." }),
+      React.createElement(SliderWithInput, { label: isCouple ? "Extra pension contribution (each)" : "Extra pension contribution", field: "extraPension", value: changes.extraPension, onChange: set, min: 0, max: 1000, step: 25, prefix: "£", suffix: "/mo", subtitle: "Kept within the annual allowance." })),
+    React.createElement("div", null,
+      React.createElement("table", { className: "w-full text-sm" },
+        React.createElement("thead", null, React.createElement("tr", { className: "text-left text-xs uppercase tracking-wide text-slate-500" },
+          React.createElement("th", { className: "pb-2 font-semibold" }, ""),
+          React.createElement("th", { className: "pb-2 font-semibold text-right" }, "Your plan"),
+          React.createElement("th", { className: "pb-2 font-semibold text-right" }, "What if"))),
+        React.createElement("tbody", null, rows.map(([label, a, b]) => React.createElement("tr", { key: label, className: "border-t border-slate-100" },
+          React.createElement("td", { className: "py-2 pr-2 text-slate-600" }, label),
+          React.createElement("td", { className: "py-2 text-right font-semibold text-slate-900 tabular" }, a),
+          React.createElement("td", { className: `py-2 text-right font-semibold tabular ${a === b ? 'text-slate-900' : 'text-blue-700'}` }, b))))),
+      React.createElement("p", { className: "text-xs text-slate-500 mt-3" }, anyChange ? "With these changes, under the same assumptions. Nothing is saved until you apply it." : "Move a slider to see how the projection changes."),
+      React.createElement("div", { className: "flex gap-2 mt-4" },
+        React.createElement("button", { type: "button", disabled: !anyChange, onClick: () => onApply(changes), className: "px-3 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50" }, "Apply to my plan"),
+        React.createElement("button", { type: "button", disabled: !anyChange, onClick: () => setChanges(WHAT_IF_ZERO), className: "px-3 py-2 rounded-lg font-semibold text-sm bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 disabled:opacity-50" }, "Reset")),
+      changes.growthDelta !== 0 && React.createElement("p", { className: "text-xs text-slate-500 mt-2" }, "Growth is set by the growth profile buttons, so applying keeps your profiles and applies the other changes.")));
+});
+const WhatMattersBody = memo(function WhatMattersBody({ engineArgs, base }) {
+  const args = useDeferredValue(engineArgs);
+  const rows = useMemo(() => sensitivityAnalysis(args, planSummary(args)), [args]);
+  const max = Math.max(1, ...rows.map(r => Math.abs(r.endWealthTodayChange)));
+  return React.createElement("div", null,
+    React.createElement("p", { className: "text-sm text-slate-600 mb-4" }, "How your projection responds to one change at a time, measured as the money left at the end of your plan (",
+      base.planEnd, ", in today's money). These are not recommendations."),
+    React.createElement("div", { className: "space-y-3" }, rows.map(r => {
+      const pos = r.endWealthTodayChange >= 0;
+      const years = r.fundedToChange;
+      return React.createElement("div", { key: r.key },
+        React.createElement("div", { className: "flex items-baseline justify-between gap-3 text-sm" },
+          React.createElement("span", { className: "font-semibold text-slate-800" }, r.label),
+          React.createElement("span", { className: "tabular font-semibold text-slate-900 whitespace-nowrap" }, signedMoney(r.endWealthTodayChange))),
+        React.createElement("div", { className: "h-2 bg-slate-100 rounded-full overflow-hidden mt-1" },
+          React.createElement("div", { className: `h-full rounded-full ${pos ? 'bg-blue-600' : 'bg-amber-500'}`, style: { width: `${Math.abs(r.endWealthTodayChange) / max * 100}%` } })),
+        years !== 0 && React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, `Money lasts ${Math.abs(years)} year${Math.abs(years) === 1 ? '' : 's'} ${years > 0 ? 'longer' : 'less'}.`));
+    })),
+    React.createElement("p", { className: "text-xs text-slate-500 mt-4" }, "Each row changes one input and keeps the rest of your plan as it is. The longer-life row measures at its own, later plan end."));
+});
 
 /* ---------------- Accounts (intent 045) ---------------- */
 // Supabase Auth over its REST API — no SDK, so nothing joins the bundle.
@@ -3725,6 +3864,27 @@ function RetirementCalculator() {
     if (field === 'annualExpenses') setAnnualExpenses(value);else if (field === 'healthcareCosts') setHealthcareCosts(value);else if (field === 'mortgagePayment') setMortgagePayment(value);else if (field === 'mortgageYears') setMortgageYears(value);else if (field === 'mortgageRate') setMortgageRate(value);else if (field === 'withdrawalRate') setWithdrawalRate(value);
   }, []);
 
+  // What if? "Apply to my plan" (intent 040). Growth isn't applied: it's set
+  // by the profile buttons, which only hold their fixed values.
+  const applyWhatIfToPlan = useCallback(changes => {
+    if (!window.confirm('Apply these changes to your plan? Your inputs will be updated.')) return;
+    const bump = p => {
+      const q = applyWhatIf({ person1: p, annualExpenses: 0, inflationRate: 0 }, { ...changes, growthDelta: 0 }).person1;
+      return { ...q, lifeExpectancy: Math.max(q.lifeExpectancy, lifeExpectancyFloor(q)) };
+    };
+    setPerson1(bump);
+    if (hasPartner) setPerson2(bump);
+    if (changes.spendPct) setAnnualExpenses(v => Math.round(v * (1 + changes.spendPct / 100) / 100) * 100);
+  }, [hasPartner]);
+  const [accountDialog, setAccountDialog] = useState(false);
+  const chooseMode = useCallback(next => {
+    if (next === 'advanced' && !advancedAccessFor(account)) {
+      setAccountDialog(true);
+      return;
+    }
+    setMode(next);
+  }, [account]);
+
   // Defer everything the heavy projection depends on
   const d = {
     p1: useDeferredValue(person1),
@@ -4013,7 +4173,10 @@ function RetirementCalculator() {
     className: "text-xs font-semibold text-red-600 underline hover:text-red-700"
   }, "Not saved on this device \u2014 export a backup"), /*#__PURE__*/React.createElement("span", {
     className: `text-xs font-semibold text-emerald-600 transition-opacity duration-300 ${justSaved && !saveFailed ? 'opacity-100' : 'opacity-0'}`
-  }, saveFailed ? '' : 'Saved')), /*#__PURE__*/React.createElement("button", {
+  }, saveFailed ? '' : 'Saved')), React.createElement(ModeSwitch, {
+    mode: advancedOn ? 'advanced' : 'simple',
+    onChange: chooseMode
+  }), /*#__PURE__*/React.createElement("button", {
     onClick: resetAll,
     title: "Reset to defaults",
     className: "flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-semibold text-sm bg-white border-2 border-slate-200 text-slate-600 hover:border-slate-400 transition-colors"
@@ -4065,7 +4228,19 @@ function RetirementCalculator() {
     className: `text-xs md:text-xl font-bold break-words ${livingStandard.color}`
   }, livingStandard.level)))), /*#__PURE__*/React.createElement("div", {
     className: "max-w-7xl mx-auto px-6 py-8"
-  }, warnings.length > 0 && !warningsDismissed && /*#__PURE__*/React.createElement("div", {
+  }, advancedIgnored > 0 && React.createElement("div", {
+    className: "mb-6 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-slate-700 flex items-center justify-between gap-3 flex-wrap"
+  }, React.createElement("span", null, `${advancedIgnored} Advanced setting${advancedIgnored === 1 ? ' is' : 's are'} saved but switched off in Simple mode, so ${advancedIgnored === 1 ? "it isn't" : "they aren't"} in these figures.`), React.createElement("button", {
+    type: "button",
+    onClick: () => chooseMode('advanced'),
+    className: "font-semibold text-blue-600 hover:text-blue-700"
+  }, "Switch to Advanced")), accountDialog && React.createElement(Modal, {
+    title: "Advanced mode",
+    onClose: () => setAccountDialog(false)
+  }, React.createElement(AccountPanel, {
+    accountState: accountState,
+    reason: "Advanced mode is in a private beta. Sign in with an account that has beta access."
+  })), warnings.length > 0 && !warningsDismissed && /*#__PURE__*/React.createElement("div", {
     className: "mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start"
   }, /*#__PURE__*/React.createElement(AlertTriangle, {
     className: "h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0"
@@ -4115,7 +4290,23 @@ function RetirementCalculator() {
     inflationRate: d.infl,
     annualExpenses: d.exp,
     onShowFullAssumptions: jumpToFullAssumptions
-  }), /*#__PURE__*/React.createElement("div", {
+  }), React.createElement(CollapsibleCard, {
+    id: "what-if",
+    title: "What if…?",
+    subtitle: "Try changes side by side with your plan, without changing it."
+  }, React.createElement(WhatIfBody, {
+    engineArgs: engineArgs,
+    base: summary,
+    isCouple: isCouple,
+    onApply: applyWhatIfToPlan
+  })), React.createElement(CollapsibleCard, {
+    id: "what-matters",
+    title: "What matters most in your projection",
+    subtitle: "How the result responds to one change at a time."
+  }, React.createElement(WhatMattersBody, {
+    engineArgs: engineArgs,
+    base: summary
+  })), /*#__PURE__*/React.createElement("div", {
     className: `grid grid-cols-1 ${isCouple ? 'lg:grid-cols-4' : 'md:grid-cols-3'} gap-5 mb-8`
   }, isCouple && /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-lg p-5 border border-slate-200"
@@ -4461,7 +4652,11 @@ function RetirementCalculator() {
     className: "flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-full bg-blue-500"
-  }), "Pension ", formatCurrency(household.pensionIncome)), household.statePension > 0 && /*#__PURE__*/React.createElement("span", {
+  }), "Pension ", formatCurrency(household.pensionIncome)), household.savingsIncome > 0 && React.createElement("span", {
+    className: "flex items-center gap-1.5"
+  }, React.createElement("span", {
+    className: "w-2.5 h-2.5 rounded-full bg-emerald-500"
+  }), "Savings ", formatCurrency(household.savingsIncome)), household.statePension > 0 && /*#__PURE__*/React.createElement("span", {
     className: "flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "w-2.5 h-2.5 rounded-full bg-violet-500"
