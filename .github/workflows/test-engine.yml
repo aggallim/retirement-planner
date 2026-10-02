@@ -16,3 +16,6 @@ jobs:
 
       - name: Run feedback Worker tests
         run: node tests/test-feedback-worker.mjs
+
+      - name: Run MCP server tests
+        run: node tests/test-mcp-worker.mjs

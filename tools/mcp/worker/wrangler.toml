@@ -1,0 +1,10 @@
+# Cloudflare Worker config for the MCP server (intent 055).
+# Deployed by .github/workflows/deploy-mcp-worker.yml. Setup: ../README.md.
+# Stateless: no KV, no logs of plan data.
+name = "retirement-planner-mcp"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[observability]
+enabled = false
