@@ -1,0 +1,23 @@
+# UK Retirement Planner
+
+> A free UK retirement planning calculator that runs in the browser. It projects pensions, ISAs, the State Pension, Defined Benefit pensions, a repayment mortgage and Income Tax year by year, for one person or a couple, and compares retirement income with the Pensions UK Retirement Living Standards. Illustrative only, not financial advice. All figures stay on the user's device.
+
+Key facts:
+
+- Free, no account needed for the core calculator. An optional Advanced mode (beta) adds scenarios, a Monte Carlo simulation, phased spending, property downsizing, multiple DB pensions, a printable report and more.
+- UK-specific reference figures for the 2026/27 tax year: Personal Allowance £12,570; higher-rate threshold £50,270; additional-rate threshold £125,140; full new State Pension £12,548 a year; pension annual allowance £60,000; Lump Sum Allowance £268,275; ISA allowance £20,000; Lifetime ISA £4,000 with a 25% bonus.
+- Income Tax uses England, Wales and Northern Ireland rates per person, with thresholds frozen until 2030/31 and then raised with inflation. Scottish rates are not modelled.
+- Living Standard bands: Pensions UK Retirement Living Standards 2026 (after tax, excluding housing, outside London). One person: £13,900 minimum, £32,700 moderate, £45,400 comfortable. Two people: £22,500, £45,400, £62,700. The app compares income with them in today's money.
+- Privacy: data is stored in the browser's local storage. No upload, no bank connection, no analytics.
+- An MCP server exposes the same calculation engine to AI assistants (tools: project_retirement_plan, what_if, get_methodology, get_uk_reference_figures).
+
+## Links
+
+- [The app](https://aggallim.github.io/retirement-planner/): the calculator itself (needs JavaScript)
+- [Full methodology for LLMs](https://aggallim.github.io/retirement-planner/llms-full.txt): how every figure is calculated, with sources
+- [MCP server setup](https://github.com/aggallim/retirement-planner/blob/main/tools/mcp/README.md): connect an AI assistant to the calculator
+- [Source repository](https://github.com/aggallim/retirement-planner): code and full tool documentation
+
+## Optional
+
+- [Tool documentation](https://github.com/aggallim/retirement-planner/blob/main/docs/TOOL_DOCUMENTATION.md): requirements, user guide, financial model, verification and known limitations

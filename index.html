@@ -3,7 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>UK Retirement Planner</title>
+<title>UK Retirement Planner — free pension, ISA and State Pension calculator</title>
+<meta name="description" content="Free UK retirement calculator. Project pensions, ISAs, LISA, State Pension, DB pensions and Income Tax year by year, for one person or a couple, against the Pensions UK Retirement Living Standards. Your figures stay on your device.">
+<link rel="canonical" href="https://aggallim.github.io/retirement-planner/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="UK Retirement Planner">
+<meta property="og:description" content="Free UK retirement calculator: pensions, ISAs, State Pension and Income Tax projected year by year. No account, no tracking; your figures stay on your device.">
+<meta property="og:url" content="https://aggallim.github.io/retirement-planner/">
+<meta property="og:image" content="https://aggallim.github.io/retirement-planner/icon.svg">
+<meta name="twitter:card" content="summary">
+<link rel="alternate" type="text/markdown" href="llms.txt" title="LLM-readable summary">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "UK Retirement Planner",
+      "url": "https://aggallim.github.io/retirement-planner/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Any (web browser; installable as an app)",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
+      "inLanguage": "en-GB",
+      "areaServed": "GB",
+      "description": "A UK retirement planning calculator that projects pensions, ISAs (Cash, Stocks & Shares, Lifetime ISA), the State Pension, Defined Benefit pensions, mortgage and Income Tax year by year, for an individual or a couple, and compares retirement income with the Pensions UK Retirement Living Standards. Illustrative only, not financial advice. Data is stored only on the user's device."
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "Is the UK Retirement Planner free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The calculator is free to use with no account. An optional Advanced mode is in beta." } },
+        { "@type": "Question", "name": "Does it send my figures anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "No. Your plan is stored only in your browser on your device. There is no upload, bank connection or analytics." } },
+        { "@type": "Question", "name": "Does it include Income Tax?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It estimates Income Tax on pension withdrawals, the State Pension and DB pensions for each person every year, using England, Wales and Northern Ireland rates for 2026/27, with thresholds frozen until 2030/31." } },
+        { "@type": "Question", "name": "Is this financial advice?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is an illustrative planning tool. For personal recommendations, speak to a regulated financial adviser." } }
+      ]
+    }
+  ]
+}
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563eb">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -42,7 +79,28 @@
 </head>
 <body>
 <div id="boot">Loading your plan&hellip;</div>
-<div id="root"></div>
+<div id="root">
+<!-- Static summary for crawlers and readers without JavaScript (intent 043).
+     React replaces it on load; the boot overlay above covers it until then. -->
+<main style="max-width:44rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,sans-serif;color:#1e293b;line-height:1.5">
+<h1>UK Retirement Planner</h1>
+<p>A free UK retirement calculator. It projects your pensions, ISAs and State Pension year by year, for one person or a couple, and shows whether your savings are likely to last under the assumptions you choose.</p>
+<h2>What it models</h2>
+<ul>
+<li>Workplace and personal pensions, with employer contributions, the £60,000 annual allowance and the 25% tax-free lump sum (up to the £268,275 Lump Sum Allowance)</li>
+<li>Cash ISA, Stocks &amp; Shares ISA and Lifetime ISA (with the 25% bonus), within the £20,000 allowance, plus other savings</li>
+<li>The new State Pension (£12,548 a year in 2026/27) and Defined Benefit (final salary) pensions</li>
+<li>Income Tax in retirement for each person, using England, Wales and Northern Ireland rates for 2026/27</li>
+<li>Spending, healthcare costs, a repayment mortgage and inflation</li>
+<li>A comparison with the Pensions UK Retirement Living Standards (2026), in today's money</li>
+<li>"What if?" sliders and a "what matters most" view showing how the result responds to changes</li>
+</ul>
+<h2>Privacy</h2>
+<p>Your figures stay in your browser on your device. No account is needed, nothing is uploaded, and there is no tracking or analytics.</p>
+<p><strong>Not financial advice.</strong> This is an illustrative planning tool. For personal recommendations, speak to a regulated financial adviser.</p>
+<p>This app needs JavaScript. A plain-text description of its methodology is at <a href="llms-full.txt">llms-full.txt</a>.</p>
+</main>
+</div>
 <script>/**
  * @license React
  * react.production.min.js
