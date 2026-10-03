@@ -8,6 +8,18 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+
+## 2026-10-03 — Friends-and-family beta starts (058)
+
+- Implements `intent/058-start-beta.md` (moved to `intent/done/`), roadmap
+  #23.
+- `advancedRequiresAccount: true` in `account-config.js`: Advanced now needs
+  a signed-in account with `profiles.advanced_access`. No code change; the
+  gate and sign-in dialog come from intents 044 and 045.
+- Open-beta users keep their Advanced settings saved; Simple mode ignores
+  them and says how many are switched off.
+- Cache and `APP_VERSION` v24, with a `USER_CHANGELOG` entry. Docs §3.15 and
+  §5.2, and `tools/accounts/README.md` updated.
 ## 2026-10-03 — Accounts go live (057)
 
 - Implements `intent/057-accounts-go-live.md`. `account-config.js` now

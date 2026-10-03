@@ -49,12 +49,17 @@ it. Steps 3–6 can only be done in the dashboard.
 
 ## Friends-and-family beta (roadmap #23)
 
+**Started 2026-10-03 (intent 058, v24).**
+
 1. Set `advancedRequiresAccount: true` in `account-config.js` (with a cache
-   bump). Advanced mode now needs a signed-in account with access.
+   bump). Advanced mode now needs a signed-in account with access. *Done.*
 2. Ask each tester to sign in once (⚙ Data → Sign in), which creates their
    profile.
 3. Table editor → `profiles` → set `advanced_access` to `true` for them.
-   They see Advanced on their next load.
+   They see Advanced on their next load. To remove access, set it back to
+   `false`; their Advanced settings stay saved on their device.
+4. Before inviting more than a handful of people, set up custom SMTP
+   (step 6 above).
 
 ## Marketing consent
 

@@ -14,5 +14,6 @@
 window.ACCOUNT_CONFIG = {
   supabaseUrl: 'https://jkoruktwyfbszshnekaj.supabase.co',
   supabaseAnonKey: 'sb_publishable_jmZKw39MI9PVYmBofXXNgQ_V4aLRNgQ',
-  advancedRequiresAccount: false
+  // true since intent 058: the friends-and-family beta (roadmap #23).
+  advancedRequiresAccount: true
 };
