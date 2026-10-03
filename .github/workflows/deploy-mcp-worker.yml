@@ -1,0 +1,64 @@
+# Deploys the MCP server Worker (tools/mcp/worker) to Cloudflare. Intent 055.
+# Setup: tools/mcp/README.md. Reuses the feedback Worker's Cloudflare secrets;
+# needs no GitHub token and no KV.
+name: Deploy MCP Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/mcp/**'
+      - '.github/workflows/deploy-mcp-worker.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-mcp-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/mcp/worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check secrets are set
+        run: |
+          missing=0
+          for v in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Repo secret $v is not set (see tools/feedback/README.md)"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run MCP server tests (includes the engine-copy freshness check)
+        working-directory: .
+        run: node tests/test-mcp-worker.mjs
+
+      - name: Deploy
+        run: npx --yes wrangler@4 deploy
+
+      - name: Print the MCP URL and check it answers
+        run: |
+          sub=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -r '.result.subdomain')
+          url="https://retirement-planner-mcp.$sub.workers.dev"
+          echo "MCP endpoint: $url/mcp"
+          echo "### MCP endpoint: $url/mcp" >> "$GITHUB_STEP_SUMMARY"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$url/health"; then echo; exit 0; fi
+            sleep 10
+          done
+          echo "::error::$url/health did not answer"; exit 1

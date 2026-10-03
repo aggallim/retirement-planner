@@ -1,0 +1,68 @@
+# UK Retirement Planner: full methodology
+
+> Plain-text description of how the UK Retirement Planner (https://aggallim.github.io/retirement-planner/) calculates its projections, for AI assistants and search tools that cite it. The figures are illustrative projections under the user's own assumptions, not financial advice. Reference figures are for the 2026/27 UK tax year.
+
+## What the tool is
+
+A free, browser-based retirement calculator for UK residents. It runs entirely on the user's device: plans are stored in the browser's local storage, with no upload, no bank connection and no analytics. It supports one person or a couple, and offers two modes:
+
+- **Simple** (default): the full core model described below.
+- **Advanced** (beta): adds spending phases, one-off costs, a home and downsizing model, more than one Defined Benefit pension per person with its own indexation, saved scenarios and comparison, a pension-versus-ISA-versus-cash comparison, a bridge-to-State-Pension view, a Monte Carlo simulation and a printable report.
+
+## Inputs
+
+Per person: current age, retirement age, life expectancy (75 to 110; default 81, the rounded ONS UK period life expectancy at birth for 2022 to 2024), pension pot, monthly personal and employer pension contributions, pension growth rate, whether to take the 25% tax-free lump sum, Cash ISA, Stocks & Shares ISA and Lifetime ISA (balance, monthly contribution, growth rate each), any number of other savings accounts (three in Simple mode), State Pension age and amount, one Defined Benefit pension (amount, start age), an expected inheritance (amount, age), and, in couple mode, take-home pay while the other partner has retired.
+
+Household: annual spending excluding the mortgage (today's money), annual healthcare costs (today's money), monthly mortgage payment, years left and interest rate, inflation rate (2%, 3% or 4%), and withdrawal rate (3% to 5%).
+
+## The projection (one row per calendar year)
+
+1. **Accumulation.** Until each person's retirement age, balances grow monthly at `(1 + annual rate)^(1/12) − 1`, with contributions added monthly. Pension contributions (personal + employer) are capped at the £60,000 annual allowance. ISA contributions are capped at the £20,000 combined allowance (Cash ISA + Stocks & Shares ISA + Lifetime ISA); the Lifetime ISA is limited to £4,000 a year, receives a 25% government bonus, and stops taking contributions at age 50.
+2. **At retirement.** If chosen, the tax-free lump sum is the lower of 25% of the pension pot and the £268,275 Lump Sum Allowance; it moves into the Stocks & Shares ISA. The first-year pension withdrawal is fixed at withdrawal rate × the remaining pension pot.
+3. **Decumulation.** The pension withdrawal rises with inflation each year (the "4% rule" style, not a percentage of the declining balance), capped at what is left in the pot.
+4. **Spending.** From the first person's retirement, the household's target spending is (annual spending + healthcare) × (1 + inflation)^years, plus mortgage payments while the mortgage runs. It is paid from, in order: State Pension and DB pensions (pooled), the still-working partner's take-home pay (couple mode only), pension withdrawals after Income Tax, then savings in a fixed order: other savings, Cash ISA, Stocks & Shares ISA, then the Lifetime ISA (only from age 60). In couple mode each savings tier is drawn in proportion to each retired person's balance.
+5. **Income Tax.** Each person's pension withdrawal + State Pension + DB pensions is taxed separately, using England, Wales and Northern Ireland rates: Personal Allowance £12,570, reduced by £1 for every £2 of income above £100,000; 20% up to £50,270; 40% above that; 45% above £125,140. Thresholds are frozen until the 2030/31 tax year, then rise with the inflation input. ISA, Lifetime ISA and other-savings withdrawals, take-home pay (already net) and the tax-free lump sum are not taxed. There is no gross-up: tax reduces net income and the shortfall comes from savings.
+6. **State Pension and DB pensions.** Both start at their own ages and are uprated from today by the inflation input. In Advanced mode a DB scheme can instead use CPI capped at a rate, RPI (modelled as inflation + 1 percentage point until 2030, then equal to inflation, reflecting RPI's alignment with CPIH from 2030), a fixed rate, or no increases.
+7. **Mortgage.** The outstanding balance is the present value of the remaining monthly payments at the mortgage interest rate. Payments and the payoff year are the user's inputs.
+8. **Depletion.** The money is treated as run out in the first year, from the first retirement onward, when total pensions + ISAs + other savings fall below £1,000. The plan end is the later of the two life expectancies.
+
+## Headline results
+
+- **Can I retire?** "On track" if the money lasts beyond the plan end; otherwise the year it runs out. The tool also searches for the earliest (or the latest needed) shared change in retirement age that keeps the plan funded, within ages 50 to 75.
+- **Pot at retirement**: total savings in the first year everyone is retired.
+- **Sustainable income after tax**: in that same year, the withdrawal rate applied to each person's pension pot (taxed) and to their ISAs and other savings (tax-free), plus State Pension and DB pensions already being paid, minus Income Tax.
+- **Living Standard**: that income in today's money, compared with the Pensions UK Retirement Living Standards 2026 (after tax, excluding housing costs, outside London). One person: minimum £13,900, moderate £32,700, comfortable £45,400. Two people: £22,500, £45,400, £62,700.
+- **Today's money**: a future amount divided by (1 + inflation)^(year − 2026).
+- **Estimated Income Tax over retirement**: the sum of each year's tax from first retirement to plan end, also shown with each year deflated to today's money.
+
+## Analysis tools
+
+- **What if?**: change retirement age (±5 years, shared), spending (±30%), growth (±3 points on every account) and an extra pension contribution, and compare with the current plan.
+- **What matters most**: nine one-at-a-time changes (retire 2 years later or earlier, spend 10% less or more, growth ±1 point, inflation +1 point, £100 a month more into each pension, plan for 5 more years), ranked by the change in money left at the plan end in today's money. These describe the model's response, not recommendations.
+- **Monte Carlo (Advanced)**: 1,000 runs with each year's growth varied by a normal distribution (12% standard deviation for pensions, Stocks & Shares ISA and Lifetime ISA; 1% for cash), reporting the share of runs in which the money lasts and the 10th, 50th and 90th percentile of total savings in today's money. The volatilities are illustrative.
+- **Pension vs ISA vs cash (Advanced)**: adds an extra monthly amount to a pension (grossed up by 25% basic-rate relief at source), a Stocks & Shares ISA or a Cash ISA (within the allowance), or other savings, and compares results.
+- **Downsizing (Advanced)**: at the chosen age, released cash = sale price − moving costs − new home cost − any mortgage owed, added to savings; the home itself is never counted as savings.
+
+## Known limitations
+
+- Fixed growth rates outside the optional simulation; no sequence-of-returns risk in the main projection.
+- One inflation rate for all spending, State Pension and (by default) DB pensions.
+- Scottish Income Tax, tax on savings interest outside ISAs, Marriage Allowance, inheritance tax and care-home costs beyond the healthcare input are not modelled.
+- Salary is only modelled as the still-working partner's take-home pay in couple mode, with no real pay growth.
+- DB scheme commutation, survivor's pensions and DB interaction with pension allowances are not modelled.
+- Allowances (£20,000 ISA, £4,000 LISA, £60,000 pension, £268,275 Lump Sum Allowance) are held flat in nominal terms.
+
+## Sources
+
+- Income Tax rates: https://www.gov.uk/income-tax-rates
+- Threshold freeze to 5 April 2031: https://www.gov.uk/government/publications/maintaining-income-tax-and-equivalent-national-insurance-contributions-thresholds-until-5-april-2031
+- New State Pension (£241.30 a week, £12,548 a year in 2026/27): https://www.gov.uk/new-state-pension/what-youll-get
+- Lump Sum Allowance: https://www.gov.uk/tax-on-your-private-pension/lump-sum-allowance
+- Pension annual allowance: https://www.gov.uk/tax-on-your-private-pension/annual-allowance
+- ISAs: https://www.gov.uk/individual-savings-accounts
+- Lifetime ISA: https://www.gov.uk/lifetime-isa
+- RPI reform: https://www.gov.uk/government/consultations/a-response-to-the-consultation-on-the-reform-to-retail-prices-index-rpi-methodology
+- Retirement Living Standards: https://www.retirementlivingstandards.org.uk/details
+- Life expectancy: https://www.ons.gov.uk/peoplepopulationandcommunity/birthsdeathsandmarriages/lifeexpectancies/bulletins/nationallifetablesunitedkingdom/2022to2024
+
+Not financial advice. For personal recommendations, speak to a regulated financial adviser.

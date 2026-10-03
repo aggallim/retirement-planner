@@ -1,11 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- UK Retirement Planner mark (intent 056): a sun rising over a horizon, on ink. -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1e3a8a"/><stop offset="60%" stop-color="#2563eb"/><stop offset="100%" stop-color="#0d9488"/>
-    </linearGradient>
+    <clipPath id="above"><rect width="512" height="344"/></clipPath>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <path d="M96 344 L176 264 L248 312 L416 152" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="416" cy="152" r="26" fill="#5eead4"/>
-  <path d="M96 400 h320" stroke="#ffffff" stroke-opacity="0.45" stroke-width="18" stroke-linecap="round"/>
+  <rect width="512" height="512" rx="112" fill="#283860"/>
+  <circle cx="256" cy="344" r="100" fill="#d9a21b" clip-path="url(#above)"/>
+  <g stroke="#d9a21b" stroke-width="20" stroke-linecap="round">
+    <path d="M256 196v-40"/>
+    <path d="M158 246l-28-28"/>
+    <path d="M354 246l28-28"/>
+  </g>
+  <path d="M96 344h320" stroke="#f7f5f0" stroke-width="24" stroke-linecap="round"/>
+  <path d="M160 404h192" stroke="#f7f5f0" stroke-opacity="0.45" stroke-width="18" stroke-linecap="round"/>
 </svg>

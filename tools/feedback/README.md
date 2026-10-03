@@ -71,17 +71,21 @@ intent's second 2026-09-24 addendum.
 6. **Claude sets `window.FEEDBACK_ENDPOINT`** in `feedback-config.js` to
    that URL, in a follow-up PR that also bumps the `sw.js` cache version.
    This makes the links appear in the app.
-7. **Claude creates the daily triage routine** (a Claude Code scheduled
-   trigger on the owner's subscription; no API key):
-   - Schedule: daily at 07:00 UK time. Routines use UTC cron, so
-     `0 6 * * *` is 07:00 in summer (BST) and 06:00 in winter (GMT).
-   - Model: Claude Haiku 4.5 (`claude-haiku-4-5-20251001`).
-   - A fresh session each run, in an environment that includes both repos.
-   - Prompt:
-
-     > Follow the instructions in `tools/feedback/TRIAGE.md` in the
-     > `aggallim/retirement-planner` repository (on `main`) to triage new
-     > issues in `aggallim/retirement-planner-feedback`.
+7. **The daily triage routine** (a Claude Code scheduled trigger on the
+   owner's subscription; no API key). Created 2026-10-02 (roadmap #35):
+   - Schedule: daily at 06:52 UK time (`CRON_TZ=Europe/London 52 6 * * *`).
+   - It fires into one dedicated, long-lived session titled **"Feedback
+     triage (daily routine)"** (Claude Haiku 4.5), which has
+     `aggallim/retirement-planner-feedback` attached as its repository. A
+     fresh session per run doesn't work: routine sessions start with no
+     repositories, so they have no GitHub tools for the private repo.
+   - Each run's prompt tells it to fetch `tools/feedback/TRIAGE.md` fresh
+     from `main` (raw GitHub URL) and triage only open `needs-triage`
+     issues, treating earlier runs as finished.
+   - To recreate it (for example if that session is archived): create a
+     session with the feedback repo as its source and Haiku 4.5 as the
+     model, then a routine that fires into that session with the same
+     prompt. The claude.ai Routines page can do both.
 8. **End-to-end test** (see below).
 
 ## End-to-end test

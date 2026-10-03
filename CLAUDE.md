@@ -31,17 +31,24 @@ calculation logic.
 | `docs/TOOL_DOCUMENTATION.md` | Full requirements, user guide, financial model and technical documentation. |
 | `CONTRIBUTING.md` | Step-by-step walkthrough (with diagram) of the intent → branch → draft PR → implement → merge lifecycle below, including when to open the PR. |
 | `CHANGELOG.md` | Short, chronological "what shipped when," one entry per requirement. |
+| `account-config.js` | Supabase settings for the optional Advanced-mode accounts (intent 045). Empty URL = no account UI anywhere. Only the public anon key belongs here. Setup and schema: `tools/accounts/`. |
+| `llms.txt`, `llms-full.txt`, `robots.txt`, `sitemap.xml` | AI/search discoverability (intent 043). `llms-full.txt` is the plain-text methodology; the MCP server serves it too, so update it with any calculation change. |
 | `feedback.html`, `feedback-config.js` | The "Send feedback" page (plain HTML, no React) and the one place the feedback Worker's URL is set (`window.FEEDBACK_ENDPOINT`; empty hides the app's feedback links). |
 | `tools/feedback/` | The feedback pipeline: the Cloudflare Worker (`worker/`) that turns submissions into issues, its setup `README.md`, and `TRIAGE.md`, the rules the daily triage routine follows. Feedback issues live in the private `aggallim/retirement-planner-feedback` repo, never this public one. |
+| `tools/tailwind/` | Dev-only Tailwind CLI that regenerates the CSS inlined in `index.html` (intent 036); also holds the brand palette. Run `npm install && npm run build` there after adding Tailwind classes. |
+| `tools/mcp/` | The MCP server Worker (intent 055) and `build-engine.mjs`, which copies the engine spans into `worker/src/engine.generated.js`. Re-run it after any engine change. |
+| `tools/accounts/` | Supabase schema (`schema.sql`) and setup guide for accounts (intent 045). |
 | `tests/test-engine.js` | Dependency-free `node` test harness for `projectJoint()`. Run with `node tests/test-engine.js` from the repo root. |
 | `tests/test-feedback-worker.mjs` | Dependency-free tests for the feedback Worker. Run with `node tests/test-feedback-worker.mjs`. |
+| `tests/test-mcp-worker.mjs` | Dependency-free tests for the MCP server, including a check that its engine copy matches `index.html`. Run with `node tests/test-mcp-worker.mjs`. |
 | `tests/fixtures/` | Regression fixtures for the test harness (e.g. the individual-mode baseline). |
 | `.github/workflows/pages.yml` | Deploys to GitHub Pages on every push to `main`. No build step. |
-| `.github/workflows/test-engine.yml` | Runs `tests/test-engine.js` and `tests/test-feedback-worker.mjs` on push/PR. |
+| `.github/workflows/test-engine.yml` | Runs `tests/test-engine.js`, `tests/test-feedback-worker.mjs` and `tests/test-mcp-worker.mjs` on push/PR. |
+| `.github/workflows/deploy-mcp-worker.yml` | Deploys the MCP server Worker when `tools/mcp/` changes on `main`, with the same Cloudflare secrets. |
 | `.github/workflows/deploy-feedback-worker.yml` | Deploys the feedback Worker to Cloudflare when `tools/feedback/worker/` changes on `main`. Uses the repo secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `FEEDBACK_GITHUB_TOKEN`. |
 | `.claude/skills/` | Skills for the workflow below: `grill-me`/`grilling` (intent gathering) and `conventional-branch` (branch naming). Reproduced from their upstream sources — see each `SKILL.md`'s attribution footer. |
 
-There is no `package.json`, no build tooling, and no separate `.jsx` source
+There is no root `package.json`, no deploy-time build, and no separate `.jsx` source
 in this repo — `index.html` is a **precompiled** artifact (JSX has already
 been turned into `React.createElement(...)` calls; there is no in-browser
 Babel). Editing the app means editing that generated JS directly inside
@@ -68,6 +75,14 @@ does that automatically.
   returning users won't see the update. Bump `APP_VERSION` in
   `index.html` to the same value. `tests/test-engine.js` fails if they
   differ.
+- **New Tailwind classes need the CSS regenerated.** The inlined Tailwind
+  CSS only contains classes it was built from. After adding classes, run
+  `cd tools/tailwind && npm install && npm run build` and commit `index.html`
+  (see `docs/TOOL_DOCUMENTATION.md` §5.1).
+- **Engine changes also go to the MCP server.** After changing anything in
+  an `ENGINE-EXTRACT` span (or `llms-full.txt`), run
+  `node tools/mcp/build-engine.mjs`; `tests/test-mcp-worker.mjs` fails until
+  you do.
 - **Performance is fragile — read §5.3 of `docs/TOOL_DOCUMENTATION.md`
   before touching component structure.** The sliders were previously
   unusable because subcomponents were declared inside the parent component.

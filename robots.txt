@@ -1,0 +1,5 @@
+# UK Retirement Planner: every crawler, including AI crawlers, is welcome.
+User-agent: *
+Allow: /
+
+Sitemap: https://aggallim.github.io/retirement-planner/sitemap.xml

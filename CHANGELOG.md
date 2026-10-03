@@ -8,6 +8,147 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-10-02 — Roadmap batch, built autonomously (034–056)
+
+One release (cache and `APP_VERSION` v22, one `USER_CHANGELOG` entry)
+covering most of the Notion roadmap. The owner asked for every buildable item
+with no confirmation round, so there was no grilling; each intent records the
+decisions taken and why. The umbrella is `intent/034-roadmap-batch.md`; all
+intents are moved to `intent/done/`. Docs: `docs/TOOL_DOCUMENTATION.md` §1,
+§2.2, §3.2–§3.5, new §3.13–§3.19, §4.3–§4.5, §4.7, new §4.8–§4.11, §5.1,
+§5.2, §5.4, §5.5, §6.2 and §7 (items 2, 3, 4, 6, 8, 11 rewritten; 13–16
+added). The individual-mode regression baseline is **unchanged**: every new
+engine input is opt-in.
+
+### Chart hover tooltips restored (035)
+
+- Implements `intent/035-chart-hover-tooltips.md`. Bug found while building:
+  release #31 (v20) replaced Recharts' `Tooltip` with the new `InfoTooltip`
+  in both charts, so hovering showed nothing. Recharts' tooltip is now
+  imported as `ChartHoverTooltip`.
+
+### Tailwind CSS regeneration tool (036)
+
+- Implements `intent/036-tailwind-regeneration.md`. Dev-only
+  `tools/tailwind/` (pinned Tailwind 3.4.19) rebuilds the inlined CSS from
+  the app script, safelisting every original class so the output is a
+  superset. Classes already in use but missing CSS (focus-visible rings,
+  `grid-cols-4`, several hover colours) now work. Repo-only.
+
+### Living Standard in today's money (037)
+
+- Implements `intent/037-living-standard-todays-money.md`, roadmap #5.
+- Why: the bands are today's money but were compared with future-£ income,
+  flattering distant retirements by about (1 + inflation)^years.
+- Card, sticky banner, gauge and "below minimum" warning now compare the
+  today's-money income; the gauge leads with it.
+- Addendum fixes found on the way: household State Pension and DB pension
+  are now the projection's nominal figures for that year (they were
+  today's-money inputs added to a future-£ figure), and sustainable income
+  applies the withdrawal rate to ISAs and other savings too (tax-free).
+  Example: the default plan's first-year income went from £33,370 (shown as
+  "Moderate" against today's-money bands) to £64,730 in 2056 pounds,
+  ≈ £26,700 in today's money ("Minimum"). The projection engine is unchanged.
+- New `householdAtRetirement()` and `planSummary()` in the engine span,
+  shared by every feature below.
+
+### Mortgage interest (038)
+
+- Implements `intent/038-mortgage-interest.md`, roadmap #9. Mortgage Interest
+  Rate input (default 4.5%); the balance shown is the present value of the
+  remaining payments. Payments and payoff year unchanged; the engine treats a
+  missing rate as 0%, so old callers and the baseline are unchanged.
+
+### A still-working partner's take-home pay (039)
+
+- Implements `intent/039-working-partner-pay.md`, roadmap #8. Per-person
+  `takeHomePay` in couple mode, counted only while that person works after
+  the other has retired, inflation-uprated, ahead of drawdown and savings,
+  not taxed. Earnings bar in the income chart. Limitation #2 narrowed.
+
+### "What if?" sliders (040) and "What matters most" (041)
+
+- Implement `intent/040-what-if-sliders.md` (roadmap #7) and
+  `intent/041-what-matters-most.md` (roadmap #6). Collapsible cards computed
+  only while open. `applyWhatIf()` and `sensitivityAnalysis()` in the engine
+  span. Wording is mechanical only ("These are not recommendations"), per
+  the owner's constraint on #6.
+
+### Share with your AI assistant (042)
+
+- Implements `intent/042-share-with-ai.md`, roadmap #36. Data menu view that
+  builds anonymised Markdown (headline results, inputs, methodology, example
+  questions, plan JSON) to copy or download; Advanced adds the yearly table
+  and scenarios. Nothing is sent by the app.
+
+### AI and search discoverability (043)
+
+- Implements `intent/043-ai-discoverability.md`, roadmap #29. Meta
+  description, Open Graph, JSON-LD, a static crawlable summary in `#root`,
+  `llms.txt`, `llms-full.txt`, `robots.txt`, `sitemap.xml`. No tracking.
+
+### Simple and Advanced modes (044) and accounts (045)
+
+- Implement `intent/044-simple-advanced-modes.md` (roadmap #12) and
+  `intent/045-accounts.md` (roadmaps #13, #14).
+- Header switch; Advanced-only inputs are saved but stripped by
+  `planForMode()` in Simple mode, which notes how many are switched off.
+- Supabase magic-link accounts over REST (no SDK), off until
+  `account-config.js` is filled in. Unticked marketing-consent box at
+  sign-up. `profiles` schema with row-level security in `tools/accounts/`.
+  Plan figures are never sent. Advanced is an open beta preview until
+  `advancedRequiresAccount` is turned on for the friends-and-family beta.
+
+### Advanced features (046–053)
+
+- Implement `intent/046-scenarios.md` (#15), `047-allocation-comparison`
+  (#16), `048-state-pension-bridge` (#17), `049-phased-spending` (#18),
+  `050-report-export` (#19), `051-monte-carlo` (#20),
+  `052-property-downsizing` (#21) and `053-multiple-db-pensions` (#31, #32).
+- Engine: optional `spendingPhases`, `oneOffCosts`, `property`,
+  `returnShocks`, `dbPensions` and per-scheme indexation, plus
+  `runMonteCarlo()` (seeded, 1,000 runs, 12%/1% illustrative volatility).
+  `UK_REFERENCE.rpi` added for RPI-linked schemes (inflation + 1 point until
+  the 2030 CPIH alignment).
+- UI: scenarios with compare table and chart; pension vs ISA vs cash table;
+  bridge table; Monte Carlo fan chart; printable report through a portal and
+  print CSS.
+
+### Savings-account cap in Simple mode (054)
+
+- Implements `intent/054-savings-account-cap.md`, roadmap #22. Simple mode
+  allows 3 other-savings accounts per person; existing extras are kept and
+  counted.
+
+### MCP server (055)
+
+- Implements `intent/055-mcp-server.md`, roadmap #30. Stateless Streamable
+  HTTP Worker in `tools/mcp/worker/` with five read-only tools, running the
+  app's own engine via the generated `engine.generated.js`. New
+  `tests/test-mcp-worker.mjs` (in CI) and `deploy-mcp-worker.yml`.
+
+### Brand identity (056)
+
+- Implements `intent/056-brand-identity.md`, roadmap #33. Ink palette in
+  place of Tailwind's stock blue (via the Tailwind config), sunrise mark for
+  the icon and header, plain Fraunces wordmark, warm paper background,
+  softer cards; manifest, theme colour and `feedback.html` follow.
+
+### Daily feedback triage routine (roadmap #35)
+
+- Not code. The private feedback repo was attached to a session this time.
+  The routine fires daily at 06:52 UK time into a dedicated Haiku 4.5
+  session that has the feedback repo attached (a fresh session per run had
+  no GitHub access), following `tools/feedback/TRIAGE.md`. Its first run
+  triaged the three waiting issues. `tools/feedback/README.md` step 7
+  updated.
+
+### Tests
+
+- `tests/test-engine.js`: 20 new checks (74 total). `tests/test-mcp-worker.mjs`:
+  10 checks. Headless Playwright checks at desktop and phone widths, light
+  and dark, listed in docs §5.4.
+
 ## 2026-09-30 — ISA and LISA hard caps (033)
 
 - Implements `intent/033-isa-lisa-hard-cap.md` (moved to `intent/done/`),
