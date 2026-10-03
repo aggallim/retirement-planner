@@ -215,7 +215,7 @@ Advanced inputs are saved with the plan but **only apply in Advanced mode**: in 
 
 ### 3.16 Accounts (optional, for Advanced)
 
-Off until a Supabase project is set in `account-config.js` (intent 045; setup in `tools/accounts/README.md`); until then no account UI appears anywhere and the privacy wording still says "no account". When on:
+On since intent 057: `account-config.js` points at the owner's Supabase project (setup in `tools/accounts/README.md`). With an empty Supabase URL, accounts are off: no account UI appears anywhere and the privacy wording says "no account" (intent 045). When on:
 
 - **⚙ Data → Sign in (for Advanced mode)** (or the dialog when locked Advanced is chosen) asks for an email address and offers an **unticked** "Email me product news and offers (optional)" box (roadmap #14). A magic link is emailed; opening it on the same device signs in and the app strips the tokens from the address bar.
 - The account panel shows the email, whether Advanced is unlocked, the marketing choice (changeable) and **Sign out**.
@@ -500,7 +500,7 @@ RetirementCalculator()  state, derived memos, layout
 
 **Plan state (034 batch).** `PERSISTED_FIELDS` gained `mortgageRate`, `spendingPhases`, `oneOffCosts`, `property` and `scenarios`. The component builds one memoised `plan` object from its state, read by auto-save, Export, scenarios and the share export; `applyPlanFields()` is the single tolerant setter used by Import, loading a scenario and What if's Apply. All derived figures read one memoised `engineArgs` (already passed through `planForMode()`), so Simple mode never sees Advanced inputs.
 
-**Accounts (intent 045).** `account-config.js` (`window.ACCOUNT_CONFIG`, cached by `sw.js`) holds the Supabase URL, the public anon key and `advancedRequiresAccount`. `accountApi` calls Supabase's REST endpoints with `fetch` (no SDK); `useAccount()` reads a magic-link return from the URL hash once, strips it with `history.replaceState`, keeps the session under `ukRetirementPlanner.session.v1`, refreshes it when expired and loads the `profiles` row. `advancedAccessFor(account)` is the gate. Schema, row-level security and setup: `tools/accounts/`.
+**Accounts (intent 045).** `account-config.js` (`window.ACCOUNT_CONFIG`, cached by `sw.js`) holds the Supabase URL, a public key (the publishable `sb_publishable_…` key since intent 057; the legacy anon key also works, because it is sent only as the `apikey` header) and `advancedRequiresAccount` (still `false`: Advanced is an open beta). `accountApi` calls Supabase's REST endpoints with `fetch` (no SDK); `useAccount()` reads a magic-link return from the URL hash once, strips it with `history.replaceState`, keeps the session under `ukRetirementPlanner.session.v1`, refreshes it when expired and loads the `profiles` row. `advancedAccessFor(account)` is the gate. Schema, row-level security and setup: `tools/accounts/`.
 
 **MCP server (intent 055).** `tools/mcp/worker/` is a stateless Cloudflare Worker speaking MCP's Streamable HTTP transport with JSON responses (POST `/mcp`, JSON-RPC 2.0, no sessions, no storage). `tools/mcp/build-engine.mjs` copies the `ENGINE-EXTRACT` spans and `llms-full.txt` into `worker/src/engine.generated.js`, so it runs the app's own engine; `tests/test-mcp-worker.mjs` fails if that copy is stale. `.github/workflows/deploy-mcp-worker.yml` deploys it on `main`.
 
@@ -607,6 +607,11 @@ Headless (Playwright, desktop and phone widths, light and dark): chart hover too
 - a life expectancy of 110 gives a projection and charts running to that year; 100 or less is unchanged (baseline fixture)
 - a saved plan with life expectancy 95 keeps 95
 
+**Accounts go live (intent 057)** — checked against the live Supabase project, and to repeat on any rebuilt one:
+- Advisors → Security and Performance are both empty
+- `authenticated` has `SELECT` on `profiles`, no table-level `UPDATE`, and column `UPDATE` only on `marketing_consent` and `marketing_consent_at`; RLS is on with "read own profile" and "update own consent"; `on_auth_user_created` and `profiles_touch` exist
+- Manual, before merging a config change: at `http://localhost:8000/`, ⚙ Data → Sign in sends a link; opening it returns signed in with the hash stripped; a `profiles` row appears with the consent choice; changing consent saves; editing `advanced_access` from the browser is refused; Sign out clears the session
+
 ### 5.5 PWA packaging
 
 Everything is inlined into one `index.html` (~1.07 MB, ~284 KB zipped after the 034 batch):
@@ -637,7 +642,7 @@ No personal data sits in the repo — figures live only in device storage.
 
 Push changes to `main`. The service worker caches aggressively, so if you don't see an update, bump `CACHE = 'retirement-planner-v1'` in `sw.js` to `v2`, or fully close and reopen the installed app. Bump `APP_VERSION` in `index.html` to the same value at the same time (the test harness checks they match).
 
-The MCP server (§3.18) is a second Cloudflare Worker, deployed by `.github/workflows/deploy-mcp-worker.yml` with the same two Cloudflare secrets; it needs no GitHub token or KV. Accounts (§3.16) use a Supabase project the owner creates (`tools/accounts/README.md`); the app talks to it directly from the browser, so GitHub Pages remains the only web host.
+The MCP server (§3.18) is a second Cloudflare Worker, deployed by `.github/workflows/deploy-mcp-worker.yml` with the same two Cloudflare secrets; it needs no GitHub token or KV. Accounts (§3.16) use the owner's Supabase project (ref `jkoruktwyfbszshnekaj`, London; setup and the dashboard-only auth settings in `tools/accounts/README.md`); the app talks to it directly from the browser, so GitHub Pages remains the only web host.
 
 The feedback Worker (§3.12) is hosted separately, on Cloudflare. It redeploys automatically when anything under `tools/feedback/worker/` changes on `main`, via `.github/workflows/deploy-feedback-worker.yml`. That workflow needs three repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `FEEDBACK_GITHUB_TOKEN`), described in `tools/feedback/README.md`. The fine-grained `FEEDBACK_GITHUB_TOKEN` expires yearly and must be renewed.
 

@@ -8,6 +8,27 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-10-03 — Accounts go live (057)
+
+- Implements `intent/057-accounts-go-live.md`. `account-config.js` now
+  points at the owner's Supabase project (London) with its **publishable**
+  key, so "Sign in (for Advanced mode)" appears in the ⚙ Data menu.
+  `advancedRequiresAccount` stays `false`: Advanced is still an open beta.
+- The schema was applied to the project from an agent session. Its
+  advisors raised three issues, now fixed both in the project and in
+  `tools/accounts/schema.sql` so a rebuild matches what is live:
+  - `touch_profile` gets a fixed `search_path`.
+  - `EXECUTE` on the `handle_new_user` trigger function is revoked from the
+    API roles.
+  - The RLS policies wrap `auth.uid()` in a `select`, so it is evaluated
+    once per query.
+- `tools/accounts/README.md` gains the setup details found along the way:
+  "Allow new users to sign up" must be on; the redirect URLs need the
+  `**` wildcard; first-time users get the "Confirm signup" email template;
+  and which key to copy. Docs: `docs/TOOL_DOCUMENTATION.md` §3.16, §5.2,
+  §5.4 and §6.2.
+- Cache and `APP_VERSION` v23, with a `USER_CHANGELOG` entry.
+
 ## 2026-10-02 — Roadmap batch, built autonomously (034–056)
 
 One release (cache and `APP_VERSION` v22, one `USER_CHANGELOG` entry)
