@@ -8,7 +8,7 @@ Key facts:
 - UK-specific reference figures for the 2026/27 tax year: Personal Allowance £12,570; higher-rate threshold £50,270; additional-rate threshold £125,140; full new State Pension £12,548 a year; pension annual allowance £60,000; Lump Sum Allowance £268,275; ISA allowance £20,000; Lifetime ISA £4,000 with a 25% bonus.
 - Income Tax uses England, Wales and Northern Ireland rates per person, with thresholds frozen until 2030/31 and then raised with inflation. Scottish rates are not modelled.
 - Living Standard bands: Pensions UK Retirement Living Standards 2026 (after tax, excluding housing, outside London). One person: £13,900 minimum, £32,700 moderate, £45,400 comfortable. Two people: £22,500, £45,400, £62,700. The app compares income with them in today's money.
-- Privacy: data is stored in the browser's local storage. No upload, no bank connection, no analytics.
+- Privacy: data is stored in the browser's local storage. No upload, no bank connection. Only anonymous, cookieless page-view counts are collected, never plan figures.
 - An MCP server exposes the same calculation engine to AI assistants (tools: project_retirement_plan, what_if, get_methodology, get_uk_reference_figures).
 
 ## Links

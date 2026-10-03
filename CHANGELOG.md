@@ -9,6 +9,20 @@ This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
 
+## 2026-10-03 — Cloudflare Web Analytics (059)
+
+- Implements `intent/059-cloudflare-web-analytics.md` (moved to
+  `intent/done/`). New `analytics-config.js` holds the public site token and
+  a loader for Cloudflare's cookieless beacon, included by `index.html` and
+  `feedback.html` and precached in `sw.js`.
+- Shipped with an empty token, so nothing is counted until the owner pastes
+  it in. The loader also skips non-`aggallim.github.io` hosts and browsers
+  sending Do Not Track or Global Privacy Control.
+- All "no analytics" wording reworded: figures never leave the device; only
+  anonymous page-view counts are collected. Updated in `index.html`,
+  `llms.txt`, `llms-full.txt` and `docs/TOOL_DOCUMENTATION.md` §3 and §6.
+- Cache and `APP_VERSION` v25, with a `USER_CHANGELOG` entry.
+
 ## 2026-10-03 — Friends-and-family beta starts (058)
 
 - Implements `intent/058-start-beta.md` (moved to `intent/done/`), roadmap
