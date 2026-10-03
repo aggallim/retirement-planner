@@ -14,15 +14,16 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
--- A signed-in user can read only their own profile.
+-- A signed-in user can read only their own profile. auth.uid() is wrapped in
+-- a select so it runs once per query, not per row (performance advisor).
 drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile" on public.profiles
-  for select using (auth.uid() = id);
+  for select using ((select auth.uid()) = id);
 
 -- A signed-in user can update their own row...
 drop policy if exists "update own consent" on public.profiles;
 create policy "update own consent" on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
+  for update using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
 -- ...but only the consent columns. advanced_access, email and id can only be
 -- changed with the service role (the Supabase dashboard).
@@ -56,8 +57,13 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- The trigger function sits in the exposed public schema, so keep it out of
+-- /rest/v1/rpc (security advisor). Triggers still fire: Postgres checks
+-- EXECUTE only when the trigger is created.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 create or replace function public.touch_profile()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = '' as $$
 begin
   new.updated_at = now();
   return new;
