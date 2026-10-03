@@ -29,6 +29,15 @@ off and the app shows its "no account" wording.
    public key). Never use the `service_role` key. Bump the `sw.js` cache
    version and `APP_VERSION` with it.
 
+## Current state (intent 057)
+
+- Project: "UK Retirement Planner", ref `jkoruktwyfbszshnekaj`, London.
+  Schema applied and checked; the security advisor is clean.
+- `account-config.js` uses the project's publishable key
+  (`sb_publishable_…`) rather than the legacy anon JWT. Both work in the
+  `apikey` header.
+- `advancedRequiresAccount` is `false`: signing in is optional.
+
 ## Friends-and-family beta (roadmap #23)
 
 1. Set `advancedRequiresAccount: true` in `account-config.js` (with a cache

@@ -10,7 +10,9 @@
 // everyone. true = Advanced needs a signed-in account whose profile has
 // advanced_access (the friends-and-family beta, roadmap #23).
 window.ACCOUNT_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  supabaseUrl: 'https://jkoruktwyfbszshnekaj.supabase.co',
+  // Supabase's publishable key (sb_publishable_...), the recommended
+  // replacement for the legacy anon key. Public by design (intent 057).
+  supabaseAnonKey: 'sb_publishable_jmZKw39MI9PVYmBofXXNgQ_V4aLRNgQ',
   advancedRequiresAccount: false
 };

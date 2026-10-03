@@ -8,6 +8,20 @@ before 024, when the lifecycle still used a spec step).
 This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
+## 2026-10-03 — Accounts turned on (057)
+
+- Implements `intent/057-enable-accounts.md` (moved to `intent/done/`),
+  following intent 045.
+- `account-config.js` points at the owner's Supabase project
+  (`jkoruktwyfbszshnekaj`, London) with its publishable key. Before
+  enabling, the agent checked the project: schema, row-level security
+  policies, triggers and the consent-only update grant all match
+  `tools/accounts/schema.sql`, and the security advisor is clean.
+- `advancedRequiresAccount` stays false, so signing in is optional and
+  Advanced remains an open beta.
+- Cache and `APP_VERSION` v23, with a `USER_CHANGELOG` entry. Docs §3.16
+  and `tools/accounts/README.md` updated.
+
 ## 2026-10-02 — Roadmap batch, built autonomously (034–056)
 
 One release (cache and `APP_VERSION` v22, one `USER_CHANGELOG` entry)

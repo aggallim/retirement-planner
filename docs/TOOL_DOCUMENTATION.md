@@ -215,7 +215,7 @@ Advanced inputs are saved with the plan but **only apply in Advanced mode**: in 
 
 ### 3.16 Accounts (optional, for Advanced)
 
-Off until a Supabase project is set in `account-config.js` (intent 045; setup in `tools/accounts/README.md`); until then no account UI appears anywhere and the privacy wording still says "no account". When on:
+Off until a Supabase project is set in `account-config.js` (intent 045; setup in `tools/accounts/README.md`); until then no account UI appears anywhere and the privacy wording still says "no account". **On since v23** (intent 057): project `jkoruktwyfbszshnekaj` (London), using its publishable key, with `advancedRequiresAccount` still false, so signing in is optional and Advanced stays open. When on:
 
 - **⚙ Data → Sign in (for Advanced mode)** (or the dialog when locked Advanced is chosen) asks for an email address and offers an **unticked** "Email me product news and offers (optional)" box (roadmap #14). A magic link is emailed; opening it on the same device signs in and the app strips the tokens from the address bar.
 - The account panel shows the email, whether Advanced is unlocked, the marketing choice (changeable) and **Sign out**.
