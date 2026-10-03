@@ -1086,7 +1086,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v23';
+const APP_VERSION = 'v24';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -1098,6 +1098,15 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v24',
+  date: '2026-10-03', // set to the actual merge date
+  title: 'Advanced mode is now a private beta',
+  items: [
+    'Advanced mode is now open to invited beta testers only. To use it, sign in from the Data menu with an account that has beta access.',
+    'Simple mode is unchanged and free, with no account needed.',
+    'If you used Advanced before, your Advanced settings are still saved. Simple mode just leaves them out of the figures, and they come back if you get beta access.'
+  ]
+}, {
   version: 'v23',
   date: '2026-10-03', // set to the actual merge date
   title: 'Optional sign-in for Advanced mode',
