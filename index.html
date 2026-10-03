@@ -33,7 +33,7 @@
       "@type": "FAQPage",
       "mainEntity": [
         { "@type": "Question", "name": "Is the UK Retirement Planner free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The calculator is free to use with no account. An optional Advanced mode is in beta." } },
-        { "@type": "Question", "name": "Does it send my figures anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "No. Your plan is stored only in your browser on your device. There is no upload, bank connection or analytics." } },
+        { "@type": "Question", "name": "Does it send my figures anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "No. Your plan is stored only in your browser on your device. There is no upload or bank connection. The site only counts anonymous page views, with no cookies, and never sees your figures." } },
         { "@type": "Question", "name": "Does it include Income Tax?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It estimates Income Tax on pension withdrawals, the State Pension and DB pensions for each person every year, using England, Wales and Northern Ireland rates for 2026/27, with thresholds frozen until 2030/31." } },
         { "@type": "Question", "name": "Is this financial advice?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is an illustrative planning tool. For personal recommendations, speak to a regulated financial adviser." } }
       ]
@@ -50,6 +50,7 @@
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8IS0tIFVLIFJldGlyZW1lbnQgUGxhbm5lciBtYXJrIChpbnRlbnQgMDU2KTogYSBzdW4gcmlzaW5nIG92ZXIgYSBob3Jpem9uLCBvbiBpbmsuIC0tPgogIDxkZWZzPgogICAgPGNsaXBQYXRoIGlkPSJhYm92ZSI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSIzNDQiLz48L2NsaXBQYXRoPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzI4Mzg2MCIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjM0NCIgcj0iMTAwIiBmaWxsPSIjZDlhMjFiIiBjbGlwLXBhdGg9InVybCgjYWJvdmUpIi8+CiAgPGcgc3Ryb2tlPSIjZDlhMjFiIiBzdHJva2Utd2lkdGg9IjIwIiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPHBhdGggZD0iTTI1NiAxOTZ2LTQwIi8+CiAgICA8cGF0aCBkPSJNMTU4IDI0NmwtMjgtMjgiLz4KICAgIDxwYXRoIGQ9Ik0zNTQgMjQ2bDI4LTI4Ii8+CiAgPC9nPgogIDxwYXRoIGQ9Ik05NiAzNDRoMzIwIiBzdHJva2U9IiNmN2Y1ZjAiIHN0cm9rZS13aWR0aD0iMjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xNjAgNDA0aDE5MiIgc3Ryb2tlPSIjZjdmNWYwIiBzdHJva2Utb3BhY2l0eT0iMC40NSIgc3Ryb2tlLXdpZHRoPSIxOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPgo=">
 <script src="feedback-config.js"></script>
 <script src="account-config.js"></script>
+<script src="analytics-config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>
@@ -97,7 +98,7 @@
 <li>"What if?" sliders and a "what matters most" view showing how the result responds to changes</li>
 </ul>
 <h2>Privacy</h2>
-<p>Your figures stay in your browser on your device. No account is needed, nothing is uploaded, and there is no tracking or analytics.</p>
+<p>Your figures stay in your browser on your device. No account is needed, nothing is uploaded, and there are no cookies. The site only counts anonymous page views, never your figures.</p>
 <p><strong>Not financial advice.</strong> This is an illustrative planning tool. For personal recommendations, speak to a regulated financial adviser.</p>
 <p>This app needs JavaScript. A plain-text description of its methodology is at <a href="llms-full.txt">llms-full.txt</a>.</p>
 </main>
@@ -1086,7 +1087,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v25';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -1098,6 +1099,14 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v25',
+  date: '2026-10-03', // set to the actual merge date
+  title: 'Anonymous visit counts',
+  items: [
+    'The site now counts anonymous page views, so we can see how many people use it. There are no cookies, and your figures are never included. Your plan still stays on your device.',
+    'If your browser sends Do Not Track or Global Privacy Control, nothing is counted.'
+  ]
+}, {
   version: 'v24',
   date: '2026-10-03', // set to the actual merge date
   title: 'Advanced mode is now a private beta',
@@ -4274,7 +4283,7 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5"
   }), React.createElement("p", {
     className: "text-xs text-slate-500"
-  }, ACCOUNTS_ENABLED ? "Everything you enter stays in this browser. No upload, no bank connection, and no analytics or tracking. An account is only needed for Advanced mode, and it never holds your plan figures." : "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file or send feedback yourself.")), React.createElement("div", {
+  }, ACCOUNTS_ENABLED ? "Everything you enter stays in this browser. No upload and no bank connection. The site only counts anonymous page views (no cookies, and never your figures). An account is only needed for Advanced mode, and it never holds your plan figures." : "Everything you enter stays in this browser. No account, no upload and no bank connection. The site only counts anonymous page views (no cookies, and never your figures) — nothing else is sent anywhere unless you choose to export a file or send feedback yourself.")), React.createElement("div", {
     className: "space-y-2"
   }, React.createElement("p", {
     className: "text-xs text-slate-500"
@@ -5628,7 +5637,7 @@ function RetirementCalculator() {
     className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Lock, {
     className: "h-3.5 w-3.5 flex-shrink-0"
-  }), ACCOUNTS_ENABLED ? "Your plan stays on this device — no upload, no bank connection, no analytics. An account is only needed for Advanced mode." : "Your data stays on this device — no account, no upload, no bank connection, no analytics."), FEEDBACK_HREF && /*#__PURE__*/React.createElement("p", {
+  }), ACCOUNTS_ENABLED ? "Your plan stays on this device — no upload, no bank connection, and only anonymous page counts. An account is only needed for Advanced mode." : "Your data stays on this device — no account, no upload, no bank connection, and only anonymous page counts."), FEEDBACK_HREF && /*#__PURE__*/React.createElement("p", {
     className: "text-sm mt-2"
   }, /*#__PURE__*/React.createElement("a", {
     href: FEEDBACK_HREF,
