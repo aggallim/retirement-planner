@@ -155,7 +155,7 @@ function loadEngine(html) {
   };
   const batch = {};
   ['mortgageBalance', 'dbIndexFactor', 'dbPensionsOf', 'spendingPhaseFactor', 'livingStandardLevel', 'householdAtRetirement',
-    'planSummary', 'applyWhatIf', 'sensitivityAnalysis', 'runMonteCarlo', 'planForMode', 'planToEngineArgs'].forEach((n) => { batch[n] = plain(n); });
+    'planSummary', 'applyWhatIf', 'sensitivityAnalysis', 'runMonteCarlo', 'planForMode', 'planToEngineArgs', 'describeClamp'].forEach((n) => { batch[n] = plain(n); });
   return {
     batch,
     isaContributionsFor, isaContributionMax,
@@ -1490,6 +1490,17 @@ check('formatNumber and parseNumberInput round-trip', () => {
   for (const n of [0, 25, 1000, 12548, 250000, 1234567.5]) {
     assert.strictEqual(parseNumberInput(formatNumber(n), -1, 0, 1e9), n);
   }
+});
+
+// intent 061: the clamp hint says why a typed value didn't stick.
+check('describeClamp explains clamping and blanks, and is silent when the value is used', () => {
+  const d = batch.describeClamp;
+  assert.strictEqual(d('500', 60, 50, 75), "The highest is 75, so it's set to 75.");
+  assert.strictEqual(d('10', 60, 50, 75), "The lowest is 50, so it's set to 50.");
+  assert.strictEqual(d('', 250000, 0, 1e6, '£'), "Left blank, so it's kept at £250,000.");
+  assert.strictEqual(d('abc', 6, 0, 20, '', '%'), "Not a number, so it's kept at 6%.");
+  assert.strictEqual(d('£1,200', 0, 0, 5000, '£'), '');
+  assert.strictEqual(d('-3', 0, -5, 5), '');
 });
 
 // intent/033: ISA and LISA hard caps.

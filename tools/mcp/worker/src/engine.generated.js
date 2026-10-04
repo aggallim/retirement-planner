@@ -122,6 +122,18 @@ function parseNumberInput(text, previous, min, max) {
   if (!isFinite(n)) return previous;
   return Math.max(min, Math.min(max, n));
 }
+// Says why a typed value didn't stick (intent 061): '' when it was used as
+// typed, otherwise a short sentence for the field's polite live region.
+function describeClamp(text, previous, min, max, prefix = '', suffix = '') {
+  const shown = v => `${prefix}${formatNumber(v)}${suffix}`;
+  const raw = String(text).trim();
+  const cleaned = min < 0 ? raw.replace(/[^0-9.-]/g, '').replace(/(?!^)-/g, '') : raw.replace(/[^0-9.]/g, '');
+  const n = parseFloat(cleaned);
+  if (!isFinite(n)) return raw === '' ? `Left blank, so it's kept at ${shown(previous)}.` : `Not a number, so it's kept at ${shown(previous)}.`;
+  if (n > max) return `The highest is ${shown(max)}, so it's set to ${shown(max)}.`;
+  if (n < min) return `The lowest is ${shown(min)}, so it's set to ${shown(min)}.`;
+  return '';
+}
 
 
 function migratePerson(saved) {
