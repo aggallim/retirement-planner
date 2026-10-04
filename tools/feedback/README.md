@@ -68,6 +68,11 @@ intent's second 2026-09-24 addendum.
    3. deploys the Worker with wrangler
    4. sets the Worker's `GITHUB_TOKEN` secret from `FEEDBACK_GITHUB_TOKEN`
    5. prints the Worker URL (in the run's summary) and checks its `/health`
+   **Optional, recommended (intent 060):** set an `IP_HASH_SALT` Worker
+   secret (any long random string) in Cloudflare → Workers → this Worker →
+   Settings → Variables and Secrets. It keys the per-IP rate-limit hash.
+   Until it's set, the Worker keys the hash with `GITHUB_TOKEN`, which is
+   also secret, so this only separates the two.
 6. **Claude sets `window.FEEDBACK_ENDPOINT`** in `feedback-config.js` to
    that URL, in a follow-up PR that also bumps the `sw.js` cache version.
    This makes the links appear in the app.

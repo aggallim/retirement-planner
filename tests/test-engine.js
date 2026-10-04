@@ -155,7 +155,7 @@ function loadEngine(html) {
   };
   const batch = {};
   ['mortgageBalance', 'dbIndexFactor', 'dbPensionsOf', 'spendingPhaseFactor', 'livingStandardLevel', 'householdAtRetirement',
-    'planSummary', 'applyWhatIf', 'sensitivityAnalysis', 'runMonteCarlo', 'planForMode', 'planToEngineArgs'].forEach((n) => { batch[n] = plain(n); });
+    'planSummary', 'applyWhatIf', 'sensitivityAnalysis', 'runMonteCarlo', 'planForMode', 'planToEngineArgs', 'describeClamp'].forEach((n) => { batch[n] = plain(n); });
   return {
     batch,
     isaContributionsFor, isaContributionMax,
@@ -1492,6 +1492,17 @@ check('formatNumber and parseNumberInput round-trip', () => {
   }
 });
 
+// intent 061: the clamp hint says why a typed value didn't stick.
+check('describeClamp explains clamping and blanks, and is silent when the value is used', () => {
+  const d = batch.describeClamp;
+  assert.strictEqual(d('500', 60, 50, 75), "The highest is 75, so it's set to 75.");
+  assert.strictEqual(d('10', 60, 50, 75), "The lowest is 50, so it's set to 50.");
+  assert.strictEqual(d('', 250000, 0, 1e6, '£'), "Left blank, so it's kept at £250,000.");
+  assert.strictEqual(d('abc', 6, 0, 20, '', '%'), "Not a number, so it's kept at 6%.");
+  assert.strictEqual(d('£1,200', 0, 0, 5000, '£'), '');
+  assert.strictEqual(d('-3', 0, -5, 5), '');
+});
+
 // intent/033: ISA and LISA hard caps.
 const isaP = (o) => ({ cashIsaContribution: 0, ssIsaContribution: 0, lisaContribution: 0, ...o });
 check('Contributions within the ISA and LISA limits are applied unchanged', () => {
@@ -1766,6 +1777,31 @@ check('APP_VERSION in index.html matches the sw.js CACHE version', () => {
   assert.ok(appVersion, 'APP_VERSION not found in index.html');
   assert.ok(cacheVersion, 'CACHE not found in sw.js');
   assert.strictEqual(appVersion, cacheVersion);
+});
+
+// intent 060 (privacy review F5, F10): no third-party fonts or scripts, the
+// self-hosted fonts are precached, and each page's CSP allows exactly the
+// hosts the config files point at.
+check('privacy: no Google Fonts, fonts precached, CSP lists the configured hosts', () => {
+  const root = path.join(__dirname, '..');
+  const read = f => fs.readFileSync(path.join(root, f), 'utf8');
+  const sw = read('sw.js');
+  const supabase = (read('account-config.js').match(/supabaseUrl:\s*'([^']*)'/) || [])[1];
+  const worker = (read('feedback-config.js').match(/FEEDBACK_ENDPOINT = '([^']*)'/) || [])[1];
+  ['fonts/fraunces-latin.woff2', 'fonts/inter-tight-latin.woff2', 'privacy.html'].forEach(f => {
+    assert.ok(fs.existsSync(path.join(root, f)), `${f} missing`);
+    assert.ok(sw.includes(`'./${f}'`), `${f} not in sw.js ASSETS`);
+  });
+  ['index.html', 'feedback.html', 'privacy.html'].forEach(f => {
+    const html = read(f);
+    assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(html), `${f} still loads Google Fonts`);
+    const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1];
+    assert.ok(csp, `${f} has no CSP`);
+    assert.ok(/object-src 'none'/.test(csp) && /base-uri 'none'/.test(csp), `${f} CSP too loose`);
+    const connect = (csp.match(/connect-src ([^;]+)/) || [])[1] || '';
+    if (f === 'index.html' && supabase) assert.ok(connect.includes(supabase.replace(/\/$/, '')), 'index.html CSP misses the Supabase host');
+    if (f !== 'privacy.html' && worker) assert.ok(connect.includes(worker.replace(/\/$/, '')), `${f} CSP misses the feedback Worker`);
+  });
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

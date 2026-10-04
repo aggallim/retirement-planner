@@ -9,6 +9,64 @@ This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
 
+## 2026-10-04 — Privacy and UX review follow-ups (059–061)
+
+Built without a grilling round at the owner's request ("don't stop to ask
+me"); `intent/059-review-batch.md` explains, and each child intent records
+the decisions made in its place.
+
+### Privacy and compliance (060)
+
+- Implements `intent/060-privacy-compliance.md`, the Notion "Privacy &
+  Compliance Review (Oct 2026)", findings F1–F10.
+- **F1** Public wording corrected everywhere it said "no account" or
+  "nothing is uploaded": static summary, Open Graph, FAQ JSON-LD, Data menu,
+  footer, README, `llms.txt`, `llms-full.txt`, docs. Plan figures still never
+  leave the device; the wording now also covers the Advanced account and
+  feedback.
+- **F2** New `privacy.html` notice (controller, lawful bases, processors,
+  transfers, retention, rights, ICO, every local-storage key, children),
+  linked from the footer, Data menu, account panels and feedback page.
+- **F3/F9** `docs/privacy/`: data-request runbook (with retention clean-up
+  SQL), breach plan, records of processing with DPIA screening. Triage now
+  redacts closed feedback after 12 months and never touches
+  `privacy-request` issues.
+- **F5** Fonts self-hosted (`fonts/`, SIL OFL, precached); no page contacts
+  Google.
+- **F6** Feedback form discloses Cloudflare, GitHub and AI triage, warns
+  against names and balances, and gains a "Privacy or data request" type
+  (email required, labelled `privacy-request`).
+- **F10** CSP `<meta>` on every page (tested against the config hosts);
+  PKCE magic links; keyed (HMAC) IP hash in the feedback Worker; sign-out
+  note; invite-only sign-in message; MCP README says "keeps no plan data".
+- **Not done (blocked):** the Supabase changes for F3/F4/F8 (invite-only
+  gate in the database, consent applied only after email confirmation,
+  server-set consent time and wording log, delete-my-account and
+  unsubscribe functions, scheduled clean-up of unconfirmed sign-ups). The
+  session's permission policy refused the schema change, so none of it was
+  written or applied; the notice and runbook describe the manual process
+  until it is. Owner actions are listed in the PR.
+
+### UX review follow-ups (061)
+
+- Implements `intent/061-ux-review-followups.md`, the open items of the
+  Notion "UI/UX Form & Data-Entry Review (Sept 2026)".
+- Clamp and blank-entry hints in a polite live region (`describeClamp()`,
+  unit-tested).
+- Structured warnings: inline amber notes under the field
+  (`aria-describedby`), a "N things to check" banner (`role="status"`) whose
+  lines focus the field.
+- Collapsible input sections with summaries (remembered per device); jump
+  nav (buttons, phone drop-down, and a compact copy in the sticky bar);
+  changed-from-default markers.
+- Pending results fade with `aria-busy`; verdict announced after a pause.
+- Reset without reload, with 10-second Undo and backup download;
+  `navigator.storage.persist()`; multi-tab notice; last-exported note;
+  first-visit quick start.
+- Tailwind CSS regenerated. Cache and `APP_VERSION` v25 with a
+  `USER_CHANGELOG` entry. Docs §1, §2.2, §3.1, §3.5–3.7, §3.12, §3.16,
+  new §3.20, §5.1, §5.2, §5.4 and §7 updated.
+
 ## 2026-10-03 — Friends-and-family beta starts (058)
 
 - Implements `intent/058-start-beta.md` (moved to `intent/done/`), roadmap

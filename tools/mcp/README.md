@@ -8,8 +8,9 @@ own calculations on your plan, so it can answer questions with real figures.
   (the deploy workflow prints the exact URL)
 - **Transport:** Streamable HTTP with plain JSON responses. Stateless: no
   sessions, no login.
-- **Privacy:** the server keeps nothing. Plans are calculated in memory and
-  discarded. There's no storage and no logging of plan data. Your assistant
+- **Privacy:** the server keeps no plan data. Plans are calculated in memory and
+  discarded. Cloudflare, which runs it, still sees ordinary request metadata
+  (such as network addresses) at its edge. There's no storage and no logging of plan data. Your assistant
   sends the plan only when it calls a tool.
 - **Not financial advice.** Every result is an illustrative projection under
   the plan's own assumptions.

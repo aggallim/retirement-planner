@@ -2,6 +2,7 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://retirement-planner-feedback.aggallim.workers.dev; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Send feedback · UK Retirement Planner</title>
 <meta name="theme-color" content="#283860">
@@ -18,10 +19,10 @@
 })();
 </script>
 <script src="feedback-config.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Self-hosted fonts (intent 060, F5). */
+  @font-face { font-family: 'Inter Tight'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/inter-tight-latin.woff2) format('woff2'); }
+  @font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/fraunces-latin.woff2) format('woff2'); }
   :root {
     --bg: #f7f5f0; --card: #ffffff; --text: #0f172a; --muted: #64748b;
     --border: #e2e8f0; --accent: #3a518f; --accent-text: #ffffff;
@@ -80,7 +81,7 @@
   <a class="back" href="./">← Back to the planner</a>
   <div class="card">
     <h1>Send feedback</h1>
-    <p class="privacy">Sends only what you type here to the developer. Your plan figures aren't included.</p>
+    <p class="privacy">Sends only what you type here; your plan figures aren't included. Your message is sent through Cloudflare and stored in a private GitHub repository. An AI assistant reads it to sort and summarise it. Closed feedback is removed after 12 months. <a href="privacy.html#feedback">Privacy notice</a></p>
 
     <p id="unavailable" class="status err" hidden>Feedback isn't available right now. Please try again later.</p>
 
@@ -92,6 +93,7 @@
           <label><input type="radio" name="type" value="Idea"> Idea</label>
           <label><input type="radio" name="type" value="Something confusing"> Something confusing</label>
           <label><input type="radio" name="type" value="Other"> Other</label>
+          <label><input type="radio" name="type" value="Privacy or data request"> Privacy or data request</label>
         </div>
       </fieldset>
 
@@ -102,11 +104,12 @@
 
       <div class="field">
         <label for="steps">Steps or example figures <span class="hint">(optional, only share what you're comfortable with)</span></label>
-        <textarea id="steps" name="steps" maxlength="5000"></textarea>
+        <textarea id="steps" name="steps" maxlength="5000" aria-describedby="steps-hint"></textarea>
+        <p id="steps-hint" class="hint">Please don't include names, account numbers or exact balances.</p>
       </div>
 
       <div class="field">
-        <label for="email">Email <span class="hint">(optional, if you'd like to hear when this is fixed)</span></label>
+        <label for="email">Email <span class="hint">(optional, if you'd like a reply; needed for a data request)</span></label>
         <input id="email" name="email" type="email" maxlength="254" autocomplete="email">
       </div>
 
@@ -137,6 +140,11 @@
   var match = /(?:^|[#&])v=([\w.-]{1,20})/.exec(location.hash);
   var version = match ? match[1] : '';
 
+  // privacy.html links here as feedback.html#type=privacy.
+  if (/(?:^|[#&])type=privacy(?:&|$)/.test(location.hash)) {
+    form.querySelector('input[value="Privacy or data request"]').checked = true;
+  }
+
   if (!endpoint) {
     form.hidden = true;
     document.getElementById('unavailable').hidden = false;
@@ -156,6 +164,7 @@
     var email = form.email.value.trim();
     if (!type) return showError('Please choose what kind of feedback it is.');
     if (!description) return showError('Please tell us what happened, or what you would like.');
+    if (type.value === 'Privacy or data request' && !email) return showError('Please add an email address so we can reply to your request.');
     if (email && !form.email.checkValidity()) return showError('That email address doesn’t look right. You can also leave it empty.');
 
     send.disabled = true;

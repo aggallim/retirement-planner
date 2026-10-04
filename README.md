@@ -51,7 +51,7 @@ This repo auto-deploys to **GitHub Pages** via [`.github/workflows/pages.yml`](.
 
 ## Data & privacy
 
-Your figures save automatically to that browser's `localStorage` on that device only — nothing is transmitted to or stored on any server. Your phone and your Mac keep **separate** plans. Clearing browser site data erases the saved plan. The **↺ Reset** button in the app clears the saved plan and restores defaults.
+Your plan figures save automatically to that browser's `localStorage` on that device only — they are never transmitted to or stored on any server. Simple mode needs no account. Advanced mode (an invite-only beta) uses an email sign-in through Supabase; the account holds only your email address, a marketing choice and an access flag. The optional feedback page sends only what you type (through Cloudflare to a private GitHub repository, where an AI assistant helps sort it). See the [privacy notice](https://aggallim.github.io/retirement-planner/privacy.html). Your phone and your Mac keep **separate** plans. Clearing browser site data erases the saved plan. The **↺ Reset** button in the app clears the saved plan and restores defaults.
 
 ## Updating the app
 
