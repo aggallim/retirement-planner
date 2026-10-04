@@ -980,11 +980,6 @@ const saveState = state => {
     return false;
   }
 };
-const clearSaved = () => {
-  try {
-    localStorage.removeItem(STORE_KEY);
-  } catch {}
-};
 const SAVED = loadSaved();
 const pick = (key, fallback) => SAVED && SAVED[key] !== undefined ? SAVED[key] : fallback;
 
@@ -1094,7 +1089,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v25';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -1106,6 +1101,21 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v25',
+  date: '2026-10-04', // set to the actual merge date
+  title: 'Easier data entry, and a privacy notice',
+  items: [
+    'If you type a number outside a field\'s range, a short note now says what it was changed to, instead of silently snapping.',
+    'Warnings now appear right under the figure they are about, and each line in the warning banner takes you straight to that figure.',
+    'Savings, Pension, DB pension and State Pension sections can be collapsed, showing a one-line summary. A "Jump to" row takes you to any part of the page.',
+    'A small dot marks any figure you have changed from the starting example.',
+    'Reset no longer reloads the page, and you can undo it for 10 seconds or download a backup first.',
+    'If you have the planner open in two tabs, you are told when the other one saves, so you don\'t overwrite your own changes by mistake.',
+    'The Data menu shows when you last exported a backup. First-time visitors get a short quick start for the five most important figures.',
+    'New privacy notice (footer and Data menu) explaining exactly what is and isn\'t collected. Your plan figures still never leave your device.',
+    'Fonts now load from this site instead of Google, so opening the planner sends nothing to Google. Signing in for Advanced mode is more secure, and the feedback page says clearly where your message goes.'
+  ]
+}, {
   version: 'v24',
   date: '2026-10-03', // set to the actual merge date
   title: 'Advanced mode is now a private beta',

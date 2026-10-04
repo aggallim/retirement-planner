@@ -1,5 +1,5 @@
 // Offline cache for UK Retirement Planner
-const CACHE = 'retirement-planner-v24';
+const CACHE = 'retirement-planner-v25';
 const ASSETS = ['./', './index.html', './feedback.html', './feedback-config.js', './account-config.js', './manifest.webmanifest', './icon.svg', './privacy.html', './fonts/fraunces-latin.woff2', './fonts/inter-tight-latin.woff2'];
 self.addEventListener('install', (e) => {
   // cache: 'reload' skips the browser's HTTP cache, so a new version never

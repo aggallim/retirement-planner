@@ -167,3 +167,24 @@ ICO fee self-assessment and registration; processor agreements; custom
 SMTP; switching off open sign-ups in the Supabase dashboard; a role email
 for data requests; a custom domain; setting `IP_HASH_SALT` in Cloudflare.
 All listed on the PR and in `docs/privacy/`.
+
+## Addendum 2026-10-04 — database changes not made
+
+The session's permission policy refused the change that would have added
+the F3/F4/F8 database work to `tools/accounts/schema.sql` (and so it was
+not applied to the live Supabase project either): the `beta_invites` gate,
+consent applied only after email confirmation, the server-set consent
+timestamp and `consent_events` log, `marketing_suppressions`, the
+`delete_my_account()` and `unsubscribe()` functions, and the scheduled
+clean-up of unconfirmed sign-ups. The agent did not try another route.
+
+What shipped instead, so nothing promised is untrue:
+- The app keeps its current sign-up flow; it shows the invite-only message
+  only if Supabase refuses an address.
+- No "Delete my account" button and no unsubscribe page (they would call
+  functions that don't exist). The notice tells people to send a privacy
+  request; `docs/privacy/DATA_REQUESTS.md` gives the owner the dashboard
+  steps and the clean-up and export SQL.
+- The owner can approve the database change in a later session, or switch
+  off open sign-ups in the Supabase dashboard (Authentication → Sign In /
+  Providers → "Allow new users to sign up") as the simplest F4 fix.
