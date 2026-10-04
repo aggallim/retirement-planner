@@ -4,7 +4,7 @@
 
 ## What the tool is
 
-A free, browser-based retirement calculator for UK residents. It runs entirely on the user's device: plans are stored in the browser's local storage, with no upload, no bank connection and no analytics. It supports one person or a couple, and offers two modes:
+A free, browser-based retirement calculator for UK residents. It runs entirely on the user's device: plan figures are stored in the browser's local storage and never uploaded, with no bank connection and no analytics. Simple mode needs no account. Advanced mode (an invite-only beta) uses an email sign-in; the account holds only the email address, a marketing choice and an access flag. Optional feedback sends only what the user types. Privacy notice: https://aggallim.github.io/retirement-planner/privacy.html It supports one person or a couple, and offers two modes:
 
 - **Simple** (default): the full core model described below.
 - **Advanced** (beta): adds spending phases, one-off costs, a home and downsizing model, more than one Defined Benefit pension per person with its own indexation, saved scenarios and comparison, a pension-versus-ISA-versus-cash comparison, a bridge-to-State-Pension view, a Monte Carlo simulation and a printable report.

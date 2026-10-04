@@ -15,6 +15,12 @@ decides later what gets built.
   `aggallim/retirement-planner`.
 - Work on every **open** issue labelled **`needs-triage`**. Ignore the rest
   (they've already been triaged, or the owner is handling them by hand).
+- **Never open, read, comment on or relabel an issue labelled
+  `privacy-request`** (a data request under the privacy notice, intent
+  060). The owner handles those personally, following
+  `docs/privacy/DATA_REQUESTS.md` in `aggallim/retirement-planner`. If you
+  meet one that also carries `needs-triage` (a mislabel), remove only
+  `needs-triage` and leave it alone otherwise.
 - Use the GitHub MCP tools (`mcp__github__*`; load them with ToolSearch if
   they aren't listed).
 
@@ -77,6 +83,26 @@ one is attached (see the triage comment below). Don't contact anyone.
 Never close a `bug`, `idea`, `confusing` or `other` issue except as a
 duplicate. Leaving it open is how the owner sees it.
 
+## Retention: redact old closed issues
+
+The privacy notice promises that feedback text, including any email
+address, is removed 12 months after the issue is closed (intent 060).
+GitHub's API can't delete an issue, so redact it instead. On every run,
+after triage:
+
+1. List **closed** issues in the feedback repo whose `closed_at` is more
+   than 12 months ago and that don't carry the `redacted` label. Skip any
+   labelled `privacy-request`.
+2. For each, replace the body with exactly:
+   `_Removed under the 12-month feedback retention rule. Type, labels and dates are kept._`
+   and replace the title with `[<type label>] (redacted)`.
+3. Edit every comment on it that isn't yours to the same redaction line
+   (your own triage comments contain no personal data and can stay).
+4. Add the `redacted` label.
+
+Count redactions in the digest ("2 old issues redacted"). If you can't
+edit something, add `needs-owner` and mention it in the digest.
+
 ## Digest
 
 When every issue is done, if you triaged **at least one** issue, send
@@ -87,5 +113,5 @@ ToolSearch) summarising the run, e.g.:
 
 Lead with any `p1`. Keep it to one line.
 
-If there were **no** `needs-triage` issues, do nothing: no notification,
+If there were **no** `needs-triage` issues and nothing to redact, do nothing: no notification,
 no comment, no message. A quiet run is the normal case.

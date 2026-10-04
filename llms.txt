@@ -4,11 +4,11 @@
 
 Key facts:
 
-- Free, no account needed for the core calculator. An optional Advanced mode (beta) adds scenarios, a Monte Carlo simulation, phased spending, property downsizing, multiple DB pensions, a printable report and more.
+- Free, and Simple mode needs no account. Advanced mode (an invite-only beta with an email sign-in) adds scenarios, a Monte Carlo simulation, phased spending, property downsizing, multiple DB pensions, a printable report and more.
 - UK-specific reference figures for the 2026/27 tax year: Personal Allowance £12,570; higher-rate threshold £50,270; additional-rate threshold £125,140; full new State Pension £12,548 a year; pension annual allowance £60,000; Lump Sum Allowance £268,275; ISA allowance £20,000; Lifetime ISA £4,000 with a 25% bonus.
 - Income Tax uses England, Wales and Northern Ireland rates per person, with thresholds frozen until 2030/31 and then raised with inflation. Scottish rates are not modelled.
 - Living Standard bands: Pensions UK Retirement Living Standards 2026 (after tax, excluding housing, outside London). One person: £13,900 minimum, £32,700 moderate, £45,400 comfortable. Two people: £22,500, £45,400, £62,700. The app compares income with them in today's money.
-- Privacy: data is stored in the browser's local storage. No upload, no bank connection, no analytics.
+- Privacy: plan figures are stored in the browser's local storage and never uploaded. No bank connection, no analytics or tracking, no third-party scripts or fonts. The optional Advanced account holds only an email address, a marketing choice and an access flag. Optional feedback sends only what the user types. Privacy notice: https://aggallim.github.io/retirement-planner/privacy.html
 - An MCP server exposes the same calculation engine to AI assistants (tools: project_retirement_plan, what_if, get_methodology, get_uk_reference_figures).
 
 ## Links

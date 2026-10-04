@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<!-- Privacy notice (intent 060, F2). Plain HTML like feedback.html; cached by sw.js. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy notice · UK Retirement Planner</title>
+<meta name="description" content="How UK Retirement Planner handles personal data: your plan figures stay on your device; the optional Advanced account holds only your email address, a marketing choice and an access flag.">
+<link rel="canonical" href="https://aggallim.github.io/retirement-planner/privacy.html">
+<meta name="theme-color" content="#283860">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('ukRetirementPlanner.theme') || 'system';
+    var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+</script>
+<script src="feedback-config.js"></script>
+<style>
+  @font-face { font-family: 'Inter Tight'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/inter-tight-latin.woff2) format('woff2'); }
+  @font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/fraunces-latin.woff2) format('woff2'); }
+  :root {
+    --bg: #f7f5f0; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #3a518f;
+  }
+  .dark { --bg: #0b1020; --card: #111831; --text: #e2e8f0; --muted: #94a3b8; --border: #334155; --accent: #9fb0d6; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 'Inter Tight', system-ui, sans-serif;
+    padding: env(safe-area-inset-top) 16px calc(2rem + env(safe-area-inset-bottom));
+  }
+  main { max-width: 44rem; margin: 0 auto; }
+  a { color: var(--accent); }
+  .back { display: inline-block; margin: 1.25rem 0 1rem; font-weight: 500; text-decoration: none; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; }
+  h1, h2 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: 1.7rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.2rem; margin: 2rem 0 .5rem; }
+  .meta, .muted { color: var(--muted); font-size: .9rem; }
+  .summary { border-left: 4px solid var(--accent); padding: .25rem 0 .25rem 1rem; margin: 1.25rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: .5rem 0; }
+  th, td { text-align: left; vertical-align: top; padding: .45rem .5rem; border-bottom: 1px solid var(--border); }
+  th { font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  code { font-size: .85em; word-break: break-all; }
+  ul { padding-left: 1.25rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← Back to the planner</a>
+  <article class="card">
+    <h1>Privacy notice</h1>
+    <p class="meta">Last updated 4 October 2026 (app version v25).</p>
+
+    <div class="summary">
+      <p><strong>In short:</strong> your plan figures never leave your device. Simple mode needs no account. Advanced mode (an invite-only beta) uses an email sign-in; the account holds only your email address, a marketing choice and an access flag. Optional feedback sends only what you type. There are no analytics, adverts or tracking.</p>
+    </div>
+
+    <h2 id="who">1. Who we are and how to contact us</h2>
+    <p>UK Retirement Planner is a free planning calculator run by its independent developer (GitHub: <a href="https://github.com/aggallim" rel="noopener noreferrer">aggallim</a>), who is the controller of the personal data described here.</p>
+    <p id="contact-email" hidden>For anything about your data, email <a id="contact-email-link" href="#"></a>.</p>
+    <p>You can also send a privacy or data request through the <a id="privacy-request-link" href="feedback.html#type=privacy">feedback form</a> (choose "Privacy or data request" and include an email address so we can reply). Those requests are handled by the developer personally, not sorted by the AI assistant described in section 4.</p>
+
+    <h2 id="device">2. What stays on your device</h2>
+    <p>Everything you enter into the planner (ages, balances, contributions, spending, names) is saved in your browser's local storage on your device. It is never uploaded to us or anyone else. Export creates a file on your device; what you do with it is up to you. To remove your plan from a device, use <strong>Reset</strong>. Signing out doesn't clear it.</p>
+
+    <h2 id="account">3. If you create an account</h2>
+    <p>Accounts exist only to unlock Advanced mode, which is an invite-only beta. When you ask for a sign-in link we hold:</p>
+    <ul>
+      <li>your email address;</li>
+      <li>whether you want product news and offers by email (unticked unless you tick it), when you chose, and which wording you saw;</li>
+      <li>whether your account has Advanced access;</li>
+      <li>the technical records Supabase keeps to run sign-in (sign-in times, and session tokens, which are also stored in your browser so you stay signed in).</li>
+    </ul>
+    <p>Your plan figures are never stored in the account. <strong>Lawful basis:</strong> providing the service you asked for (contract) for sign-in and access; your consent for marketing emails. A marketing choice only counts once you've confirmed the address by opening the sign-in link. We don't send marketing emails yet; when we do, every one will include a one-click unsubscribe link, and you can change your choice at any time in the account panel (⚙ Data → Account).</p>
+
+    <h2 id="feedback">4. If you send feedback</h2>
+    <p>The feedback form sends only what you type: the kind of feedback, your message, any steps or example figures, an optional email address, and the app version. It passes through a small Cloudflare Worker and is stored as an issue in a private GitHub repository. An AI assistant (Anthropic's Claude) reads new issues once a day to sort and summarise them; it is instructed never to repeat email addresses. Please don't include names, account numbers or exact balances. To limit abuse, the Worker counts submissions per network address for one hour, storing only a keyed hash of the address, never the address itself. <strong>Lawful basis:</strong> our legitimate interest in improving the app and replying to you.</p>
+
+    <h2 id="ai">5. Sharing your plan with an AI assistant</h2>
+    <p>"Share with your AI assistant" builds text from your plan, with names removed, for you to copy into an assistant of your choice. It still includes your figures and ages. Nothing is sent by us: you choose whether to paste it, and the assistant's own privacy terms apply. The optional MCP server runs the same calculations for an assistant you connect; it keeps no plan data, and Cloudflare, which runs it, sees ordinary request information such as network addresses.</p>
+
+    <h2 id="processors">6. Who processes data for us, and where</h2>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Provider</th><th>What for</th><th>Data</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>GitHub Pages (GitHub, Microsoft)</td><td>Hosting the site</td><td>Network address and browser details in server logs</td><td>US and worldwide</td></tr>
+        <tr><td>Supabase</td><td>Accounts and sign-in emails</td><td>Email address, account details above, network address</td><td>London (UK) for account data</td></tr>
+        <tr><td>Cloudflare</td><td>Feedback relay and MCP server</td><td>Feedback text, network address in transit</td><td>US and worldwide</td></tr>
+        <tr><td>GitHub (Microsoft)</td><td>Storing feedback (private repository)</td><td>Feedback text and optional email</td><td>US</td></tr>
+        <tr><td>Anthropic</td><td>AI sorting of feedback</td><td>Feedback text and optional email</td><td>US</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Fonts and all the app's code are served from this site; nothing loads from Google or other third parties. Where data goes to the US, transfers rely on the UK–US data bridge or the UK's International Data Transfer Addendum to standard contractual clauses, as offered by each provider. We don't sell or share personal data for advertising.</p>
+
+    <h2 id="retention">7. How long we keep it</h2>
+    <ul>
+      <li><strong>Plan figures:</strong> on your device until you reset, clear your browser data or uninstall.</li>
+      <li><strong>Accounts:</strong> until you ask us to delete yours. Accounts with no sign-in for 24 months are removed after a warning email. Sign-ups whose link is never opened are removed after 7 days.</li>
+      <li><strong>Feedback:</strong> the issue's text, including any email address, is removed 12 months after it is closed, or sooner if you ask.</li>
+      <li><strong>Abuse counters:</strong> one hour for the per-address count, two days for the daily total.</li>
+      <li><strong>Marketing opt-outs:</strong> if you unsubscribe, or delete an account after opting in, we keep just your email address on a do-not-email list so we never contact you by mistake.</li>
+    </ul>
+
+    <h2 id="rights">8. Your rights and how to use them</h2>
+    <p>You can ask to see the personal data we hold about you, correct it, delete it, restrict or object to how we use it, or take a copy. You can withdraw marketing consent at any time. Use the contact route in section 1; we'll reply within one month. To delete your account, send a privacy request from the email address on the account. If you're unhappy with how we've handled your data, you can complain to the Information Commissioner's Office (<a href="https://ico.org.uk/make-a-complaint/" rel="noopener noreferrer">ico.org.uk</a>, 0303 123 1113).</p>
+
+    <h2 id="storage">9. Local storage on your device</h2>
+    <p>The app uses your browser's local storage, not cookies. Every item supports something you asked for, so no consent banner is needed:</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Item</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>ukRetirementPlanner.v1</code></td><td>Your plan</td></tr>
+        <tr><td><code>ukRetirementPlanner.theme</code>, <code>.mode</code></td><td>Light/dark theme and Simple/Advanced choice</td></tr>
+        <tr><td><code>ukRetirementPlanner.dismissedWarnings.v1</code></td><td>Warnings you've dismissed</td></tr>
+        <tr><td><code>ukRetirementPlanner.sections.v1</code></td><td>Which input sections you've collapsed</td></tr>
+        <tr><td><code>ukRetirementPlanner.lastExported</code></td><td>Date of your last export, for the backup reminder</td></tr>
+        <tr><td><code>ukRetirementPlanner.quickStartDone</code></td><td>That you've seen the quick start</td></tr>
+        <tr><td><code>ukRetirementPlanner.session.v1</code>, <code>.pkce.v1</code></td><td>Keeping you signed in, and finishing sign-in (only if you use an account)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>The app is also saved in your browser's cache so it works offline.</p>
+
+    <h2 id="children">10. Children</h2>
+    <p>The planner is meant for adults planning their retirement. It isn't aimed at children, and accounts are for adults only.</p>
+
+    <h2 id="changes">11. Changes to this notice</h2>
+    <p>We'll update this page when what we do changes, and note it in the app's "What's new". This is a planning tool, not financial advice.</p>
+  </article>
+</main>
+<script>
+(function () {
+  var email = window.PRIVACY_CONTACT_EMAIL || '';
+  if (email) {
+    var link = document.getElementById('contact-email-link');
+    link.href = 'mailto:' + email;
+    link.textContent = email;
+    document.getElementById('contact-email').hidden = false;
+  }
+  if (!window.FEEDBACK_ENDPOINT) document.getElementById('privacy-request-link').removeAttribute('href');
+})();
+</script>
+</body>
+</html>

@@ -11,9 +11,12 @@
  *            DAILY_ISSUE_CAP, HOURLY_PER_IP
  *   kv:      FEEDBACK_KV (rate-limit counters only; no feedback content)
  *   secret:  GITHUB_TOKEN (fine-grained, Issues read/write on FEEDBACK_REPO)
+ *            IP_HASH_SALT (optional; keys the per-IP hash, intent 060 F10.
+ *            Until it's set, GITHUB_TOKEN keys it, so the hash is never bare.)
  */
 
-export const TYPES = ['Bug', 'Idea', 'Something confusing', 'Other'];
+export const PRIVACY_TYPE = 'Privacy or data request';
+export const TYPES = ['Bug', 'Idea', 'Something confusing', 'Other', PRIVACY_TYPE];
 export const LIMITS = { description: 5000, steps: 5000, email: 254, version: 20, body: 20000 };
 const TITLE_SNIPPET_LENGTH = 60;
 const TIME_ZONE = 'Europe/London';
@@ -106,6 +109,8 @@ export function validate(data) {
   if (!TYPES.includes(f.type)) return null;
   if (!f.description || f.description.length > LIMITS.description) return null;
   if (f.steps.length > LIMITS.steps) return null;
+  // A data request needs a way to reply (intent 060).
+  if (f.type === PRIVACY_TYPE && !f.email) return null;
   if (f.email && (f.email.length > LIMITS.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email))) return null;
   if (f.version.length > LIMITS.version || !/^[\w.-]*$/.test(f.version)) return null;
   return f;
@@ -140,7 +145,8 @@ export function buildIssue(f) {
   return {
     title: `[${f.type}] ${neutralise(snippet)}`,
     body: lines.join('\n'),
-    labels: ['needs-triage']
+    // Privacy requests skip AI triage: the owner handles them (TRIAGE.md).
+    labels: f.type === PRIVACY_TYPE ? ['privacy-request'] : ['needs-triage']
   };
 }
 
@@ -149,23 +155,27 @@ function ukDate(now) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(now);
 }
 
-async function sha256Hex(text) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+// Keyed hash (HMAC-SHA-256), so a stored hash can't be reversed by trying
+// every IPv4 address (intent 060, F10).
+export async function hashIp(ip, env) {
+  const secret = env.IP_HASH_SALT || env.GITHUB_TOKEN || '';
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(`ip-hash:${secret}`), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(ip));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
  * Checks and increments the per-IP hourly and global daily counters in KV.
  * Returns null when a slot was reserved, or the name of the limit hit.
  * KV is eventually consistent, so bursts can slightly exceed a cap; that's
- * acceptable for spam control at this scale. IPs are stored only as a hash.
+ * acceptable for spam control at this scale. IPs are stored only as a keyed hash.
  */
 export async function reserveSlots(env, request, now) {
   const hourlyCap = Number(env.HOURLY_PER_IP) || 5;
   const dailyCap = Number(env.DAILY_ISSUE_CAP) || 20;
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   const hour = now.toISOString().slice(0, 13);
-  const ipKey = `ip:${(await sha256Hex(ip)).slice(0, 32)}:${hour}`;
+  const ipKey = `ip:${(await hashIp(ip, env)).slice(0, 32)}:${hour}`;
   const dayKey = `day:${ukDate(now)}`;
 
   const [ipCount, dayCount] = await Promise.all([

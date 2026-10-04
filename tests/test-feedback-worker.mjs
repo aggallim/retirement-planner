@@ -1,7 +1,8 @@
 // Dependency-free tests for the feedback Worker (intent/026).
 // Run from the repo root: node tests/test-feedback-worker.mjs
 import assert from 'node:assert/strict';
-import worker, { buildIssue, validate } from '../tools/feedback/worker/src/index.js';
+import worker, { buildIssue, validate, hashIp, PRIVACY_TYPE } from '../tools/feedback/worker/src/index.js';
+import { createHash } from 'node:crypto';
 
 let pass = 0;
 let fail = 0;
@@ -171,6 +172,25 @@ await check('GET /health answers; other paths and methods are refused', async ()
   assert.equal((await worker.fetch(new Request('https://worker.test/x', { method: 'POST' }), env)).status, 404);
   const get = new Request('https://worker.test/', { headers: { Origin: ORIGIN } });
   assert.equal((await worker.fetch(get, env)).status, 405);
+});
+
+await check('privacy requests need an email, and are labelled privacy-request (not needs-triage)', async () => {
+  assert.equal(validate({ ...good, type: PRIVACY_TYPE, email: '' }), null);
+  const f = validate({ ...good, type: PRIVACY_TYPE });
+  assert.ok(f);
+  assert.deepEqual(buildIssue(f).labels, ['privacy-request']);
+  assert.deepEqual(buildIssue(validate(good)).labels, ['needs-triage']);
+});
+
+await check('IP hash is keyed: not plain SHA-256, and changes with the salt', async () => {
+  const plain = createHash('sha256').update('1.2.3.4').digest('hex');
+  const a = await hashIp('1.2.3.4', { IP_HASH_SALT: 'one' });
+  const b = await hashIp('1.2.3.4', { IP_HASH_SALT: 'two' });
+  const fallback = await hashIp('1.2.3.4', { GITHUB_TOKEN: 'tok' });
+  assert.notEqual(a, plain);
+  assert.notEqual(a, b);
+  assert.notEqual(fallback, plain);
+  assert.equal(a, await hashIp('1.2.3.4', { IP_HASH_SALT: 'one' }));
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

@@ -2,13 +2,17 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
+<!-- Content Security Policy (intent 060, F10). connect-src must list the
+     Supabase project (account-config.js) and the feedback Worker
+     (feedback-config.js); tests/test-engine.js checks it does. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://jkoruktwyfbszshnekaj.supabase.co https://retirement-planner-feedback.aggallim.workers.dev; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>UK Retirement Planner — free pension, ISA and State Pension calculator</title>
 <meta name="description" content="Free UK retirement calculator. Project pensions, ISAs, LISA, State Pension, DB pensions and Income Tax year by year, for one person or a couple, against the Pensions UK Retirement Living Standards. Your figures stay on your device.">
 <link rel="canonical" href="https://aggallim.github.io/retirement-planner/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="UK Retirement Planner">
-<meta property="og:description" content="Free UK retirement calculator: pensions, ISAs, State Pension and Income Tax projected year by year. No account, no tracking; your figures stay on your device.">
+<meta property="og:description" content="Free UK retirement calculator: pensions, ISAs, State Pension and Income Tax projected year by year. Your plan figures never leave your device, and Simple mode needs no account.">
 <meta property="og:url" content="https://aggallim.github.io/retirement-planner/">
 <meta property="og:image" content="https://aggallim.github.io/retirement-planner/icon.svg">
 <meta name="twitter:card" content="summary">
@@ -32,8 +36,8 @@
     {
       "@type": "FAQPage",
       "mainEntity": [
-        { "@type": "Question", "name": "Is the UK Retirement Planner free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The calculator is free to use with no account. An optional Advanced mode is in beta." } },
-        { "@type": "Question", "name": "Does it send my figures anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "No. Your plan is stored only in your browser on your device. There is no upload, bank connection or analytics." } },
+        { "@type": "Question", "name": "Is the UK Retirement Planner free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Simple mode is free and needs no account. Advanced mode is an invite-only beta that uses an email sign-in." } },
+        { "@type": "Question", "name": "Does it send my figures anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "No. Your plan figures are stored only in your browser on your device and are never uploaded. There is no bank connection, analytics or tracking. If you sign in for Advanced mode, the account holds only your email address, a marketing choice and an access flag. Optional feedback sends only what you type." } },
         { "@type": "Question", "name": "Does it include Income Tax?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It estimates Income Tax on pension withdrawals, the State Pension and DB pensions for each person every year, using England, Wales and Northern Ireland rates for 2026/27, with thresholds frozen until 2030/31." } },
         { "@type": "Question", "name": "Is this financial advice?", "acceptedAnswer": { "@type": "Answer", "text": "No. It is an illustrative planning tool. For personal recommendations, speak to a regulated financial adviser." } }
       ]
@@ -50,8 +54,12 @@
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8IS0tIFVLIFJldGlyZW1lbnQgUGxhbm5lciBtYXJrIChpbnRlbnQgMDU2KTogYSBzdW4gcmlzaW5nIG92ZXIgYSBob3Jpem9uLCBvbiBpbmsuIC0tPgogIDxkZWZzPgogICAgPGNsaXBQYXRoIGlkPSJhYm92ZSI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSIzNDQiLz48L2NsaXBQYXRoPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzI4Mzg2MCIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjM0NCIgcj0iMTAwIiBmaWxsPSIjZDlhMjFiIiBjbGlwLXBhdGg9InVybCgjYWJvdmUpIi8+CiAgPGcgc3Ryb2tlPSIjZDlhMjFiIiBzdHJva2Utd2lkdGg9IjIwIiBzdHJva2UtbGluZWNhcD0icm91bmQiPgogICAgPHBhdGggZD0iTTI1NiAxOTZ2LTQwIi8+CiAgICA8cGF0aCBkPSJNMTU4IDI0NmwtMjgtMjgiLz4KICAgIDxwYXRoIGQ9Ik0zNTQgMjQ2bDI4LTI4Ii8+CiAgPC9nPgogIDxwYXRoIGQ9Ik05NiAzNDRoMzIwIiBzdHJva2U9IiNmN2Y1ZjAiIHN0cm9rZS13aWR0aD0iMjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0xNjAgNDA0aDE5MiIgc3Ryb2tlPSIjZjdmNWYwIiBzdHJva2Utb3BhY2l0eT0iMC40NSIgc3Ryb2tlLXdpZHRoPSIxOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPgo=">
 <script src="feedback-config.js"></script>
 <script src="account-config.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Fonts are self-hosted (intent 060, F5): no request goes to Google. -->
+<link rel="preload" href="fonts/inter-tight-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: 'Inter Tight'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/inter-tight-latin.woff2) format('woff2'); }
+  @font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/fraunces-latin.woff2) format('woff2'); }
+</style>
 <script>
 (function() {
   try {
@@ -97,7 +105,7 @@
 <li>"What if?" sliders and a "what matters most" view showing how the result responds to changes</li>
 </ul>
 <h2>Privacy</h2>
-<p>Your figures stay in your browser on your device. No account is needed, nothing is uploaded, and there is no tracking or analytics.</p>
+<p>Your plan figures never leave your device: they are stored in your browser and never uploaded, and there is no tracking or analytics. Simple mode needs no account. Advanced mode (an invite-only beta) uses an email sign-in; the account holds only your email address, a marketing choice and an access flag. Optional feedback sends only what you type. Read the <a href="privacy.html">privacy notice</a>.</p>
 <p><strong>Not financial advice.</strong> This is an illustrative planning tool. For personal recommendations, speak to a regulated financial adviser.</p>
 <p>This app needs JavaScript. A plain-text description of its methodology is at <a href="llms-full.txt">llms-full.txt</a>.</p>
 </main>
@@ -4052,29 +4060,76 @@ const sessionFrom = t => ({
   refresh_token: t.refresh_token,
   expires_at: Date.now() + (Number(t.expires_in) || 3600) * 1000
 });
-// The magic link returns here with the tokens (or an error) in the URL hash.
-// Read them once, then strip the hash so a reload or a shared URL can't
-// carry them.
-function takeAuthRedirect() {
-  if (typeof window === 'undefined' || !window.location.hash) return null;
-  const params = new URLSearchParams(window.location.hash.slice(1));
-  if (!params.get('access_token') && !params.get('error_description')) return null;
-  window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  if (params.get('error_description')) return { error: params.get('error_description') };
-  return { session: sessionFrom(Object.fromEntries(params)) };
+// PKCE (intent 060, F10): the sign-in request carries a hash of a random
+// verifier kept on this device; the link comes back with a one-time ?code=
+// that only this device can swap for a session, so tokens never appear in
+// the URL.
+const PKCE_KEY = 'ukRetirementPlanner.pkce.v1';
+const base64Url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+async function newPkceChallenge() {
+  if (typeof crypto === 'undefined' || !crypto.subtle) return null;
+  const verifier = base64Url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  try {
+    localStorage.setItem(PKCE_KEY, verifier);
+  } catch {
+    return null; // no storage, no way to finish PKCE: fall back to the fragment flow
+  }
+  return base64Url(new Uint8Array(digest));
 }
+const takePkceVerifier = () => {
+  try {
+    const v = localStorage.getItem(PKCE_KEY);
+    localStorage.removeItem(PKCE_KEY);
+    return v;
+  } catch {
+    return null;
+  }
+};
+// The magic link returns here with ?code= (PKCE), or with tokens in the hash
+// (links sent before PKCE), or with an error. Read once, then strip them so
+// a reload or a shared URL can't carry them.
+function takeAuthRedirect() {
+  if (typeof window === 'undefined') return null;
+  const query = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  const code = query.get('code');
+  const error = query.get('error_description') || hash.get('error_description');
+  if (!code && !error && !hash.get('access_token')) return null;
+  ['code', 'error', 'error_code', 'error_description'].forEach(k => query.delete(k));
+  const rest = query.toString();
+  window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
+  if (error) return { error };
+  if (code) return { code };
+  return { session: sessionFrom(Object.fromEntries(hash)) };
+}
+// Supabase refuses to create an account for an address that isn't on the
+// beta invite list; turn its generic database error into plain words.
+const friendlyAuthError = message => /database error|invite_only|signups not allowed/i.test(message || '') ? 'Sign-in is invite-only during the Advanced beta. To ask for an invite, send feedback.' : message;
 const accountApi = {
-  sendMagicLink: (email, marketingConsent) => authRequest(`/auth/v1/otp?redirect_to=${encodeURIComponent(window.location.origin + window.location.pathname)}`, {
-    method: 'POST',
-    body: {
-      email,
-      create_user: true,
-      data: {
-        marketing_consent: !!marketingConsent,
-        marketing_consent_at: marketingConsent ? new Date().toISOString() : null
+  sendMagicLink: async (email, marketingConsent) => {
+    const challenge = await newPkceChallenge();
+    return authRequest(`/auth/v1/otp?redirect_to=${encodeURIComponent(window.location.origin + window.location.pathname)}`, {
+      method: 'POST',
+      body: {
+        email,
+        create_user: true,
+        data: {
+          marketing_consent: !!marketingConsent,
+          marketing_consent_at: marketingConsent ? new Date().toISOString() : null
+        },
+        ...(challenge ? { code_challenge: challenge, code_challenge_method: 's256' } : {})
       }
-    }
-  }),
+    });
+  },
+  exchangeCode: async code => {
+    const verifier = takePkceVerifier();
+    if (!verifier) throw new Error('Open the sign-in link on the same device and browser you asked for it from.');
+    return sessionFrom(await authRequest('/auth/v1/token?grant_type=pkce', {
+      method: 'POST',
+      body: { auth_code: code, code_verifier: verifier }
+    }));
+  },
   refresh: async session => sessionFrom(await authRequest('/auth/v1/token?grant_type=refresh_token', {
     method: 'POST',
     body: { refresh_token: session.refresh_token }
@@ -4119,6 +4174,10 @@ function useAccount() {
       setState({ status: 'signedOut', account: null, error: redirect.error });
       return;
     }
+    if (redirect && redirect.code) {
+      accountApi.exchangeCode(redirect.code).then(load, e => setState({ status: 'signedOut', account: null, error: e.message || 'That sign-in link has expired. Ask for a new one.' }));
+      return;
+    }
     const session = redirect ? redirect.session : loadSession();
     if (session) load(session);else setState({ status: 'signedOut', account: null, error: '' });
   }, [load]);
@@ -4156,8 +4215,9 @@ const AccountPanel = memo(function AccountPanel({ accountState, reason }) {
       p && React.createElement("label", { className: "flex items-start gap-2 text-xs text-slate-600 cursor-pointer" },
         React.createElement("input", { type: "checkbox", checked: !!p.marketing_consent, onChange: e => accountState.setConsent(e.target.checked), className: "mt-0.5" }),
         "Email me product news and offers. You can change this at any time."),
-      React.createElement("p", { className: "text-xs text-slate-500" }, "Your account holds your email address, this choice and your access level. Your plan figures stay on this device."),
-      React.createElement("button", { type: "button", onClick: accountState.signOut, className: "text-sm font-semibold text-blue-600 hover:text-blue-700" }, "Sign out"));
+      React.createElement("p", { className: "text-xs text-slate-500" }, "Your account holds your email address, this choice and your access level. Your plan figures stay on this device. ", React.createElement("a", { href: "privacy.html", className: "text-blue-600 font-semibold" }, "Privacy notice")),
+      React.createElement("button", { type: "button", onClick: accountState.signOut, className: "text-sm font-semibold text-blue-600 hover:text-blue-700" }, "Sign out"),
+      React.createElement("p", { className: "text-xs text-slate-500" }, "Signing out doesn't clear your plan from this device. To clear it, use Reset."));
   }
   const submit = async e => {
     e.preventDefault();
@@ -4171,7 +4231,7 @@ const AccountPanel = memo(function AccountPanel({ accountState, reason }) {
       await accountApi.sendMagicLink(email.trim(), consent);
       setSent(true);
     } catch (err) {
-      setError(err.message || 'Could not send the link. Check your connection and try again.');
+      setError(friendlyAuthError(err.message) || 'Could not send the link. Check your connection and try again.');
     }
     setBusy(false);
   };
@@ -4185,7 +4245,7 @@ const AccountPanel = memo(function AccountPanel({ accountState, reason }) {
       "Email me product news and offers (optional)."),
     (error || accountState.error) && React.createElement("p", { className: "text-xs text-red-600 font-medium" }, error || accountState.error),
     React.createElement("button", { type: "submit", disabled: busy, className: "w-full px-3 py-2 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60" }, busy ? 'Sending…' : 'Email me a sign-in link'),
-    React.createElement("p", { className: "text-xs text-slate-500" }, "No password. The account is only for Advanced mode, and holds your email address, your choice above and your access level. Your plan figures stay on this device."));
+    React.createElement("p", { className: "text-xs text-slate-500" }, "No password. Advanced mode is an invite-only beta. The account holds your email address, your choice above and your access level; your plan figures stay on this device. ", React.createElement("a", { href: "privacy.html", className: "text-blue-600 font-semibold" }, "Privacy notice")));
 });
 // Number of Advanced-only settings in a plan, for Simple mode's "switched
 // off" note (intent 044).
@@ -4274,7 +4334,7 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5"
   }), React.createElement("p", {
     className: "text-xs text-slate-500"
-  }, ACCOUNTS_ENABLED ? "Everything you enter stays in this browser. No upload, no bank connection, and no analytics or tracking. An account is only needed for Advanced mode, and it never holds your plan figures." : "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file or send feedback yourself.")), React.createElement("div", {
+  }, ACCOUNTS_ENABLED ? "Your plan figures never leave this browser: no upload, no bank connection, no analytics or tracking. Simple mode needs no account. Advanced mode (an invite-only beta) uses an email sign-in; the account holds only your email, a marketing choice and an access flag." : "Everything you enter stays in this browser. No account, no upload, no bank connection, and no analytics or tracking — nothing is sent anywhere unless you choose to export a file or send feedback yourself."), " ", React.createElement("a", { href: "privacy.html", className: "text-blue-600 font-semibold" }, "Privacy notice")), React.createElement("div", {
     className: "space-y-2"
   }, React.createElement("p", {
     className: "text-xs text-slate-500"
@@ -4337,7 +4397,7 @@ const SettingsMenu = memo(function SettingsMenu({
     className: "text-sm text-blue-600 font-medium"
   }, "Send feedback"), React.createElement("p", {
     className: "text-xs text-slate-500"
-  }, "Sends only what you type here to the developer. Your plan figures aren't included."))) : view === 'share' ? React.createElement(React.Fragment, null, React.createElement("button", {
+  }, "Sends only what you type, through Cloudflare to a private GitHub repository, where an AI assistant helps sort it. Your plan figures aren't included."))) : view === 'share' ? React.createElement(React.Fragment, null, React.createElement("button", {
     onClick: () => setView('menu'),
     className: "text-sm text-blue-600 font-medium"
   }, "← Back"), React.createElement(ShareView, {
@@ -4781,7 +4841,6 @@ function RetirementCalculator() {
   return /*#__PURE__*/React.createElement("div", {
     className: "min-h-screen app-bg"
   }, /*#__PURE__*/React.createElement("style", null, `
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&display=swap');
         @keyframes assumption-highlight-flash {
           0% { background-color: rgba(58,81,143,.18); box-shadow: 0 0 0 3px rgba(58,81,143,.35); }
           100% { background-color: transparent; box-shadow: 0 0 0 3px rgba(58,81,143,0); }
@@ -5628,9 +5687,13 @@ function RetirementCalculator() {
     className: "text-slate-500 text-sm mt-2 flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Lock, {
     className: "h-3.5 w-3.5 flex-shrink-0"
-  }), ACCOUNTS_ENABLED ? "Your plan stays on this device — no upload, no bank connection, no analytics. An account is only needed for Advanced mode." : "Your data stays on this device — no account, no upload, no bank connection, no analytics."), FEEDBACK_HREF && /*#__PURE__*/React.createElement("p", {
-    className: "text-sm mt-2"
-  }, /*#__PURE__*/React.createElement("a", {
+  }), ACCOUNTS_ENABLED ? "Your plan figures never leave this device — no upload, no bank connection, no analytics. Simple mode needs no account; the invite-only Advanced beta uses an email sign-in." : "Your data stays on this device — no account, no upload, no bank connection, no analytics."), React.createElement("p", {
+    className: "text-sm mt-2 flex items-center justify-center gap-4"
+  }, React.createElement("a", {
+    href: "privacy.html",
+    className: "text-slate-400",
+    style: { textDecoration: 'underline' }
+  }, "Privacy"), FEEDBACK_HREF && React.createElement("a", {
     href: FEEDBACK_HREF,
     className: "text-slate-400",
     style: { textDecoration: 'underline' }

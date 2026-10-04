@@ -1768,5 +1768,30 @@ check('APP_VERSION in index.html matches the sw.js CACHE version', () => {
   assert.strictEqual(appVersion, cacheVersion);
 });
 
+// intent 060 (privacy review F5, F10): no third-party fonts or scripts, the
+// self-hosted fonts are precached, and each page's CSP allows exactly the
+// hosts the config files point at.
+check('privacy: no Google Fonts, fonts precached, CSP lists the configured hosts', () => {
+  const root = path.join(__dirname, '..');
+  const read = f => fs.readFileSync(path.join(root, f), 'utf8');
+  const sw = read('sw.js');
+  const supabase = (read('account-config.js').match(/supabaseUrl:\s*'([^']*)'/) || [])[1];
+  const worker = (read('feedback-config.js').match(/FEEDBACK_ENDPOINT = '([^']*)'/) || [])[1];
+  ['fonts/fraunces-latin.woff2', 'fonts/inter-tight-latin.woff2', 'privacy.html'].forEach(f => {
+    assert.ok(fs.existsSync(path.join(root, f)), `${f} missing`);
+    assert.ok(sw.includes(`'./${f}'`), `${f} not in sw.js ASSETS`);
+  });
+  ['index.html', 'feedback.html', 'privacy.html'].forEach(f => {
+    const html = read(f);
+    assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(html), `${f} still loads Google Fonts`);
+    const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1];
+    assert.ok(csp, `${f} has no CSP`);
+    assert.ok(/object-src 'none'/.test(csp) && /base-uri 'none'/.test(csp), `${f} CSP too loose`);
+    const connect = (csp.match(/connect-src ([^;]+)/) || [])[1] || '';
+    if (f === 'index.html' && supabase) assert.ok(connect.includes(supabase.replace(/\/$/, '')), 'index.html CSP misses the Supabase host');
+    if (f !== 'privacy.html' && worker) assert.ok(connect.includes(worker.replace(/\/$/, '')), `${f} CSP misses the feedback Worker`);
+  });
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);
