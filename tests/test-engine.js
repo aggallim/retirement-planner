@@ -1788,20 +1788,34 @@ check('privacy: no Google Fonts, fonts precached, CSP lists the configured hosts
   const sw = read('sw.js');
   const supabase = (read('account-config.js').match(/supabaseUrl:\s*'([^']*)'/) || [])[1];
   const worker = (read('feedback-config.js').match(/FEEDBACK_ENDPOINT = '([^']*)'/) || [])[1];
-  ['fonts/fraunces-latin.woff2', 'fonts/inter-tight-latin.woff2', 'privacy.html'].forEach(f => {
+  ['fonts/fraunces-latin.woff2', 'fonts/inter-tight-latin.woff2', 'privacy.html', 'unsubscribe.html'].forEach(f => {
     assert.ok(fs.existsSync(path.join(root, f)), `${f} missing`);
     assert.ok(sw.includes(`'./${f}'`), `${f} not in sw.js ASSETS`);
   });
-  ['index.html', 'feedback.html', 'privacy.html'].forEach(f => {
+  ['index.html', 'feedback.html', 'privacy.html', 'unsubscribe.html'].forEach(f => {
     const html = read(f);
     assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(html), `${f} still loads Google Fonts`);
     const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1];
     assert.ok(csp, `${f} has no CSP`);
     assert.ok(/object-src 'none'/.test(csp) && /base-uri 'none'/.test(csp), `${f} CSP too loose`);
     const connect = (csp.match(/connect-src ([^;]+)/) || [])[1] || '';
-    if (f === 'index.html' && supabase) assert.ok(connect.includes(supabase.replace(/\/$/, '')), 'index.html CSP misses the Supabase host');
-    if (f !== 'privacy.html' && worker) assert.ok(connect.includes(worker.replace(/\/$/, '')), `${f} CSP misses the feedback Worker`);
+    if ((f === 'index.html' || f === 'unsubscribe.html') && supabase) assert.ok(connect.includes(supabase.replace(/\/$/, '')), `${f} CSP misses the Supabase host`);
+    if ((f === 'index.html' || f === 'feedback.html') && worker) assert.ok(connect.includes(worker.replace(/\/$/, '')), `${f} CSP misses the feedback Worker`);
   });
+});
+
+// intent 063: consent evidence is set by the database, not the browser,
+// and the schema carries the invite gate, consent log and clean-up job.
+check('accounts: the app sends the consent wording version, never a consent time', () => {
+  const root = path.join(__dirname, '..');
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  const schema = fs.readFileSync(path.join(root, 'tools', 'accounts', 'schema.sql'), 'utf8');
+  assert.ok(!/marketing_consent_at:/.test(html), 'index.html still sends marketing_consent_at');
+  assert.ok(/consent_text_version: CONSENT_TEXT_VERSION/.test(html), 'index.html does not send consent_text_version');
+  ['before_auth_user_created', 'on_auth_user_confirmed', 'profiles_consent_stamp', 'profiles_consent_log',
+    'profiles_suppress_on_delete', 'unsubscribe_by_token', 'private.marketing_list', 'private.inactive_accounts',
+    'delete-unconfirmed-signups'].forEach(name => assert.ok(schema.includes(name), `schema.sql lacks ${name}`));
+  ['delete-account', 'unsubscribe'].forEach(fn => assert.ok(fs.existsSync(path.join(root, 'tools', 'accounts', 'functions', fn, 'index.ts')), `${fn} function missing`));
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

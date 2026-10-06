@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://jkoruktwyfbszshnekaj.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Unsubscribe · UK Retirement Planner</title>
+<meta name="theme-color" content="#283860">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<script>
+// Same theme preference as the planner (index.html).
+(function () {
+  try {
+    var t = localStorage.getItem('ukRetirementPlanner.theme') || 'system';
+    var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+</script>
+<script src="account-config.js"></script>
+<style>
+  /* Self-hosted fonts (intent 060, F5). */
+  @font-face { font-family: 'Inter Tight'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/inter-tight-latin.woff2) format('woff2'); }
+  @font-face { font-family: 'Fraunces'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(fonts/fraunces-latin.woff2) format('woff2'); }
+  :root {
+    --bg: #f7f5f0; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #3a518f; --accent-text: #ffffff;
+    --ok-bg: #ecfdf5; --ok-text: #065f46; --err-bg: #fef2f2; --err-text: #991b1b;
+  }
+  .dark {
+    --bg: #0b1020; --card: #111831; --text: #e2e8f0; --muted: #94a3b8;
+    --border: #334155; --accent: #4e68a8; --accent-text: #ffffff;
+    --ok-bg: #022c22; --ok-text: #6ee7b7; --err-bg: #450a0a; --err-text: #fca5a5;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 'Inter Tight', system-ui, sans-serif;
+    padding: env(safe-area-inset-top) 16px calc(2rem + env(safe-area-inset-bottom));
+  }
+  main { max-width: 36rem; margin: 0 auto; }
+  a { color: var(--accent); }
+  .back { display: inline-block; margin: 1.25rem 0 1rem; font-weight: 500; text-decoration: none; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; }
+  h1 { font-family: 'Fraunces', serif; font-weight: 600; letter-spacing: -0.01em; font-size: 1.6rem; margin: 0 0 .75rem; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  button {
+    font: inherit; font-weight: 600; background: var(--accent); color: var(--accent-text);
+    border: 0; border-radius: .6rem; padding: .7rem 1.4rem; cursor: pointer;
+  }
+  button[disabled] { opacity: .6; cursor: default; }
+  .status { border-radius: .6rem; padding: .75rem 1rem; margin-top: 1rem; }
+  .status.ok { background: var(--ok-bg); color: var(--ok-text); }
+  .status.err { background: var(--err-bg); color: var(--err-text); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← Back to the planner</a>
+  <div class="card">
+    <h1>Unsubscribe</h1>
+    <div id="ask">
+      <p>Stop product news and offers from UK Retirement Planner? Your account and your Advanced access aren't affected.</p>
+      <button type="button" id="go">Unsubscribe</button>
+    </div>
+    <p id="done" class="status ok" role="status" hidden>You're unsubscribed. We won't send you marketing emails. You can opt in again from the account panel (⚙ Data → Account) if you change your mind.</p>
+    <p id="error" class="status err" role="alert" hidden></p>
+    <p class="muted">We keep your address on a do-not-email list so you aren't contacted by mistake. <a href="privacy.html#retention">Privacy notice</a></p>
+  </div>
+</main>
+<script>
+(function () {
+  var cfg = window.ACCOUNT_CONFIG || {};
+  // The token is in the hash (#token=…), so it never reaches the web server.
+  var match = /(?:^|[#&])token=([0-9a-fA-F-]{36})(?:&|$)/.exec(location.hash);
+  var token = match ? match[1] : '';
+  var ask = document.getElementById('ask');
+  var go = document.getElementById('go');
+  var done = document.getElementById('done');
+  var error = document.getElementById('error');
+  function fail(message) {
+    error.textContent = message;
+    error.hidden = false;
+  }
+  if (!token || !cfg.supabaseUrl) {
+    ask.hidden = true;
+    fail(token ? "Unsubscribing isn't available right now. Please try again later." : 'This unsubscribe link is incomplete. Use the link from the email, or untick the box in the account panel (⚙ Data → Account).');
+    return;
+  }
+  go.addEventListener('click', function () {
+    go.disabled = true;
+    error.hidden = true;
+    fetch(cfg.supabaseUrl + '/functions/v1/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseAnonKey },
+      body: JSON.stringify({ token: token })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        if (!res.ok || !body.unsubscribed) throw new Error(body.error || 'Something went wrong. Please try again.');
+        ask.hidden = true;
+        done.hidden = false;
+        history.replaceState(null, '', location.pathname);
+      });
+    }).catch(function (e) {
+      go.disabled = false;
+      fail(e && e.message && e.message !== 'Failed to fetch' ? e.message : 'Could not reach the server. Check your connection and try again.');
+    });
+  });
+})();
+</script>
+</body>
+</html>
