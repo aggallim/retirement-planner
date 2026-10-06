@@ -9,6 +9,32 @@ This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
 
+## 2026-10-06 — Account data controls (063)
+
+- Implements `intent/063-account-data-controls.md`: the database half of
+  intent 060 (privacy findings F3, F4, F8), which the earlier session's
+  permission policy had blocked.
+- **Invite-only sign-up in the database.** A `before insert` trigger on
+  `auth.users` refuses addresses not on `private.beta_invites`; being
+  invited grants `advanced_access`. Existing accounts are carried over.
+- **Consent only after confirmation, with evidence.** A ticked box is
+  pending until the address is confirmed. The consent time comes from the
+  server clock; the wording version is stored; every change is logged in
+  `private.consent_events`.
+- **Unsubscribe and do-not-email list.** Per-profile `unsubscribe_token`,
+  an `unsubscribe` Edge Function (also one-click, RFC 8058), a new
+  `unsubscribe.html` page, `private.marketing_suppressions` and a
+  `private.marketing_list` view as the only export.
+- **Delete my account** in the account panel, via a `delete-account` Edge
+  Function. Deleting an opted-in account keeps the address on the
+  do-not-email list.
+- **Clean-up.** A daily pg_cron job deletes sign-ups never confirmed after
+  7 days; `private.inactive_accounts` lists accounts with no sign-in for
+  24 months.
+- Functions are in `tools/accounts/functions/`; the schema stays one
+  re-runnable `tools/accounts/schema.sql`.
+- `sw.js` cache and `APP_VERSION` to v27; `unsubscribe.html` precached.
+
 ## 2026-10-06 — Branded sign-in email (062)
 
 - Implements `intent/062-branded-sign-in-email.md`. The Advanced sign-in

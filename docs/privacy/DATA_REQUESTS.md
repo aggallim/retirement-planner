@@ -28,7 +28,10 @@ for them: say so.
 
 | Data | Where | How to find it |
 |---|---|---|
-| Account: email, `advanced_access`, marketing choice and time | Supabase → Table Editor → `profiles` | filter by email |
+| Account: email, `advanced_access`, marketing choice, time and wording version | Supabase → Table Editor → `profiles` | filter by email |
+| Marketing-choice history | `private.consent_events` (schema `private`) | filter by email |
+| Do-not-email list | `private.marketing_suppressions` | filter by email |
+| Beta invite | `private.beta_invites` | filter by email |
 | Sign-in records | Supabase → Authentication → Users | search by email |
 | Feedback they sent | GitHub, `aggallim/retirement-planner-feedback` issues | search by text or the email |
 | Rate-limit counters | Cloudflare KV `FEEDBACK_KV` | keyed hashes only, expire in 1 hour/2 days; not linkable to a person |
@@ -38,10 +41,14 @@ for them: say so.
 - **Access (Art. 15).** Send the `profiles` row, the Auth user's email,
   created and last-sign-in times, and copies of any feedback issues they
   sent. Say that plan figures are only on their own device.
-- **Erasure (Art. 17) / delete my account.** Supabase → Authentication →
-  Users → the user → **Delete user**. The `profiles` row is deleted with it
-  (`on delete cascade`). If they had ever opted in to marketing, add their
-  email to your do-not-email list before deleting. For feedback, edit each
+- **Erasure (Art. 17) / delete my account.** Users can do this themselves:
+  ⚙ Data → Account → **Delete my account** (the `delete-account` Edge
+  Function, intent 063). Otherwise: Supabase → Authentication → Users →
+  the user → **Delete user**. Either way the `profiles` row and its
+  consent history are deleted with it (`on delete cascade`), and if the
+  account was opted in to marketing, a trigger adds the address to
+  `private.marketing_suppressions`. Also remove their row from
+  `private.beta_invites` if they don't want to be invited again. For feedback, edit each
   issue's body and title to the redaction line in `TRIAGE.md` (GitHub's
   API can't delete issues; the web UI can delete an issue if you're an
   admin, which is better when asked).
@@ -49,41 +56,46 @@ for them: say so.
   (the user can also just create a new account and ask for the old one to
   be deleted).
 - **Objection / withdraw marketing consent (Art. 21, Art. 7(3)).** Set
-  `marketing_consent` to false on their `profiles` row and add them to the
-  do-not-email list. They can also untick it themselves in ⚙ Data →
-  Account.
+  `marketing_consent` to false on their `profiles` row (the change is
+  logged in `private.consent_events`) and add them to the do-not-email
+  list: `insert into private.marketing_suppressions (email, reason) values
+  (lower('…'), 'owner');`. They can also untick it themselves in ⚙ Data →
+  Account, or use the unsubscribe link in any marketing email.
 - **Portability (Art. 20).** Same as access, as JSON. Their plan is
   already portable through Export.
 
 ## Retention housekeeping (monthly)
 
-The privacy notice promises these; until they are automated (see intent
-060, owner actions), run them by hand in the Supabase SQL editor:
+Sign-ups whose link was never opened are deleted automatically after 7
+days (pg_cron job `delete-unconfirmed-signups`, daily at 03:17 UTC; intent
+063). Check it ran: `select * from cron.job_run_details order by
+start_time desc limit 5;`.
+
+Accounts with no sign-in for 24 months are still manual, because nothing
+sends a warning email yet:
 
 ```sql
--- Sign-ups whose link was never opened, older than 7 days: delete.
-select id, email, created_at from auth.users
- where email_confirmed_at is null and created_at < now() - interval '7 days';
-
--- Accounts with no sign-in for 24 months: email a warning, then delete
--- after 30 days if there's no reply.
-select id, email, last_sign_in_at from auth.users
- where coalesce(last_sign_in_at, created_at) < now() - interval '24 months';
+select * from private.inactive_accounts;
 ```
 
-Delete through Authentication → Users so Supabase cleans up sessions.
+Email each one a warning, then delete after 30 days if there's no reply
+(Authentication → Users → Delete user, so Supabase cleans up sessions).
 Feedback redaction after 12 months is done by the daily triage routine.
 
 ## Exporting a marketing list (when sending starts)
 
 Only addresses that are confirmed, opted in and not on the do-not-email
-list:
+list. This view is the only sanctioned export:
 
 ```sql
-select p.email, p.marketing_consent_at from public.profiles p
-  join auth.users u on u.id = p.id
- where p.marketing_consent and u.email_confirmed_at is not null;
+select * from private.marketing_list;
 ```
 
-Remove anyone on the do-not-email list before sending, and include an
-unsubscribe link in every email (PECR reg. 22).
+Every email must carry that person's unsubscribe link (PECR reg. 22), in
+the body as `https://aggallim.github.io/retirement-planner/unsubscribe.html#token=<unsubscribe_token>`
+and as headers for one-click unsubscribe (RFC 8058):
+
+```
+List-Unsubscribe: <https://jkoruktwyfbszshnekaj.supabase.co/functions/v1/unsubscribe?token=<unsubscribe_token>>
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+```
