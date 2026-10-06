@@ -70,10 +70,11 @@ and `RECORDS_OF_PROCESSING.md`, the accounts setup guide, and
 ## Decisions on points 060 left open
 
 - **Who goes on the do-not-email list when an account is deleted.** Only
-  people who had opted in, or ticked the box and were waiting for
-  confirmation. Keeping the address of someone who never agreed to
-  marketing would hold data for no reason. This matches what the privacy
-  notice already says.
+  people who had opted in (confirmed consent). Keeping the address of
+  someone who never agreed to marketing would hold data for no reason. A
+  ticked box that was never confirmed doesn't count either, because the
+  address may not even be theirs. This matches what the privacy notice
+  already says.
 - **Re-joining after unsubscribing.** A new, confirmed opt-in is a newer
   choice than the old unsubscribe, so it removes the address from the
   do-not-email list. The change is logged in `consent_events`.
