@@ -33,13 +33,29 @@ it. Steps 3–6 can only be done in the dashboard.
      wildcard: the app redirects back to whatever page the user is on
      (e.g. `…/index.html`), and a URL that isn't allowed falls back to the
      Site URL.
-5. **Email templates** (optional): Authentication → Email Templates. A
+5. **Email templates** (intent 062): Authentication → Email Templates. A
    first-time user receives **Confirm signup**; a returning user receives
-   **Magic Link**. If you reword one, reword both, and keep
-   `{{ .ConfirmationURL }}` in each: the app reads the tokens from the URL
-   hash it returns with.
+   **Magic Link**. Replace both with the branded templates in
+   `email-templates/` (switch the editor to source/HTML and paste the whole
+   file):
+
+   | Template | File | Subject |
+   |---|---|---|
+   | Confirm signup | `email-templates/confirm-signup.html` | Confirm your email for UK Retirement Planner |
+   | Magic Link | `email-templates/magic-link.html` | Your UK Retirement Planner sign-in link |
+
+   Their link is `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email`,
+   so it points at the app rather than at `…supabase.co`; the app posts the
+   hash to `/auth/v1/verify`. Paste them only once the app version that
+   handles `?token_hash=` (v26) is live. If you reword them, keep that link
+   in both. Supabase's default `{{ .ConfirmationURL }}` still works too.
+   The sender stays "Supabase Auth" until step 6.
 6. **Custom SMTP** (before more than a handful of users): the built-in
-   sender allows only a few emails an hour. Authentication → SMTP Settings.
+   sender allows only a few emails an hour, and it sends as "Supabase Auth
+   <noreply@mail.app.supabase.io>". Authentication → SMTP Settings; set the
+   sender name to "UK Retirement Planner". Needs an email provider you
+   control (e.g. Resend with your own domain, or Gmail with an app
+   password).
 7. **Turn it on in the app:** in `account-config.js` set `supabaseUrl` and
    `supabaseAnonKey` (Project Settings → API Keys: the Project URL and the
    **publishable** key `sb_publishable_…`; the legacy `anon` key also works).
@@ -75,6 +91,8 @@ All over Supabase's REST API with the public key as the `apikey` header (no SDK)
 | Call | Purpose |
 |---|---|
 | `POST /auth/v1/otp?redirect_to=…` | send the magic link, with consent in user metadata |
+| `POST /auth/v1/verify` | finish sign-in from a branded-template link (`token_hash`) |
+| `POST /auth/v1/token?grant_type=pkce` | finish sign-in from a default-template link (`?code=`) |
 | `POST /auth/v1/token?grant_type=refresh_token` | refresh an expired session |
 | `GET /auth/v1/user` | who is signed in |
 | `GET /rest/v1/profiles?id=eq.<id>` | access flag and consent |
