@@ -12,7 +12,10 @@ off and the app shows its "no account" wording.
 **Status (intent 057):** done up to step 2. The project is "UK Retirement
 Planner" (ref `jkoruktwyfbszshnekaj`, London) and the schema has been
 applied, with both Supabase advisors clean. `account-config.js` points at
-it. Steps 3–6 can only be done in the dashboard.
+it. Steps 3–6 can only be done in the dashboard. Intent 063's schema and
+both Edge Functions (step 2b) were applied on 2026-10-06; the performance
+advisor is clean, and the security advisor's only note is leaked-password
+protection, which doesn't apply (magic links only).
 
 1. **Create a Supabase project** (free tier is enough) at
    https://supabase.com/dashboard. Region: London (`eu-west-2`). If the form

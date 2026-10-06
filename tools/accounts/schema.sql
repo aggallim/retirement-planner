@@ -72,8 +72,7 @@ begin
 end;
 $$;
 
-drop trigger if exists before_auth_user_created on auth.users;
-create trigger before_auth_user_created
+create or replace trigger before_auth_user_created
   before insert on auth.users
   for each row execute function private.enforce_beta_invite();
 
@@ -87,8 +86,7 @@ begin
 end;
 $$;
 
-drop trigger if exists beta_invites_grant on private.beta_invites;
-create trigger beta_invites_grant
+create or replace trigger beta_invites_grant
   after insert on private.beta_invites
   for each row execute function private.grant_invited_access();
 
@@ -113,8 +111,7 @@ begin
 end;
 $$;
 
-drop trigger if exists consent_events_no_update on private.consent_events;
-create trigger consent_events_no_update
+create or replace trigger consent_events_no_update
   before update on private.consent_events
   for each row execute function private.consent_events_append_only();
 
@@ -126,7 +123,7 @@ create table if not exists private.marketing_suppressions (
 );
 
 -- The consent time comes from the server clock, never the browser.
-create or replace function public.stamp_consent()
+create or replace function private.stamp_consent()
 returns trigger language plpgsql set search_path = '' as $$
 begin
   if tg_op = 'INSERT' or new.marketing_consent is distinct from old.marketing_consent then
@@ -142,14 +139,13 @@ begin
 end;
 $$;
 
-drop trigger if exists profiles_consent_stamp on public.profiles;
-create trigger profiles_consent_stamp
+create or replace trigger profiles_consent_stamp
   before insert or update on public.profiles
-  for each row execute function public.stamp_consent();
+  for each row execute function private.stamp_consent();
 
 -- Log each change. The source is set by the function making it; otherwise
 -- it is the account panel (a signed-in user) or the owner.
-create or replace function public.log_consent()
+create or replace function private.log_consent()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if tg_op = 'INSERT' or new.marketing_consent is distinct from old.marketing_consent then
@@ -168,14 +164,13 @@ begin
 end;
 $$;
 
-drop trigger if exists profiles_consent_log on public.profiles;
-create trigger profiles_consent_log
+create or replace trigger profiles_consent_log
   after insert or update on public.profiles
-  for each row execute function public.log_consent();
+  for each row execute function private.log_consent();
 
 -- Deleting an account that had opted in keeps the address on the
 -- do-not-email list, whichever way it was deleted.
-create or replace function public.suppress_on_delete()
+create or replace function private.suppress_on_delete()
 returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if old.marketing_consent then
@@ -187,10 +182,9 @@ begin
 end;
 $$;
 
-drop trigger if exists profiles_suppress_on_delete on public.profiles;
-create trigger profiles_suppress_on_delete
+create or replace trigger profiles_suppress_on_delete
   before delete on public.profiles
-  for each row execute function public.suppress_on_delete();
+  for each row execute function private.suppress_on_delete();
 
 -- ---------------------------------------------------------- new accounts
 -- Create the profile on sign-up. A ticked marketing box is held as pending
@@ -227,7 +221,7 @@ create trigger on_auth_user_created
 
 -- Opening the sign-in link confirms the address; only then does a ticked
 -- box become consent.
-create or replace function public.handle_user_confirmed()
+create or replace function private.handle_user_confirmed()
 returns trigger
 language plpgsql
 security definer set search_path = ''
@@ -241,12 +235,11 @@ begin
 end;
 $$;
 
-drop trigger if exists on_auth_user_confirmed on auth.users;
-create trigger on_auth_user_confirmed
+create or replace trigger on_auth_user_confirmed
   after update of email_confirmed_at on auth.users
   for each row
   when (old.email_confirmed_at is null and new.email_confirmed_at is not null)
-  execute function public.handle_user_confirmed();
+  execute function private.handle_user_confirmed();
 
 -- --------------------------------------------------------- unsubscribe
 -- Called only by the unsubscribe Edge Function (service role). The token is
@@ -327,12 +320,10 @@ create trigger profiles_touch before update on public.profiles
 
 -- Functions in the exposed public schema stay out of /rest/v1/rpc (security
 -- advisor). Triggers still fire: Postgres checks EXECUTE only when the
--- trigger is created. unsubscribe_by_token is for the service role only.
+-- trigger is created. The intent 063 trigger functions live in the private
+-- schema, which the API can't reach. unsubscribe_by_token is for the
+-- service role only.
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
-revoke execute on function public.handle_user_confirmed() from public, anon, authenticated;
-revoke execute on function public.stamp_consent() from public, anon, authenticated;
-revoke execute on function public.log_consent() from public, anon, authenticated;
-revoke execute on function public.suppress_on_delete() from public, anon, authenticated;
 revoke execute on function public.touch_profile() from public, anon, authenticated;
 revoke execute on function public.unsubscribe_by_token(uuid) from public, anon, authenticated;
 grant execute on function public.unsubscribe_by_token(uuid) to service_role;
