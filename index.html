@@ -1089,7 +1089,7 @@ const importPlanFields = parsed => {
 // APP_VERSION must equal the suffix of CACHE in sw.js (tests/test-engine.js
 // checks this) — bump both together. It's passed to feedback.html so a
 // report can be matched to the build it came from.
-const APP_VERSION = 'v25';
+const APP_VERSION = 'v26';
 // feedback-config.js sets window.FEEDBACK_ENDPOINT (the feedback Worker's
 // URL). While it's empty, both "Send feedback" entry points stay hidden.
 // The app never sends plan data: feedback.html sends only what users type.
@@ -1101,6 +1101,11 @@ const FEEDBACK_HREF = typeof window !== 'undefined' && window.FEEDBACK_ENDPOINT 
 // the point that change shipped, so the sequence has intentional gaps
 // (v1, v2 never appear here — neither was user-facing).
 const USER_CHANGELOG = [{
+  version: 'v26',
+  date: '2026-10-06', // set to the actual merge date
+  title: 'A clearer sign-in email',
+  items: ['The Advanced sign-in email now comes in the planner\'s own style, and its link opens the planner directly.']
+}, {
   version: 'v25',
   date: '2026-10-04', // set to the actual merge date
   title: 'Easier data entry, and a privacy notice',
@@ -4253,20 +4258,25 @@ const takePkceVerifier = () => {
     return null;
   }
 };
-// The magic link returns here with ?code= (PKCE), or with tokens in the hash
-// (links sent before PKCE), or with an error. Read once, then strip them so
-// a reload or a shared URL can't carry them.
+// The magic link returns here with ?token_hash= (the branded email
+// templates, intent 062: the link points at the app, not at Supabase), with
+// ?code= (PKCE, Supabase's default template), with tokens in the hash (links
+// sent before PKCE), or with an error. Read once, then strip them so a
+// reload or a shared URL can't carry them.
 function takeAuthRedirect() {
   if (typeof window === 'undefined') return null;
   const query = new URLSearchParams(window.location.search);
   const hash = new URLSearchParams(window.location.hash.slice(1));
   const code = query.get('code');
+  const tokenHash = query.get('token_hash');
+  const type = /^(email|magiclink|signup)$/.test(query.get('type') || '') ? query.get('type') : 'email';
   const error = query.get('error_description') || hash.get('error_description');
-  if (!code && !error && !hash.get('access_token')) return null;
-  ['code', 'error', 'error_code', 'error_description'].forEach(k => query.delete(k));
+  if (!code && !tokenHash && !error && !hash.get('access_token')) return null;
+  ['code', 'token_hash', 'type', 'error', 'error_code', 'error_description'].forEach(k => query.delete(k));
   const rest = query.toString();
   window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
   if (error) return { error };
+  if (tokenHash) return { tokenHash, type };
   if (code) return { code };
   return { session: sessionFrom(Object.fromEntries(hash)) };
 }
@@ -4288,6 +4298,15 @@ const accountApi = {
         ...(challenge ? { code_challenge: challenge, code_challenge_method: 's256' } : {})
       }
     });
+  },
+  // The link carries a one-time token hash; posting it back returns the
+  // session in the response body, so no token ever sits in the URL.
+  verifyTokenHash: async (tokenHash, type) => {
+    takePkceVerifier(); // not needed on this path; don't leave it behind
+    return sessionFrom(await authRequest('/auth/v1/verify', {
+      method: 'POST',
+      body: { type, token_hash: tokenHash }
+    }));
   },
   exchangeCode: async code => {
     const verifier = takePkceVerifier();
@@ -4339,6 +4358,10 @@ function useAccount() {
     const redirect = takeAuthRedirect();
     if (redirect && redirect.error) {
       setState({ status: 'signedOut', account: null, error: redirect.error });
+      return;
+    }
+    if (redirect && redirect.tokenHash) {
+      accountApi.verifyTokenHash(redirect.tokenHash, redirect.type).then(load, () => setState({ status: 'signedOut', account: null, error: 'That sign-in link has expired or was already used. Ask for a new one.' }));
       return;
     }
     if (redirect && redirect.code) {

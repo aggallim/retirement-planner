@@ -9,6 +9,20 @@ This file is the complete change history — both what shipped and, for a
 non-trivial calculation change, why — in one place.
 
 
+## 2026-10-06 — Branded sign-in email (062)
+
+- Implements `intent/062-branded-sign-in-email.md`. The Advanced sign-in
+  email looked like it came from Supabase (default wording, a link to the
+  `…supabase.co` project address).
+- Branded HTML templates for Supabase's *Confirm signup* and *Magic Link*
+  emails in `tools/accounts/email-templates/`, for the owner to paste in
+  (setup step 5).
+- Their link points at the app (`?token_hash=…&type=email`); the app posts
+  it to `/auth/v1/verify`. The PKCE `?code=` and hash returns still work,
+  so links from the default templates keep signing in.
+- The sender stays Supabase's until custom SMTP is set up (step 6).
+- `sw.js` cache and `APP_VERSION` to v26.
+
 ## 2026-10-04 — Privacy and UX review follow-ups (059–061)
 
 Built without a grilling round at the owner's request ("don't stop to ask
